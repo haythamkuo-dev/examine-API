@@ -1,0 +1,14 @@
+{
+  "name": "examine_api",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^25.6.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
