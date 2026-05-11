@@ -62,7 +62,7 @@ const createSignedPayoutPayload = (
 ) => {
   const basePayload = createPayoutPayload(payoutChannel, makeId);
   const signFields = ['amount.amount', 'amount.currency_code', 'merchant_reference', 'product_no'];
-  const sign = generateSign(basePayload, signFields, Bun.env.MERCHANT_ID || '');
+  const sign = generateSign(basePayload, signFields, Bun.env.MERCHANT_SIGN || '');
 
   return { ...basePayload, sign };
 };
@@ -74,7 +74,7 @@ const createSignedDepositPayload = (
 ) => {
   const basePayload = createDepositPayload(depositChannel, makeId);
   const signFields = ['amount.amount', 'amount.currency_code', 'merchant_ref', 'product_no'];
-  const sign = generateSign(basePayload, signFields, Bun.env.MERCHANT_ID || '');
+  const sign = generateSign(basePayload, signFields, Bun.env.MERCHANT_SIGN || '');
 
   return { ...basePayload, sign };
 };
@@ -127,7 +127,7 @@ export const apiTests: ApiTestCase[] = [
       };
 
       const signFields = ['merchant_no', 'merchant_ref', 'order_id', 'status'];
-      const sign = generateSign(basePayload, signFields, Bun.env.MERCHANT_ID || '');
+      const sign = generateSign(basePayload, signFields, Bun.env.MERCHANT_SIGN || '');
 
       return { ...basePayload, sign };
     },
