@@ -1,15 +1,6 @@
-export type DepositChannel =
-  | 'southafrica_cards'
-  | 'linepay'
-  | 'linepay_invoice'
-  | 'inr_upi'
-  | 'bdt_worldpay'
-  | 'co_bank_transfer'
-  | 'co_cash'
-  | 'co_nequi'
-  | 'co_pse'
-  | 'th_rabbit_linepay'
-  | 'my_tng';
+import { type CliEnv, type DepositChannel, joinUrl } from '../core/env';
+import { generateSign } from '../utils';
+import type { CommandRequest } from '../runner';
 
 type Amount = {
   amount: string;
@@ -33,18 +24,19 @@ export type DepositPayload = {
   payment_order?: Record<string, unknown>;
   issue_invoice?: boolean;
   invoice?: Record<string, unknown>;
+  sign?: string;
 };
 
-const DEPOSIT_TEMPLATES: Record<DepositChannel, DepositTemplate> = {
+const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemplate> => ({
   southafrica_cards: {
-    product_no: Bun.env.DEPOSIT_SOUTHAFICA_CARDS || 'TEST_PRODUCT_123',
+    product_no: env.depositSouthAfricaCardsProductNo,
     amount: { amount: '99.00', currency_code: 'USD' },
-    return_url: Bun.env.CALLBACK_URL_DEPOSIT,
+    return_url: env.callbackUrlDeposit,
   },
   linepay: {
     product_no: 'DEP-LINEPAY_ONLINE-ONLINE-TWD',
     amount: { amount: '100', currency_code: 'TWD' },
-    return_url: Bun.env.CALLBACK_URL_DEPOSIT,
+    return_url: env.callbackUrlDeposit,
     payment_order: {
       linepay_online: {
         confirm_url:
@@ -65,7 +57,7 @@ const DEPOSIT_TEMPLATES: Record<DepositChannel, DepositTemplate> = {
   linepay_invoice: {
     product_no: 'DEP-LINEPAY_ONLINE-ONLINE-TWD',
     amount: { amount: '120', currency_code: 'TWD' },
-    return_url: Bun.env.CALLBACK_URL_DEPOSIT,
+    return_url: env.callbackUrlDeposit,
     payment_order: {
       linepay_online: {
         confirm_url:
@@ -107,12 +99,12 @@ const DEPOSIT_TEMPLATES: Record<DepositChannel, DepositTemplate> = {
   inr_upi: {
     product_no: 'DEP-EC-UPI-INR',
     amount: { amount: '100.00', currency_code: 'INR' },
-    return_url: Bun.env.CALLBACK_URL_DEPOSIT,
+    return_url: env.callbackUrlDeposit,
   },
   bdt_worldpay: {
     product_no: 'DEP-WORLDPAY-bkash-BDT',
     amount: { amount: '100.00', currency_code: 'BDT' },
-    return_url: Bun.env.CALLBACK_URL_DEPOSIT,
+    return_url: env.callbackUrlDeposit,
     payment_order: {
       worldpay: {
         payer_key: 'PAYER-001',
@@ -123,7 +115,7 @@ const DEPOSIT_TEMPLATES: Record<DepositChannel, DepositTemplate> = {
   co_bank_transfer: {
     product_no: 'DEP-SINGLEPAYMENT-BANKTRANSFERCO-COP',
     amount: { amount: '1000', currency_code: 'COP' },
-    return_url: Bun.env.CALLBACK_URL_DEPOSIT,
+    return_url: env.callbackUrlDeposit,
     payment_order: {
       country_code: 'CO',
       product_detail: 'Single Payment Bank Transfer order for %s',
@@ -140,7 +132,7 @@ const DEPOSIT_TEMPLATES: Record<DepositChannel, DepositTemplate> = {
   co_cash: {
     product_no: 'DEP-SINGLEPAYMENT-CASHCO-COP',
     amount: { amount: '1000', currency_code: 'COP' },
-    return_url: Bun.env.CALLBACK_URL_DEPOSIT,
+    return_url: env.callbackUrlDeposit,
     payment_order: {
       country_code: 'CO',
       product_detail: 'Single Payment CASH order for %s',
@@ -155,7 +147,7 @@ const DEPOSIT_TEMPLATES: Record<DepositChannel, DepositTemplate> = {
   co_nequi: {
     product_no: 'DEP-SINGLEPAYMENT-NEQUICO-COP',
     amount: { amount: '1000', currency_code: 'COP' },
-    return_url: Bun.env.CALLBACK_URL_DEPOSIT,
+    return_url: env.callbackUrlDeposit,
     payment_order: {
       country_code: 'CO',
       product_detail: 'Single Payment NEQUI order for %s',
@@ -173,7 +165,7 @@ const DEPOSIT_TEMPLATES: Record<DepositChannel, DepositTemplate> = {
   co_pse: {
     product_no: 'DEP-SINGLEPAYMENT-PSECO-COP',
     amount: { amount: '1000', currency_code: 'COP' },
-    return_url: Bun.env.CALLBACK_URL_DEPOSIT,
+    return_url: env.callbackUrlDeposit,
     payment_order: {
       country_code: 'CO',
       product_detail: 'Single Payment PSE order for %s',
@@ -192,7 +184,7 @@ const DEPOSIT_TEMPLATES: Record<DepositChannel, DepositTemplate> = {
   th_rabbit_linepay: {
     product_no: 'DEP-SINGLEPAYMENT-RABBITLINEPAY-THB',
     amount: { amount: '100.00', currency_code: 'THB' },
-    return_url: Bun.env.CALLBACK_URL_DEPOSIT,
+    return_url: env.callbackUrlDeposit,
     payment_order: {
       country_code: 'TH',
       product_detail: 'Single Payment Rabbit LINE Pay order for %s',
@@ -211,7 +203,7 @@ const DEPOSIT_TEMPLATES: Record<DepositChannel, DepositTemplate> = {
   my_tng: {
     product_no: 'DEP-SINGLEPAYMENT-TNG-MYR',
     amount: { amount: '45.00', currency_code: 'MYR' },
-    return_url: Bun.env.CALLBACK_URL_DEPOSIT,
+    return_url: env.callbackUrlDeposit,
     payment_order: {
       country_code: 'MY',
       product_detail: 'Single Payment TNG order for %s',
@@ -227,29 +219,37 @@ const DEPOSIT_TEMPLATES: Record<DepositChannel, DepositTemplate> = {
       },
     },
   },
-};
+});
 
 export const createDepositPayload = (
+  env: CliEnv,
   channel: DepositChannel,
   makeId: (prefix: string) => string,
 ): DepositPayload => {
-  const template = DEPOSIT_TEMPLATES[channel];
-
-  return {
+  const template = createDepositTemplates(env)[channel];
+  const payload: DepositPayload = {
     ...template,
     merchant_ref: makeId('TEST_ORDER_'),
-    amount: {
-      ...template.amount,
-    },
-    payment_order: template.payment_order
-      ? {
-          ...template.payment_order,
-        }
-      : undefined,
-    invoice: template.invoice
-      ? {
-          ...template.invoice,
-        }
-      : undefined,
+  };
+  const signFields = ['amount.amount', 'amount.currency_code', 'merchant_ref', 'product_no'];
+
+  return {
+    ...payload,
+    sign: generateSign(payload, signFields, env.signKey),
   };
 };
+
+export const createDepositRequest = (
+  env: CliEnv,
+  channel: DepositChannel,
+  makeId: (prefix: string) => string,
+): CommandRequest => ({
+  name: `deposit:create:${channel}`,
+  method: 'POST',
+  url: joinUrl(env.baseUrl, env.depositUrl),
+  headers: {
+    Authorization: `ApiKey ${env.tokens.deposit}`,
+    'Content-Type': 'application/json',
+  },
+  payload: createDepositPayload(env, channel, makeId),
+});

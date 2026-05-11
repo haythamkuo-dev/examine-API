@@ -1,18 +1,39 @@
 # examine_api
 
-To install dependencies:
+Internal CLI for exercising deposit, subscription, and payout API flows.
+
+## Install
 
 ```bash
 bun install
 ```
 
-To run:
+## Run locally
 
 ```bash
-bun run index.ts
+bun run index.ts --help
 ```
 
-This project was created using `bun init` in bun v1.3.12. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Preview payloads without sending requests:
 
-// todo
-尚未跑測試，`config.ts` 裡能重構的部分已經先重新重構，接下來除了跑測試還要指定能跑單一指令的模組
+```bash
+bun run index.ts deposit preview --channel linepay
+bun run index.ts payout preview --channel co_bank
+bun run index.ts subscription preview --plan-id PLAN-001
+```
+
+Send requests:
+
+```bash
+bun run index.ts deposit create --channel linepay
+bun run index.ts payout create --channel co_wallet
+bun run index.ts subscription create --plan-id PLAN-001
+```
+
+## Build for publish
+
+```bash
+bun run build
+```
+
+The published package exposes the `examine-api` bin and runs on a Node-compatible runtime.

@@ -1,7 +1,4 @@
-export type HttpClient = (
-  input: Parameters<typeof fetch>[0],
-  init?: Parameters<typeof fetch>[1],
-) => ReturnType<typeof fetch>;
+export type HttpClient = typeof fetch;
 
 export type Logger = {
   info: (...args: unknown[]) => void;
@@ -16,18 +13,16 @@ export type RunnerDeps = {
   makeId: (prefix: string) => string;
 };
 
-type PayloadContext = Pick<RunnerDeps, 'now' | 'makeId'>;
-
-export type ApiTestCase = {
+export type CommandRequest = {
   name: string;
   url: string;
   method: string;
   headers?: Record<string, string>;
-  generatePayload: (ctx: PayloadContext) => unknown | Promise<unknown>;
+  payload: unknown;
 };
 
-export type TestResult = {
-  caseName: string;
+export type CommandResult = {
+  requestName: string;
   ok: boolean;
   status?: number;
   request: { method: string; url: string; payload: unknown };
@@ -63,41 +58,35 @@ const stringifyError = (error: unknown): string => {
 };
 
 export function createRunner(deps: RunnerDeps) {
-  const runOne = async (testCase: ApiTestCase): Promise<TestResult> => {
+  const run = async (request: CommandRequest): Promise<CommandResult> => {
     const startedAt = deps.now().getTime();
-
-    const payload = await testCase.generatePayload({
-      now: deps.now,
-      makeId: deps.makeId,
-    });
-
-    deps.logger.info('Running test case', testCase.name, testCase.method, testCase.url);
+    deps.logger.info('Running request', request.name, request.method, request.url);
 
     try {
-      const response = await deps.httpClient(testCase.url, {
-        method: testCase.method,
-        headers: testCase.headers,
-        body: JSON.stringify(payload),
+      const response = await deps.httpClient(request.url, {
+        method: request.method,
+        headers: request.headers,
+        body: JSON.stringify(request.payload),
       });
 
       const responseBody = await parseResponse(response);
       const durationMs = deps.now().getTime() - startedAt;
 
-      const result: TestResult = {
-        caseName: testCase.name,
+      const result: CommandResult = {
+        requestName: request.name,
         ok: response.ok,
         status: response.status,
         request: {
-          method: testCase.method,
-          url: testCase.url,
-          payload,
+          method: request.method,
+          url: request.url,
+          payload: request.payload,
         },
         response: responseBody,
         durationMs,
       };
 
       if (!result.ok) {
-        deps.logger.warn('Test case failed', testCase.name, response.status);
+        deps.logger.warn('Request failed', request.name, response.status);
       }
 
       return result;
@@ -105,15 +94,15 @@ export function createRunner(deps: RunnerDeps) {
       const durationMs = deps.now().getTime() - startedAt;
       const errorMessage = stringifyError(error);
 
-      deps.logger.error('Test case crashed', testCase.name, errorMessage);
+      deps.logger.error('Request crashed', request.name, errorMessage);
 
       return {
-        caseName: testCase.name,
+        requestName: request.name,
         ok: false,
         request: {
-          method: testCase.method,
-          url: testCase.url,
-          payload,
+          method: request.method,
+          url: request.url,
+          payload: request.payload,
         },
         error: errorMessage,
         durationMs,
@@ -121,19 +110,7 @@ export function createRunner(deps: RunnerDeps) {
     }
   };
 
-  const runAll = async (cases: ApiTestCase[]): Promise<TestResult[]> => {
-    const results: TestResult[] = [];
-
-    for (const testCase of cases) {
-      const result = await runOne(testCase);
-      results.push(result);
-    }
-
-    return results;
-  };
-
   return {
-    runOne,
-    runAll,
+    run,
   };
 }

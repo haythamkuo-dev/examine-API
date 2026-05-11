@@ -1,4 +1,6 @@
-export type PayoutChannel = 'co_bank' | 'co_wallet' | 'imps' | 'bd_wallet';
+import { type CliEnv, type PayoutChannel, joinUrl } from '../core/env';
+import { generateSign } from '../utils';
+import type { CommandRequest } from '../runner';
 
 type Amount = {
   amount: string;
@@ -25,22 +27,23 @@ type PayoutInfo = {
   beneficiary: PayoutBeneficiary;
 };
 
-export type PayoutPayload = {
-  product_no: string;
-  merchant_reference: string;
-  amount: Amount;
-  payout_info: PayoutInfo;
-};
-
 type PayoutTemplate = {
   productNo: string;
   amount: Amount;
   payoutInfo: PayoutInfo;
 };
 
-const PAYOUT_TEMPLATES: Record<PayoutChannel, PayoutTemplate> = {
+export type PayoutPayload = {
+  product_no: string;
+  merchant_reference: string;
+  amount: Amount;
+  payout_info: PayoutInfo;
+  sign?: string;
+};
+
+const createPayoutTemplates = (env: CliEnv): Record<PayoutChannel, PayoutTemplate> => ({
   co_bank: {
-    productNo: Bun.env.PAYOUT_CO_BANK || 'PAY-FUTUREPAY_COLLECT-BANKTRANSFERCO-COP',
+    productNo: env.payoutProductNos.co_bank,
     amount: { amount: '10.00', currency_code: 'COP' },
     payoutInfo: {
       account_type: 'individual',
@@ -61,7 +64,7 @@ const PAYOUT_TEMPLATES: Record<PayoutChannel, PayoutTemplate> = {
     },
   },
   co_wallet: {
-    productNo: Bun.env.PAYOUT_CO_WALLET || 'PAY-FUTUREPAY_COLLECT-MOBILEMONEY-COP',
+    productNo: env.payoutProductNos.co_wallet,
     amount: { amount: '10.00', currency_code: 'COP' },
     payoutInfo: {
       account_type: 'individual',
@@ -79,7 +82,7 @@ const PAYOUT_TEMPLATES: Record<PayoutChannel, PayoutTemplate> = {
     },
   },
   imps: {
-    productNo: Bun.env.PAYOUT_IMPS || 'PAY-EC-IMPS-INR',
+    productNo: env.payoutProductNos.imps,
     amount: { amount: '100.00', currency_code: 'INR' },
     payoutInfo: {
       beneficiary: {
@@ -91,7 +94,7 @@ const PAYOUT_TEMPLATES: Record<PayoutChannel, PayoutTemplate> = {
     },
   },
   bd_wallet: {
-    productNo: Bun.env.PAYOUT_BD_WALLET || 'PAY-FUTUREPAY_COLLECT-BD-MSOBILE-WALLET-COP',
+    productNo: env.payoutProductNos.bd_wallet,
     amount: { amount: '100.00', currency_code: 'BDT' },
     payoutInfo: {
       narration: 'payout remark',
@@ -101,15 +104,15 @@ const PAYOUT_TEMPLATES: Record<PayoutChannel, PayoutTemplate> = {
       },
     },
   },
-};
+});
 
 export const createPayoutPayload = (
+  env: CliEnv,
   channel: PayoutChannel,
   makeId: (prefix: string) => string,
 ): PayoutPayload => {
-  const template = PAYOUT_TEMPLATES[channel];
-
-  return {
+  const template = createPayoutTemplates(env)[channel];
+  const payload: PayoutPayload = {
     product_no: template.productNo,
     merchant_reference: makeId('TEST_ORDER_'),
     amount: {
@@ -122,4 +125,25 @@ export const createPayoutPayload = (
       },
     },
   };
+  const signFields = ['amount.amount', 'amount.currency_code', 'merchant_reference', 'product_no'];
+
+  return {
+    ...payload,
+    sign: generateSign(payload, signFields, env.signKey),
+  };
 };
+
+export const createPayoutRequest = (
+  env: CliEnv,
+  channel: PayoutChannel,
+  makeId: (prefix: string) => string,
+): CommandRequest => ({
+  name: `payout:create:${channel}`,
+  method: 'POST',
+  url: joinUrl(env.baseUrl, env.payoutUrls[channel]),
+  headers: {
+    Authorization: `ApiKey ${env.tokens.payout}`,
+    'Content-Type': 'application/json',
+  },
+  payload: createPayoutPayload(env, channel, makeId),
+});

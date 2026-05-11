@@ -1,14 +1,36 @@
 {
   "name": "examine_api",
-  "module": "index.ts",
   "type": "module",
-  "private": true,
-  
+  "module": "index.ts",
+  "main": "./dist/index.js",
+  "bin": {
+    "examine-api": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun build index.ts --outdir dist --format esm --target node --minify",
+    "prepublishOnly": "bun run build",
+    "test": "bun test",
+    "deposit": "bun run index.ts deposit create",
+    "payout": "bun run index.ts payout create",
+    "subscribe": "bun run index.ts subscription create",
+    "preview:deposit": "bun run index.ts deposit preview",
+    "preview:payout": "bun run index.ts payout preview",
+    "preview:subscription": "bun run index.ts subscription preview"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^25.6.0"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "commander": "^14.0.3",
+    "ora": "^9.4.0",
+    "picocolors": "^1.1.1"
   }
 }
