@@ -41,7 +41,7 @@ web/: 存放 React 元件，確保不含後端 Node/Bun 特有的 API。
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **examine_api** (317 symbols, 425 relationships, 7 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **examine_api** (482 symbols, 693 relationships, 15 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
