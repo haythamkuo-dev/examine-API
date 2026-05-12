@@ -1,7 +1,22 @@
+## 🚧 當前開發狀態 (Current Status)
+- [/] 改善 `deposit api` 與其欄位 
+- [ ] 待辦：重構 `deposit` 相關程式碼
+
+## 🛠️ 開發規範 (Conventions)
+- 先執行 GitNexus Skill 檢查環境，再進行 Code 生成。
+
+
+## ⚠️ 專案特有規則
+- 暫時不管跟 CLI 相關的程式碼
+- 前端整體架構應該保持業務邏輯與 UI 分離，提升程式碼複用
+- 前端遵循單向數據流
+- 後端的 `merchantRef`, `merchant_reference` 為unique
+
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **examine_api** (81 symbols, 86 relationships, 0 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **examine_api** (347 symbols, 467 relationships, 6 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -19,25 +34,5 @@ This project is indexed by GitNexus as **examine_api** (81 symbols, 86 relations
 - NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
 - NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
 - NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
-
-## Resources
-
-| Resource | Use for |
-|----------|---------|
-| `gitnexus://repo/examine_api/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/examine_api/clusters` | All functional areas |
-| `gitnexus://repo/examine_api/processes` | All execution flows |
-| `gitnexus://repo/examine_api/process/{name}` | Step-by-step execution trace |
-
-## CLI
-
-| Task | Read this skill file |
-|------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->

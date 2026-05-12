@@ -1,0 +1,84 @@
+{
+  "commonValues": {
+    "productNo": "DEP-LINEPAY_ONLINE-ONLINE-TWD",
+    "amount": "100",
+    "currencyCode": "TWD"
+  },
+  "schema": {
+    "checkout_url_type": {
+      "kind": "select",
+      "label": "Checkout URL type",
+      "options": [
+        { "label": "Direct", "value": "direct" },
+        { "label": "LionPage", "value": "lionpage" }
+      ]
+    },
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "linepay_online": {
+          "kind": "object",
+          "label": "LINE Pay online",
+          "fields": {
+            "confirm_url": { "kind": "text", "label": "Confirm URL", "required": true },
+            "cancel_url": { "kind": "text", "label": "Cancel URL", "required": true },
+            "packages": {
+              "kind": "array",
+              "label": "Packages",
+              "itemLabel": "Package",
+              "itemSchema": {
+                "kind": "object",
+                "label": "Package",
+                "fields": {
+                  "id": { "kind": "text", "label": "Package ID", "required": true },
+                  "name": { "kind": "text", "label": "Package name", "required": true },
+                  "amount": { "kind": "text", "label": "Package amount", "required": true },
+                  "products": {
+                    "kind": "array",
+                    "label": "Products",
+                    "itemLabel": "Product",
+                    "itemSchema": {
+                      "kind": "object",
+                      "label": "Product",
+                      "fields": {
+                        "id": { "kind": "text", "label": "Product ID", "required": true },
+                        "name": { "kind": "text", "label": "Product name", "required": true },
+                        "quantity": { "kind": "text", "label": "Quantity", "required": true },
+                        "price": { "kind": "text", "label": "Price", "required": true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "checkout_url_type": "direct",
+    "payment_order": {
+      "linepay_online": {
+        "confirm_url": "https://merchant.example.com/linepay/confirm?merchant_ref=M-ORDER-LINEPAY-000001",
+        "cancel_url": "https://merchant.example.com/linepay/cancel?merchant_ref=M-ORDER-LINEPAY-000001",
+        "packages": [
+          {
+            "id": "pkg-1",
+            "name": "Default Package",
+            "amount": "100",
+            "products": [
+              {
+                "id": "SKU-001",
+                "name": "Sample Item",
+                "quantity": "1",
+                "price": "100"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

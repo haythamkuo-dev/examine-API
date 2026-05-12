@@ -1,0 +1,31 @@
+{
+  "commonValues": {
+    "productNo": "DEP-WORLDPAY-bkash-BDT",
+    "amount": "100.00",
+    "currencyCode": "BDT"
+  },
+  "schema": {
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "worldpay": {
+          "kind": "object",
+          "label": "Worldpay",
+          "fields": {
+            "payer_key": { "kind": "text", "label": "Payer key", "required": true },
+            "payer_name": { "kind": "text", "label": "Payer name", "required": true }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "payment_order": {
+      "worldpay": {
+        "payer_key": "PAYER-001",
+        "payer_name": "Amy"
+      }
+    }
+  }
+}

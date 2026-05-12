@@ -1,0 +1,39 @@
+{
+  "commonValues": {
+    "productNo": "DEP-SINGLEPAYMENT-CASHCO-COP",
+    "amount": "1000",
+    "currencyCode": "COP"
+  },
+  "schema": {
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "country_code": { "kind": "text", "label": "Country code", "required": true },
+        "product_detail": { "kind": "textarea", "label": "Product detail", "required": true },
+        "singlepayment_cashco": {
+          "kind": "object",
+          "label": "Cash payment",
+          "fields": {
+            "shopper_email": { "kind": "text", "label": "Shopper email", "required": true },
+            "bank_name": { "kind": "text", "label": "Bank name", "required": true },
+            "origin": { "kind": "text", "label": "Origin", "required": true },
+            "shopper_reference": { "kind": "text", "label": "Shopper reference", "required": true }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "payment_order": {
+      "country_code": "CO",
+      "product_detail": "Single Payment CASH order for %s",
+      "singlepayment_cashco": {
+        "shopper_email": "shopper@example.com",
+        "bank_name": "8323",
+        "origin": "merchant.example.com",
+        "shopper_reference": "CUSTOMER_001"
+      }
+    }
+  }
+}

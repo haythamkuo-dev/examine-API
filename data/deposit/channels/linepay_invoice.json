@@ -1,0 +1,137 @@
+{
+  "commonValues": {
+    "productNo": "DEP-LINEPAY_ONLINE-ONLINE-TWD",
+    "amount": "120",
+    "currencyCode": "TWD"
+  },
+  "schema": {
+    "checkout_url_type": {
+      "kind": "select",
+      "label": "Checkout URL type",
+      "options": [
+        { "label": "Direct", "value": "direct" },
+        { "label": "LionPage", "value": "lionpage" }
+      ]
+    },
+    "issue_invoice": { "kind": "boolean", "label": "Issue invoice", "required": true },
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "linepay_online": {
+          "kind": "object",
+          "label": "LINE Pay online",
+          "fields": {
+            "confirm_url": { "kind": "text", "label": "Confirm URL", "required": true },
+            "cancel_url": { "kind": "text", "label": "Cancel URL", "required": true },
+            "packages": {
+              "kind": "array",
+              "label": "Packages",
+              "itemLabel": "Package",
+              "itemSchema": {
+                "kind": "object",
+                "label": "Package",
+                "fields": {
+                  "id": { "kind": "text", "label": "Package ID", "required": true },
+                  "name": { "kind": "text", "label": "Package name", "required": true },
+                  "amount": { "kind": "text", "label": "Package amount", "required": true },
+                  "products": {
+                    "kind": "array",
+                    "label": "Products",
+                    "itemLabel": "Product",
+                    "itemSchema": {
+                      "kind": "object",
+                      "label": "Product",
+                      "fields": {
+                        "id": { "kind": "text", "label": "Product ID", "required": true },
+                        "name": { "kind": "text", "label": "Product name", "required": true },
+                        "quantity": { "kind": "text", "label": "Quantity", "required": true },
+                        "price": { "kind": "text", "label": "Price", "required": true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "invoice": {
+      "kind": "object",
+      "label": "Invoice",
+      "fields": {
+        "relate_number": { "kind": "text", "label": "Relate number", "required": true },
+        "print": { "kind": "text", "label": "Print", "required": true },
+        "donation": { "kind": "text", "label": "Donation", "required": true },
+        "tax_type": { "kind": "text", "label": "Tax type", "required": true },
+        "sales_amount": { "kind": "text", "label": "Sales amount", "required": true },
+        "inv_type": { "kind": "text", "label": "Invoice type", "required": true },
+        "vat": { "kind": "text", "label": "VAT", "required": true },
+        "customer_email": { "kind": "text", "label": "Customer email", "required": true },
+        "items": {
+          "kind": "array",
+          "label": "Invoice items",
+          "itemLabel": "Invoice item",
+          "itemSchema": {
+            "kind": "object",
+            "label": "Invoice item",
+            "fields": {
+              "item_seq": { "kind": "text", "label": "Item sequence", "required": true },
+              "item_name": { "kind": "text", "label": "Item name", "required": true },
+              "item_count": { "kind": "text", "label": "Item count", "required": true },
+              "item_word": { "kind": "text", "label": "Item unit", "required": true },
+              "item_price": { "kind": "text", "label": "Item price", "required": true },
+              "item_amount": { "kind": "text", "label": "Item amount", "required": true }
+            }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "checkout_url_type": "direct",
+    "issue_invoice": true,
+    "payment_order": {
+      "linepay_online": {
+        "confirm_url": "https://merchant.example.com/linepay/confirm?merchant_ref=M-ORDER-LINEPAY-INV-000001",
+        "cancel_url": "https://merchant.example.com/linepay/cancel?merchant_ref=M-ORDER-LINEPAY-INV-000001",
+        "packages": [
+          {
+            "id": "pkg-1",
+            "name": "Default Package",
+            "amount": "120",
+            "products": [
+              {
+                "id": "SKU-001",
+                "name": "Sample Item",
+                "quantity": "1",
+                "price": "120"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "invoice": {
+      "relate_number": "INV-20250101-000123",
+      "print": "0",
+      "donation": "0",
+      "tax_type": "1",
+      "sales_amount": "120",
+      "inv_type": "07",
+      "vat": "1",
+      "customer_email": "buyer@example.com",
+      "items": [
+        {
+          "item_seq": "1",
+          "item_name": "Sample Item",
+          "item_count": "1",
+          "item_word": "件",
+          "item_price": "120",
+          "item_amount": "120"
+        }
+      ]
+    }
+  }
+}

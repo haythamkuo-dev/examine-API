@@ -1,0 +1,51 @@
+{
+  "commonValues": {
+    "productNo": "DEP-SINGLEPAYMENT-TNG-MYR",
+    "amount": "45.00",
+    "currencyCode": "MYR"
+  },
+  "schema": {
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "country_code": { "kind": "text", "label": "Country code", "required": true },
+        "product_detail": { "kind": "textarea", "label": "Product detail", "required": true },
+        "singlepayment_tng": {
+          "kind": "object",
+          "label": "Touch n Go",
+          "fields": {
+            "origin": { "kind": "text", "label": "Origin", "required": true },
+            "shopper_reference": { "kind": "text", "label": "Shopper reference", "required": true },
+            "shopper_email": { "kind": "text", "label": "Shopper email", "required": true },
+            "holder_name": { "kind": "text", "label": "Holder name", "required": true },
+            "browser_info": {
+              "kind": "object",
+              "label": "Browser info",
+              "fields": {
+                "os_type": { "kind": "text", "label": "OS type", "required": true },
+                "terminal_type": { "kind": "text", "label": "Terminal type", "required": true }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "payment_order": {
+      "country_code": "MY",
+      "product_detail": "Single Payment TNG order for %s",
+      "singlepayment_tng": {
+        "origin": "merchant.example.com",
+        "shopper_reference": "CUSTOMER_001",
+        "shopper_email": "shopper@example.com",
+        "holder_name": "Test User",
+        "browser_info": {
+          "os_type": "IOS",
+          "terminal_type": "APP"
+        }
+      }
+    }
+  }
+}

@@ -11,6 +11,7 @@ export type RunnerDeps = {
   logger: Logger;
   now: () => Date;
   makeId: (prefix: string) => string;
+  timeoutMs?: number;
 };
 
 export type CommandRequest = {
@@ -28,8 +29,12 @@ export type CommandResult = {
   request: { method: string; url: string; payload: unknown };
   response?: unknown;
   error?: string;
+  code?: string;
+  message?: string;
   durationMs: number;
 };
+
+const DEFAULT_TIMEOUT_MS = 15_000;
 
 const parseResponse = async (response: Response): Promise<unknown> => {
   const rawText = await response.text();
@@ -60,17 +65,23 @@ const stringifyError = (error: unknown): string => {
 export function createRunner(deps: RunnerDeps) {
   const run = async (request: CommandRequest): Promise<CommandResult> => {
     const startedAt = deps.now().getTime();
-    deps.logger.info('Running request', request.name, request.method, request.url);
+    const timeoutMs = deps.timeoutMs || DEFAULT_TIMEOUT_MS;
+    deps.logger.info(`Running request ${request.name} ${request.method} ${request.url} (timeout ${timeoutMs}ms)`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const response = await deps.httpClient(request.url, {
         method: request.method,
         headers: request.headers,
         body: JSON.stringify(request.payload),
+        signal: controller.signal,
       });
 
       const responseBody = await parseResponse(response);
       const durationMs = deps.now().getTime() - startedAt;
+      const responseObject =
+        responseBody && typeof responseBody === 'object' ? (responseBody as Record<string, unknown>) : undefined;
 
       const result: CommandResult = {
         requestName: request.name,
@@ -82,11 +93,17 @@ export function createRunner(deps: RunnerDeps) {
           payload: request.payload,
         },
         response: responseBody,
+        code: typeof responseObject?.code === 'string' ? responseObject.code : undefined,
+        message: typeof responseObject?.message === 'string' ? responseObject.message : undefined,
         durationMs,
       };
 
       if (!result.ok) {
-        deps.logger.warn('Request failed', request.name, response.status);
+        deps.logger.warn(
+          `Request failed ${request.name} status=${response.status}` +
+            (result.code ? ` code=${result.code}` : '') +
+            (result.message ? ` message=${result.message}` : ''),
+        );
       }
 
       return result;
@@ -104,9 +121,11 @@ export function createRunner(deps: RunnerDeps) {
           url: request.url,
           payload: request.payload,
         },
-        error: errorMessage,
+        error: error instanceof DOMException && error.name === 'AbortError' ? `Timeout after ${timeoutMs}ms` : errorMessage,
         durationMs,
       };
+    } finally {
+      clearTimeout(timeoutId);
     }
   };
 

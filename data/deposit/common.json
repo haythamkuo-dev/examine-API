@@ -1,0 +1,13 @@
+{
+  "schema": {
+    "productNo": { "kind": "text", "label": "Product number", "required": true },
+    "merchantRef": { "kind": "text", "label": "Merchant reference", "required": true },
+    "amount": { "kind": "text", "label": "Amount", "required": true },
+    "currencyCode": { "kind": "text", "label": "Currency code", "required": true },
+    "returnUrl": { "kind": "text", "label": "Return URL", "required": true }
+  },
+  "values": {
+    "merchantRef": "TEST_ORDER_000001",
+    "returnUrl": "https://example.com/deposit-return"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "commonValues": {
+    "productNo": "DEP-SINGLEPAYMENT-PSECO-COP",
+    "amount": "1000",
+    "currencyCode": "COP"
+  },
+  "schema": {
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "country_code": { "kind": "text", "label": "Country code", "required": true },
+        "product_detail": { "kind": "textarea", "label": "Product detail", "required": true },
+        "singlepayment_pseco": {
+          "kind": "object",
+          "label": "PSE",
+          "fields": {
+            "shopper_email": { "kind": "text", "label": "Shopper email", "required": true },
+            "holder_name": { "kind": "text", "label": "Holder name", "required": true },
+            "telephone_number": { "kind": "text", "label": "Telephone number", "required": true },
+            "bank_name": { "kind": "text", "label": "Bank name", "required": true },
+            "tax_type": { "kind": "text", "label": "Tax type", "required": true },
+            "personal_tax_id": { "kind": "text", "label": "Personal tax ID", "required": true },
+            "origin": { "kind": "text", "label": "Origin", "required": true },
+            "shopper_reference": { "kind": "text", "label": "Shopper reference", "required": true }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "payment_order": {
+      "country_code": "CO",
+      "product_detail": "Single Payment PSE order for %s",
+      "singlepayment_pseco": {
+        "shopper_email": "shopper@example.com",
+        "holder_name": "JW L",
+        "telephone_number": "575555555555",
+        "bank_name": "1001",
+        "tax_type": "PPT",
+        "personal_tax_id": "36570630563",
+        "origin": "merchant.example.com",
+        "shopper_reference": "CUSTOMER_001"
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { type CliEnv, type DepositChannel, joinUrl } from '../core/env';
 import { generateSign } from '../utils';
 import type { CommandRequest } from '../runner';
+import type { DepositChannelValues, DepositCommonValues } from '../deposit/web';
 
 type Amount = {
   amount: string;
@@ -25,6 +26,36 @@ export type DepositPayload = {
   issue_invoice?: boolean;
   invoice?: Record<string, unknown>;
   sign?: string;
+};
+
+export type DepositCollectOverride = {
+  country_code: string;
+  product_detail: string;
+  product_name: string;
+  shopper_reference: string;
+  origin: string;
+};
+
+export type DepositRequestOverrides = {
+  apiKey?: string;
+  baseUrl?: string;
+  depositUrl?: string;
+  signKey?: string;
+  productNo?: string;
+  merchantRef?: string;
+  amount?: string;
+  currencyCode?: string;
+  returnUrl?: string;
+  collect?: DepositCollectOverride;
+};
+
+export type StructuredDepositRequestOverrides = {
+  apiKey?: string;
+  baseUrl?: string;
+  depositUrl?: string;
+  signKey?: string;
+  commonValues: DepositCommonValues;
+  channelValues: DepositChannelValues;
 };
 
 const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemplate> => ({
@@ -225,17 +256,42 @@ export const createDepositPayload = (
   env: CliEnv,
   channel: DepositChannel,
   makeId: (prefix: string) => string,
+  overrides: DepositRequestOverrides = {},
 ): DepositPayload => {
   const template = createDepositTemplates(env)[channel];
   const payload: DepositPayload = {
-    ...template,
-    merchant_ref: makeId('TEST_ORDER_'),
+    product_no: overrides.productNo || template.product_no,
+    merchant_ref: overrides.merchantRef || makeId('TEST_ORDER_'),
+    amount: {
+      amount: overrides.amount || template.amount.amount,
+      currency_code: overrides.currencyCode || template.amount.currency_code,
+    },
   };
   const signFields = ['amount.amount', 'amount.currency_code', 'merchant_ref', 'product_no'];
 
+  if (overrides.returnUrl ?? template.return_url) {
+    payload.return_url = overrides.returnUrl ?? template.return_url;
+  }
+
+  if (overrides.collect) {
+    payload.payment_order = {
+      collect: overrides.collect,
+    };
+  } else if (template.payment_order) {
+    payload.payment_order = template.payment_order;
+  }
+
+  if (template.issue_invoice !== undefined && !overrides.collect) {
+    payload.issue_invoice = template.issue_invoice;
+  }
+
+  if (template.invoice && !overrides.collect) {
+    payload.invoice = template.invoice;
+  }
+
   return {
     ...payload,
-    sign: generateSign(payload, signFields, env.signKey),
+    sign: generateSign(payload, signFields, overrides.signKey || env.signKey),
   };
 };
 
@@ -243,13 +299,61 @@ export const createDepositRequest = (
   env: CliEnv,
   channel: DepositChannel,
   makeId: (prefix: string) => string,
+  overrides: DepositRequestOverrides = {},
 ): CommandRequest => ({
   name: `deposit:create:${channel}`,
   method: 'POST',
-  url: joinUrl(env.baseUrl, env.depositUrl),
+  url: joinUrl(overrides.baseUrl || env.baseUrl, overrides.depositUrl || env.depositUrl),
   headers: {
-    Authorization: `ApiKey ${env.tokens.deposit}`,
+    Authorization: `ApiKey ${overrides.apiKey || env.tokens.deposit}`,
     'Content-Type': 'application/json',
   },
-  payload: createDepositPayload(env, channel, makeId),
+  payload: createDepositPayload(env, channel, makeId, overrides),
+});
+
+const cloneUnknown = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
+
+export const createStructuredDepositPayload = (
+  env: CliEnv,
+  channel: DepositChannel,
+  makeId: (prefix: string) => string,
+  overrides: StructuredDepositRequestOverrides,
+): DepositPayload => {
+  const template = createDepositTemplates(env)[channel];
+  const channelValues = cloneUnknown(overrides.channelValues || {});
+  const payload = {
+    product_no: overrides.commonValues.productNo || template.product_no,
+    merchant_ref: overrides.commonValues.merchantRef || makeId('TEST_ORDER_'),
+    amount: {
+      amount: overrides.commonValues.amount || template.amount.amount,
+      currency_code: overrides.commonValues.currencyCode || template.amount.currency_code,
+    },
+    ...(channelValues as Record<string, unknown>),
+  } as DepositPayload;
+  const signFields = ['amount.amount', 'amount.currency_code', 'merchant_ref', 'product_no'];
+
+  if (overrides.commonValues.returnUrl || template.return_url) {
+    payload.return_url = overrides.commonValues.returnUrl || template.return_url;
+  }
+
+  return {
+    ...payload,
+    sign: generateSign(payload, signFields, overrides.signKey || env.signKey),
+  };
+};
+
+export const createStructuredDepositRequest = (
+  env: CliEnv,
+  channel: DepositChannel,
+  makeId: (prefix: string) => string,
+  overrides: StructuredDepositRequestOverrides,
+): CommandRequest => ({
+  name: `deposit:create:${channel}`,
+  method: 'POST',
+  url: joinUrl(overrides.baseUrl || env.baseUrl, overrides.depositUrl || env.depositUrl),
+  headers: {
+    Authorization: `ApiKey ${overrides.apiKey || env.tokens.deposit}`,
+    'Content-Type': 'application/json',
+  },
+  payload: createStructuredDepositPayload(env, channel, makeId, overrides),
 });

@@ -1,0 +1,51 @@
+{
+  "commonValues": {
+    "productNo": "DEP-SINGLEPAYMENT-RABBITLINEPAY-THB",
+    "amount": "100.00",
+    "currencyCode": "THB"
+  },
+  "schema": {
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "country_code": { "kind": "text", "label": "Country code", "required": true },
+        "product_detail": { "kind": "textarea", "label": "Product detail", "required": true },
+        "singlepayment_rabbitlinepay": {
+          "kind": "object",
+          "label": "Rabbit LINE Pay",
+          "fields": {
+            "origin": { "kind": "text", "label": "Origin", "required": true },
+            "shopper_reference": { "kind": "text", "label": "Shopper reference", "required": true },
+            "shopper_email": { "kind": "text", "label": "Shopper email", "required": true },
+            "holder_name": { "kind": "text", "label": "Holder name", "required": true },
+            "browser_info": {
+              "kind": "object",
+              "label": "Browser info",
+              "fields": {
+                "os_type": { "kind": "text", "label": "OS type", "required": true },
+                "terminal_type": { "kind": "text", "label": "Terminal type", "required": true }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "payment_order": {
+      "country_code": "TH",
+      "product_detail": "Single Payment Rabbit LINE Pay order for %s",
+      "singlepayment_rabbitlinepay": {
+        "origin": "merchant.example.com",
+        "shopper_reference": "CUSTOMER_001",
+        "shopper_email": "shopper@example.com",
+        "holder_name": "Rabbit User",
+        "browser_info": {
+          "os_type": "ANDROID",
+          "terminal_type": "APP"
+        }
+      }
+    }
+  }
+}

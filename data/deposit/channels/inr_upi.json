@@ -1,0 +1,20 @@
+{
+  "commonValues": {
+    "productNo": "DEP-EC-UPI-INR",
+    "amount": "100.00",
+    "currencyCode": "INR"
+  },
+  "schema": {
+    "checkout_url_type": {
+      "kind": "select",
+      "label": "Checkout URL type",
+      "options": [
+        { "label": "Direct", "value": "direct" },
+        { "label": "LionPage", "value": "lionpage" }
+      ]
+    }
+  },
+  "values": {
+    "checkout_url_type": "direct"
+  }
+}
