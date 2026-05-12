@@ -48,7 +48,7 @@ describe('deposit web helpers', () => {
     const preview = buildDepositPreviewResponse(env, values, makeId);
 
     expect(preview.request.headers?.Authorization).toBe('ApiKey ****-token');
-    expect((preview.request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_217');
+    expect((preview.request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_217_fixed-id');
   });
 
   test('builds request from form values', () => {
@@ -63,6 +63,20 @@ describe('deposit web helpers', () => {
     const request = buildDepositRequestFromForm(env, values, makeId);
     expect(request.url).toBe('https://example.test/s2s/v1/intents/deposit');
     expect(request.headers?.Authorization).toBe('ApiKey deposit-token');
+    expect((request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_217_fixed-id');
+  });
+
+  test('creates a unique merchant reference when form value is blank', () => {
+    const values: DepositFormValues = {
+      ...toDepositDefaultsResponse('southafrica_cards', createSeedDepositPresets(env, makeId)).form,
+      commonValues: {
+        ...toDepositDefaultsResponse('southafrica_cards', createSeedDepositPresets(env, makeId)).form.commonValues,
+        merchantRef: '   ',
+      },
+    };
+
+    const request = buildDepositRequestFromForm(env, values, makeId);
+    expect((request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
   test('adds binding hint to failed create response', async () => {

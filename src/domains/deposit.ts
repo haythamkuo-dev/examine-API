@@ -1,5 +1,5 @@
 import { type CliEnv, type DepositChannel, joinUrl } from '../core/env';
-import { generateSign } from '../utils';
+import { createUniqueReference, generateSign } from '../utils';
 import type { CommandRequest } from '../runner';
 import type { DepositChannelValues, DepositCommonValues } from '../deposit/web';
 
@@ -321,9 +321,10 @@ export const createStructuredDepositPayload = (
 ): DepositPayload => {
   const template = createDepositTemplates(env)[channel];
   const channelValues = cloneUnknown(overrides.channelValues || {});
+  const merchantRef = createUniqueReference(overrides.commonValues.merchantRef, makeId, 'TEST_ORDER_');
   const payload = {
     product_no: overrides.commonValues.productNo || template.product_no,
-    merchant_ref: overrides.commonValues.merchantRef || makeId('TEST_ORDER_'),
+    merchant_ref: merchantRef,
     amount: {
       amount: overrides.commonValues.amount || template.amount.amount,
       currency_code: overrides.commonValues.currencyCode || template.amount.currency_code,

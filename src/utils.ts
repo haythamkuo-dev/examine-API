@@ -25,3 +25,17 @@ export const generateSign = (
   const canonicalString = keyValuePairs.join('&');
   return crypto.createHash('sha256').update(canonicalString).digest('hex');
 };
+
+export const createUniqueReference = (
+  value: string | undefined,
+  makeId: (prefix: string) => string,
+  fallbackPrefix: string,
+): string => {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return makeId(fallbackPrefix);
+  }
+
+  return makeId(`${trimmed}_`);
+};
