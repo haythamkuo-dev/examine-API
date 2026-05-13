@@ -1,0 +1,15 @@
+{
+  "product_no": "PAY-EC-IMPS-INR",
+  "amount": {
+    "amount": "100.00",
+    "currency_code": "INR"
+  },
+  "payout_info": {
+    "beneficiary": {
+      "name": "Rahul Kumar",
+      "account_number": "1234567890",
+      "bank_name": "BENEFICIARY BANK",
+      "bank_code": "BANK0001234"
+    }
+  }
+}

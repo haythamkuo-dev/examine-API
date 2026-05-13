@@ -1,0 +1,50 @@
+{
+  "product_no": "PAY-FUTUREPAY_COLLECT-MOBILEMONEY-COP",
+  "amount": {
+    "amount": "100.00",
+    "currency_code": "COP"
+  },
+  "payout_info": {
+    "account_type": "company",
+    "narration": "E2E payout mobile money",
+    "client_ip": "127.0.0.1",
+    "beneficiary": {
+      "account_number": "03179596864",
+      "bank_account_type": "dp",
+      "bank_code": "1507",
+      "bank_name": "NEQUI",
+      "identification_type": "CC",
+      "id_number": "1020806281",
+      "name": "E2E MobileMoney Beneficiary",
+      "first_name": "名 (非必填)",
+      "last_name": "姓 (非必填)",
+      "email": "受益人 Email (非必填)",
+      "identification": "其他識別編號 (非必填)",
+      "date_of_birth": "出生日期 YYYY-MM-DD (非必填)",
+      "contact_number": {
+        "country_code": "國碼 (非必填)",
+        "number": "電話號碼 (非必填)"
+      },
+      "address": {
+        "line1": "地址第一行 (非必填)",
+        "line2": "地址第二行 (非必填)",
+        "city": "城市 (非必填)",
+        "state": "州/省 (非必填)",
+        "country_code": "國別代碼 (非必填)",
+        "postal_code": "郵遞區號 (非必填)"
+      }
+    },
+    "remitter": {
+      "name": "付款人姓名 (非必填)",
+      "phone_num": "付款人電話 (非必填)",
+      "address": "付款人地址 (非必填)",
+      "email": "付款人 Email (非必填)",
+      "country_code": "國別代碼 (非必填)",
+      "city": "城市 (非必填)",
+      "id_type": "證件類型 (非必填)",
+      "id_number": "證件號碼 (非必填)",
+      "id_expiry": "證件效期 YYYY-MM-DD (非必填)",
+      "date_of_birth": "出生日期 YYYY-MM-DD (非必填)"
+    }
+  }
+}

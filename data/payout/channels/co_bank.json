@@ -1,0 +1,50 @@
+{
+  "product_no": "PAY-FUTUREPAY_COLLECT-BANKTRANSFERCO-COP",
+  "amount": {
+    "amount": "100.00",
+    "currency_code": "COP"
+  },
+  "payout_info": {
+    "account_type": "individual",
+    "narration": "E2E payout order",
+    "client_ip": "127.0.0.1",
+    "beneficiary": {
+      "name": "E2E Payout Beneficiary",
+      "first_name": "E2E",
+      "last_name": "Beneficiary",
+      "identification_type": "CC",
+      "id_number": "1020806281",
+      "account_number": "03179596864",
+      "bank_account_type": "cc",
+      "bank_code": "1007",
+      "bank_name": "BANCOLOMBIA",
+      "email": "e2e@example.com",
+      "identification": "其他識別編號 (非必填)",
+      "date_of_birth": "出生日期 YYYY-MM-DD (非必填)",
+      "contact_number": {
+        "country_code": "國碼 (非必填)",
+        "number": "電話號碼 (非必填)"
+      },
+      "address": {
+        "line1": "地址第一行 (非必填)",
+        "line2": "地址第二行 (非必填)",
+        "city": "城市 (非必填)",
+        "state": "州/省 (非必填)",
+        "country_code": "國別代碼 (非必填)",
+        "postal_code": "郵遞區號 (非必填)"
+      }
+    },
+    "remitter": {
+      "name": "付款人姓名 (非必填)",
+      "phone_num": "付款人電話 (非必填)",
+      "address": "付款人地址 (非必填)",
+      "email": "付款人 Email (非必填)",
+      "country_code": "國別代碼 (非必填)",
+      "city": "城市 (非必填)",
+      "id_type": "證件類型 (非必填)",
+      "id_number": "證件號碼 (非必填)",
+      "id_expiry": "證件效期 YYYY-MM-DD (非必填)",
+      "date_of_birth": "出生日期 YYYY-MM-DD (非必填)"
+    }
+  }
+}

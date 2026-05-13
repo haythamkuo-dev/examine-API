@@ -4,7 +4,27 @@
 ├── README.md
 ├── bun.lock
 ├── data
-│   └── deposit-presets.json
+│   ├── deposit
+│   │   ├── channels
+│   │   │   ├── bdt_worldpay.json
+│   │   │   ├── co_bank_transfer.json
+│   │   │   ├── co_cash.json
+│   │   │   ├── co_nequi.json
+│   │   │   ├── co_pse.json
+│   │   │   ├── inr_upi.json
+│   │   │   ├── linepay.json
+│   │   │   ├── linepay_invoice.json
+│   │   │   ├── my_tng.json
+│   │   │   ├── southafrica_cards.json
+│   │   │   └── th_rabbit_linepay.json
+│   │   └── common.json
+│   └── payout
+│       ├── channels
+│       │   ├── bd_wallet.json
+│       │   ├── co_bank.json
+│       │   ├── co_wallet.json
+│       │   └── imps.json
+│       └── common.json
 ├── index.html
 ├── index.ts
 ├── package.json
@@ -36,10 +56,15 @@
 │   └── utils.ts
 ├── structure.md
 ├── tsconfig.json
+├── tsconfig.server.json
+├── tsconfig.web.json
 ├── vite.config.ts
 └── web
+    ├── App.test.tsx
     ├── App.tsx
     ├── main.tsx
+    ├── pages
+    │   └── DepositPage.tsx
     └── styles.css
 
-10 directories, 33 files
+15 directories, 57 files

@@ -52,12 +52,15 @@
 - 渠道客製化與 Payload 生成：
   - 由於 Deposit/Payout/Subscription 在不同渠道有不同的欄位需求，禁止在測試檔中撰寫大量 Hard-coded 的 JSON payload。
   - 必須實作並使用 Factory 模式（例如 `createChannelPayload(channelType, overrides)`）來動態生成請求資料。
+  - Factory 生成的假資料必須加上型別斷言或回傳型別（例如 `Partial<DepositChannelConfig>`），以符合專案的嚴格 TypeScript 規範。
   - 必須針對各渠道的「必填欄位缺失」與「邊界值」撰寫負面測試 (Negative Tests)。
 - 錯誤斷言 (Error Assertions)：必須捕捉並驗證自定義的 `AppError`，確保錯誤碼與 HTTP 狀態碼符合 API 規格。
 
 ## When Writing Tests
 - 執行 `gitnexus_query({query: "channel config payload"})` 來了解現有渠道的結構，然後才開始撰寫針對該渠道的測試。
 - 若測試需要新增特定渠道的 Mock 參數，請更新至 `data/mock_channels.json`，並確保 JSDoc 型別定義同步更新。
+<!-- 未來測試其他服務，渠道來源需做更新 -->
+- **Source Code 為唯一真實來源 (Source of Truth)**：在撰寫針對特定渠道的測試前，必須先解析該渠道在 `src/deposit/presets.ts` (或其他相關定義檔) 中的 `DepositChannelConfig` 等 TypeScript 介面，了解確切的必填與選填欄位。
 
 
 <!-- ### Operational Rules (Strictly Follow)

@@ -1,0 +1,14 @@
+{
+  "product_no": "PAY-WORLDPAY-BKASH-BDT",
+  "amount": {
+    "amount": "100.00",
+    "currency_code": "BDT"
+  },
+  "payout_info": {
+    "narration": "Test payout transaction",
+    "beneficiary": {
+      "name": "John Doe",
+      "account_number": "01712345678"
+    }
+  }
+}
