@@ -21,6 +21,7 @@ const moduleName = 'Payout Module';
 const pageTitle = 'Payout Operator Console';
 const previewEmptyState = 'Run a preview to inspect the exact request body, URL, and masked headers.';
 const resultEmptyState = 'Send a request to capture the raw response, status code, and diagnostics.';
+const optionalFieldMarker = '非必填';
 
 const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, init);
@@ -67,6 +68,54 @@ const JsonPanel = ({
 );
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const isPlaceholderOptionalValue = (value: unknown): boolean =>
+  typeof value === 'string' && value.includes(optionalFieldMarker);
+
+/**
+ * Returns whether a payout field should be hidden in the frontend form.
+ *
+ * Optional fields stay visible when they already carry a real value. Placeholder-only
+ * optional fields, plus any parent container that only contains hidden descendants,
+ * are hidden to reduce accidental submission noise.
+ *
+ * @param schema The schema entry describing the field.
+ * @param value The current field value from the form state.
+ * @returns `true` when the field should be hidden from the payout form.
+ */
+export const shouldHidePayoutField = (
+  schema: PayoutFieldMap[string],
+  value: unknown,
+): boolean => {
+  if (schema.kind === 'object') {
+    const record = isPlainObject(value) ? value : {};
+
+    return Object.entries(schema.fields).every(([key, childSchema]) =>
+      shouldHidePayoutField(childSchema, record[key]),
+    );
+  }
+
+  if (schema.kind === 'array') {
+    if (schema.required) {
+      return false;
+    }
+
+    if (!Array.isArray(value) || value.length === 0) {
+      return true;
+    }
+
+    return value.every((item) => shouldHidePayoutField(schema.itemSchema, item));
+  }
+
+  if (schema.required) {
+    return false;
+  }
+
+  return isPlaceholderOptionalValue(value);
+};
 
 const updatePathValue = (
   source: Record<string, unknown>,
@@ -150,6 +199,10 @@ const renderSchemaMap = ({
     const value = values[key];
     const fieldPath = [...pathPrefix, key];
     const pathKey = fieldPath.join('.');
+
+    if (shouldHidePayoutField(schema, value)) {
+      return null;
+    }
 
     if (schema.kind === 'object') {
       const objectValues = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};

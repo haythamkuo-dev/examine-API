@@ -1,5 +1,5 @@
 import type { CliEnv, PayoutChannel } from '../core/env';
-import { createUniqueReference } from '../utils';
+import { createUniqueReference, generateSign } from '../utils';
 import type { PayoutPayload } from '../domains/payout';
 import { createPayoutPayload, createPayoutRequest } from '../domains/payout';
 import type { CommandRequest, CommandResult } from '../runner';
@@ -86,8 +86,38 @@ export type PayoutDefaultsSavedResponse = {
 };
 
 const merchantReferenceKey = 'merchant_reference';
+const optionalFieldMarker = '非必填';
+const payoutSignFields = ['amount.amount', 'amount.currency_code', 'merchant_reference', 'product_no'];
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const shouldPruneValue = (value: unknown): boolean =>
+  value === undefined ||
+  value === null ||
+  (typeof value === 'string' && (!value.trim() || value.includes(optionalFieldMarker)));
+
+const pruneOptionalFields = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    const items = value
+      .map((item) => pruneOptionalFields(item))
+      .filter((item) => item !== undefined);
+
+    return items.length > 0 ? items : undefined;
+  }
+
+  if (isPlainObject(value)) {
+    const entries = Object.entries(value)
+      .map(([key, childValue]) => [key, pruneOptionalFields(childValue)] as const)
+      .filter((entry): entry is readonly [string, unknown] => entry[1] !== undefined);
+
+    return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+  }
+
+  return shouldPruneValue(value) ? undefined : value;
+};
 
 const sanitizeMerchantReference = (
   merchantReference: string,
@@ -114,9 +144,21 @@ const buildPayloadFromForm = (
     makeId,
   );
 
-  return {
+  const mergedPayload = {
     ...payload,
     ...(clone(values.channelValues) as Omit<PayoutPayload, 'merchant_reference'>),
+  };
+
+  const { sign: _existingSign, ...payloadWithoutSign } = mergedPayload;
+  const prunedPayload = pruneOptionalFields(payloadWithoutSign);
+
+  if (!isPlainObject(prunedPayload)) {
+    throw new TypeError('Payout payload must remain an object after pruning');
+  }
+
+  return {
+    ...(prunedPayload as Omit<PayoutPayload, 'sign'>),
+    sign: generateSign(prunedPayload, payoutSignFields, env.signKey),
   };
 };
 

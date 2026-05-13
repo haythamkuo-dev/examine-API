@@ -3,6 +3,7 @@ import { cp, mkdtemp, readFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { getCliEnv } from '../core/env';
+import { generateSign } from '../utils';
 import { buildPayoutPreviewResponse, buildPayoutRequestFromForm, type PayoutFormValues } from './web';
 import { createSeedPayoutPresets, loadPayoutPresets, toPayoutDefaultsResponse, updatePayoutPreset } from './presets';
 
@@ -42,7 +43,7 @@ describe('payout web helpers', () => {
 
     expect(result.common.values.merchantReference).toBe('TEST_ORDER_fixed-id');
     expect(result.channels.co_bank.values.product_no).toBe('PAY-FUTUREPAY_COLLECT-BANKTRANSFERCO-COP');
-    expect(result.channels.imps.values.amount).toEqual({ amount: '100.00', currency_code: 'INR' });
+    expect(result.channels.imps.values.amount).toEqual({ amount: '10.00', currency_code: 'INR' });
   });
 
   test('builds masked payout preview response', async () => {
@@ -55,9 +56,17 @@ describe('payout web helpers', () => {
     };
 
     const preview = buildPayoutPreviewResponse(env, values, makeId);
+    const payload = preview.request.payload as Record<string, unknown>;
+    const payoutInfo = payload.payout_info as Record<string, unknown>;
+    const beneficiary = payoutInfo.beneficiary as Record<string, unknown>;
 
     expect(preview.request.headers?.Authorization).toBe('ApiKey ****-token');
-    expect((preview.request.payload as Record<string, unknown>).merchant_reference).toBe('TEST_ORDER_217_fixed-id');
+    expect(payload.merchant_reference).toBe('TEST_ORDER_217_fixed-id');
+    expect(beneficiary.identification).toBeUndefined();
+    expect(beneficiary.date_of_birth).toBeUndefined();
+    expect(beneficiary.contact_number).toBeUndefined();
+    expect(beneficiary.address).toBeUndefined();
+    expect(payoutInfo.remitter).toBeUndefined();
   });
 
   test('builds payout request from form values', async () => {
@@ -73,6 +82,40 @@ describe('payout web helpers', () => {
     expect(request.url).toBe('https://example.test/s2s/v1/payout/orders/in/imps');
     expect(request.headers?.Authorization).toBe('ApiKey payout-token');
     expect((request.payload as Record<string, unknown>).merchant_reference).toBe('TEST_IMPS_001_fixed-id');
+  });
+
+  test('prunes optional placeholder and blank payout fields before signing', async () => {
+    const defaults = toPayoutDefaultsResponse('co_bank', await loadPayoutPresets({ dirPath: presetDirPath, makeId }));
+    const values: PayoutFormValues = {
+      ...defaults.form,
+      commonValues: {
+        merchantReference: 'TEST_BT_ORDER_125',
+      },
+      channelValues: {
+        ...defaults.form.channelValues,
+        payout_info: {
+          ...((defaults.form.channelValues.payout_info as Record<string, unknown>) || {}),
+          beneficiary: {
+            ...((((defaults.form.channelValues.payout_info as Record<string, unknown>) || {}).beneficiary as Record<string, unknown>) || {}),
+            email: 'e2e@example.com',
+          },
+        },
+      },
+    };
+
+    const request = buildPayoutRequestFromForm(env, values, makeId);
+    const payload = request.payload as Record<string, unknown>;
+    const payoutInfo = payload.payout_info as Record<string, unknown>;
+    const beneficiary = payoutInfo.beneficiary as Record<string, unknown>;
+
+    expect(beneficiary.identification).toBeUndefined();
+    expect(beneficiary.date_of_birth).toBeUndefined();
+    expect(beneficiary.contact_number).toBeUndefined();
+    expect(beneficiary.address).toBeUndefined();
+    expect(payoutInfo.remitter).toBeUndefined();
+    expect(payload.sign).toBe(
+      generateSign(payload, ['amount.amount', 'amount.currency_code', 'merchant_reference', 'product_no'], 'sign-key'),
+    );
   });
 
   test('creates a unique merchant reference when form value is blank', async () => {
