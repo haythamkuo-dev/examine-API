@@ -43,6 +43,12 @@
 │   │   ├── validation.ts
 │   │   ├── web.test.ts
 │   │   └── web.ts
+│   ├── payout
+│   │   ├── presets.ts
+│   │   ├── service.ts
+│   │   ├── validation.ts
+│   │   ├── web.test.ts
+│   │   └── web.ts
 │   ├── domains
 │   │   ├── deposit.ts
 │   │   ├── payout.ts
@@ -52,7 +58,9 @@
 │   │   ├── http.ts
 │   │   ├── index.ts
 │   │   └── routes
-│   │       └── deposit.ts
+│   │       ├── deposit.ts
+│   │       ├── payout.test.ts
+│   │       └── payout.ts
 │   └── utils.ts
 ├── structure.md
 ├── tsconfig.json
@@ -64,7 +72,8 @@
     ├── App.tsx
     ├── main.tsx
     ├── pages
-    │   └── DepositPage.tsx
+    │   ├── DepositPage.tsx
+    │   └── PayoutPage.tsx
     └── styles.css
 
-15 directories, 57 files
+16 directories, 64 files

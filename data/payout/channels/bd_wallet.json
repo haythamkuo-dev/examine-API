@@ -1,7 +1,7 @@
 {
   "product_no": "PAY-WORLDPAY-BKASH-BDT",
   "amount": {
-    "amount": "100.00",
+    "amount": "10.00",
     "currency_code": "BDT"
   },
   "payout_info": {

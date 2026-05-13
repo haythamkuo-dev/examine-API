@@ -1,5 +1,6 @@
 import { Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom';
 import { DepositPage } from './pages/DepositPage';
+import { PayoutPage } from './pages/PayoutPage';
 
 const AppShell = () => (
   <main className="mx-auto min-h-screen w-full max-w-[1280px] px-5 pb-12 pt-8">
@@ -23,6 +24,16 @@ const AppShell = () => (
         >
           Deposit
         </NavLink>
+        <NavLink
+          to="/payout"
+          className={({ isActive }) =>
+            isActive
+              ? 'inline-flex min-w-[116px] items-center justify-center rounded-full border border-transparent bg-amber-300 px-4 py-2.5 text-[#141414]'
+              : 'inline-flex min-w-[116px] items-center justify-center rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-[rgba(245,243,237,0.72)] transition hover:-translate-y-px hover:border-amber-300/40'
+          }
+        >
+          Payout
+        </NavLink>
       </nav>
     </header>
 
@@ -36,6 +47,7 @@ export function App() {
       <Route element={<AppShell />}>
         <Route index element={<Navigate to="/deposit" replace />} />
         <Route path="/deposit" element={<DepositPage />} />
+        <Route path="/payout" element={<PayoutPage />} />
       </Route>
     </Routes>
   );

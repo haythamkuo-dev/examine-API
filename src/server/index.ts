@@ -3,11 +3,13 @@ import { resolve } from 'path';
 import { getCliEnv } from '../core/env';
 import { corsHeaders, json, notFound } from './http';
 import { handleDepositRoute } from './routes/deposit';
+import { handlePayoutRoute } from './routes/payout';
 
 const PORT = Number(process.env.API_SERVER_PORT || 3000);
 const env = getCliEnv();
 const makeId = (prefix: string): string => `${prefix}${crypto.randomUUID()}`;
-const PRESET_DIR_PATH = resolve(process.cwd(), 'data/deposit');
+const DEPOSIT_PRESET_DIR_PATH = resolve(process.cwd(), 'data/deposit');
+const PAYOUT_PRESET_DIR_PATH = resolve(process.cwd(), 'data/payout');
 
 const server = Bun.serve({
   port: PORT,
@@ -27,13 +29,27 @@ const server = Bun.serve({
       url,
       deps: {
         env,
-        presetDirPath: PRESET_DIR_PATH,
+        presetDirPath: DEPOSIT_PRESET_DIR_PATH,
         makeId,
         logger: console,
       },
     });
     if (depositResponse) {
       return depositResponse;
+    }
+
+    const payoutResponse = await handlePayoutRoute({
+      request,
+      url,
+      deps: {
+        env,
+        presetDirPath: PAYOUT_PRESET_DIR_PATH,
+        makeId,
+        logger: console,
+      },
+    });
+    if (payoutResponse) {
+      return payoutResponse;
     }
 
     return notFound();
