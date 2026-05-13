@@ -11,7 +11,7 @@ const PRESET_DIR_PATH = resolve(process.cwd(), 'data/deposit');
 
 const server = Bun.serve({
   port: PORT,
-  async fetch(request) {
+  async fetch(request:Request) {
     const url = new URL(request.url);
 
     if (request.method === 'OPTIONS') {

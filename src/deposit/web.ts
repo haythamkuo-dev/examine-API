@@ -91,6 +91,7 @@ export type DepositCreateResponse = CommandResult & {
 
 export type DepositDefaultsSavedResponse = {
   ok: true;
+  availableChannels: DepositChannel[];
   channel: DepositChannel;
   commonSchema: DepositFieldMap;
   channelSchema: DepositFieldMap;

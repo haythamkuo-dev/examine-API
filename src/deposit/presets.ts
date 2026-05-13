@@ -51,12 +51,12 @@ const arrayField = (label: string, itemLabel: string, itemSchema: DepositFieldMa
   itemSchema: objectField(itemLabel, itemSchema),
 });
 
-type DepositCommonConfig = {
+export type DepositCommonConfig = {
   schema: DepositFieldMap;
   values: Partial<DepositCommonValues>;
 };
 
-type DepositChannelConfig = {
+export type DepositChannelConfig = {
   commonValues: Partial<DepositCommonValues>;
   schema: DepositFieldMap;
   values: DepositChannelValues;
@@ -65,6 +65,11 @@ type DepositChannelConfig = {
 export type DepositPresetStore = {
   common: DepositCommonConfig;
   channels: Record<DepositChannel, DepositChannelConfig>;
+};
+
+export type DepositPresetSource = {
+  common?: Partial<DepositCommonConfig>;
+  channels?: Partial<Record<DepositChannel, Partial<DepositChannelConfig>>>;
 };
 
 const COMMON_SCHEMA: DepositFieldMap = {
@@ -569,7 +574,7 @@ const normalizeChannelConfig = (
 });
 
 export const normalizeDepositPresets = (
-  source: Partial<DepositPresetStore>,
+  source: DepositPresetSource,
   env: CliEnv,
   makeId: (prefix: string) => string,
 ): DepositPresetStore => {
@@ -641,7 +646,9 @@ export const loadDepositPresets = async ({
   return normalizeDepositPresets(
     {
       common: commonSource || seed.common,
-      channels: Object.fromEntries(channels) as Partial<Record<DepositChannel, DepositChannelConfig>>,
+      // channels: Object.fromEntries(channels) as Partial<Record<DepositChannel, DepositChannelConfig>>,
+      channels: Object.fromEntries(channels) as Record<DepositChannel, DepositChannelConfig>,
+
     },
     env,
     makeId,

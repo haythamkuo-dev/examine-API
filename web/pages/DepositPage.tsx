@@ -70,35 +70,52 @@ const updatePathValue = (
   nextValue: unknown,
 ): Record<string, unknown> => {
   const draft = clone(source);
+  if (path.length === 0) {
+    return draft;
+  }
+
   let cursor: Record<string, unknown> | unknown[] = draft;
 
   for (let index = 0; index < path.length - 1; index += 1) {
     const segment = path[index];
     const nextSegment = path[index + 1];
+    if (segment === undefined) {
+      throw new Error('Invalid path segment');
+    }
+
+    const nextContainer = typeof nextSegment === 'number' ? [] : {};
 
     if (typeof segment === 'number') {
       if (!Array.isArray(cursor)) {
         throw new Error('Invalid array path');
       }
-      cursor[segment] = clone(cursor[segment]);
-      cursor = cursor[segment] as Record<string, unknown> | unknown[];
-      if (cursor === undefined) {
-        cursor = typeof nextSegment === 'number' ? [] : {};
-        (draft as unknown[])[segment] = cursor;
-      }
+
+      const currentValue = cursor[segment];
+      const normalized = currentValue === undefined || currentValue === null
+        ? nextContainer
+        : clone(currentValue);
+      cursor[segment] = normalized;
+      cursor = normalized as Record<string, unknown> | unknown[];
       continue;
     }
 
-    const currentValue = (cursor as Record<string, unknown>)[segment];
-    if (currentValue === undefined || currentValue === null) {
-      (cursor as Record<string, unknown>)[segment] = typeof nextSegment === 'number' ? [] : {};
-    } else {
-      (cursor as Record<string, unknown>)[segment] = clone(currentValue);
+    if (Array.isArray(cursor)) {
+      throw new Error('Invalid object path');
     }
-    cursor = (cursor as Record<string, unknown>)[segment] as Record<string, unknown> | unknown[];
+
+    const currentValue = cursor[segment];
+    if (currentValue === undefined || currentValue === null) {
+      cursor[segment] = nextContainer;
+    } else {
+      cursor[segment] = clone(currentValue);
+    }
+    cursor = cursor[segment] as Record<string, unknown> | unknown[];
   }
 
   const lastSegment = path[path.length - 1];
+  if (lastSegment === undefined) {
+    throw new Error('Invalid final path segment');
+  }
 
   if (typeof lastSegment === 'number') {
     if (!Array.isArray(cursor)) {
@@ -108,7 +125,11 @@ const updatePathValue = (
     return draft;
   }
 
-  (cursor as Record<string, unknown>)[lastSegment] = nextValue;
+  if (Array.isArray(cursor)) {
+    throw new Error('Invalid final object path');
+  }
+
+  cursor[lastSegment] = nextValue;
   return draft;
 };
 

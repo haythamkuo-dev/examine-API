@@ -1,4 +1,4 @@
-export type HttpClient = typeof fetch;
+export type HttpClient = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 export type Logger = {
   info: (...args: unknown[]) => void;

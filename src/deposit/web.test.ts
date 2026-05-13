@@ -7,6 +7,9 @@ import {
 } from './web';
 import {
   createSeedDepositPresets,
+  type DepositChannelConfig,
+  type DepositCommonConfig,
+  type DepositPresetSource,
   normalizeDepositPresets,
   toDepositDefaultsResponse,
   updateDepositPreset,
@@ -110,7 +113,7 @@ describe('deposit web helpers', () => {
             merchantRef: 'TEST_ORDER_CUSTOM',
             returnUrl: 'https://custom.example.com/return',
           },
-        },
+        } as Partial<DepositCommonConfig>,
         channels: {
           southafrica_cards: {
             commonValues: {
@@ -129,9 +132,9 @@ describe('deposit web helpers', () => {
                 },
               },
             },
-          },
+          } as Partial<DepositChannelConfig>,
         },
-      },
+      } satisfies DepositPresetSource,
       env,
       makeId,
     );
