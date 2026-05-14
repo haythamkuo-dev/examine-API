@@ -40,7 +40,6 @@
 - 測試規範：全面使用 `bun test`，嚴禁引入 Jest 或 Vitest 等其他工具。測試檔案需命名為 `*.test.ts` 並放在對應模組的同一層或 `__tests__` 目錄中。
 - 前置探索：在撰寫特定渠道測試前，必須先執行 `gitnexus_query({query: "channel config payload"})` 了解結構，並從 Source of Truth（如 `src/deposit/presets.ts`）解析介面定義，了解必/選填欄位。
 - 資料隔離：本專案無資料庫，嚴禁在測試期間真實寫入或覆蓋原始的 JSON 檔案。API 狀態變更必須在 `beforeEach` 中處理或透過記憶體 Mock 替換。
-- Factory 模式：因不同渠道欄位差異大，禁止 Hard-coded Payload。必須實作並使用 Factory 模式（如 `createChannelPayload(channelType, overrides)`）動態生成請求資料，且生成的假資料必須加上型別斷言（如 `Partial<DepositChannelConfig>`）。
 - 負面測試：必須針對「必填欄位缺失」與「邊界值」撰寫 Negative Tests。
 
 ## When Using GitNexus
@@ -56,11 +55,11 @@
 
 
 <!-- gitnexus:start -->
-<!-- # GitNexus — Code Intelligence
+# GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **examine_api** (482 symbols, 693 relationships, 15 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **examine_api** (772 symbols, 1176 relationships, 34 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
-> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+<!-- > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
 ## Always Do
 
