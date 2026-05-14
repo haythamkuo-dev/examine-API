@@ -10,7 +10,7 @@ import { createSeedPayoutPresets, loadPayoutPresets, toPayoutDefaultsResponse, u
 const env = getCliEnv({
   API_BASE_URL: 'https://example.test',
   MERCHANT_SIGN: 'sign-key',
-  MERCHANT_API_TOKEN_PAYOUT: 'payout-token',
+  NORMAL_MERCHANT_API_TOKEN: 'default-token',
   PAYOUT_URL_BANK: '/s2s/v1/payout/orders/co/bank-transfer',
   PAYOUT_URL_CO_WALLET: '/s2s/v1/payout/orders/co/mobile-money',
   PAYOUT_URL_IMPS: '/s2s/v1/payout/orders/in/imps',
@@ -80,7 +80,7 @@ describe('payout web helpers', () => {
 
     const request = buildPayoutRequestFromForm(env, values, makeId);
     expect(request.url).toBe('https://example.test/s2s/v1/payout/orders/in/imps');
-    expect(request.headers?.Authorization).toBe('ApiKey payout-token');
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
     expect((request.payload as Record<string, unknown>).merchant_reference).toBe('TEST_IMPS_001_fixed-id');
   });
 

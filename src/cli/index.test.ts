@@ -16,9 +16,7 @@ import type { CommandRequest } from '../runner';
 const env = getCliEnv({
   API_BASE_URL: 'https://example.test',
   MERCHANT_SIGN: 'sign-key',
-  MERCHANT_API_TOKEN_DEPOSIT: 'deposit-token',
-  MERCHANT_API_TOKEN_SUBSCRIPTION: 'subscription-token',
-  MERCHANT_API_TOKEN_PAYOUT: 'payout-token',
+  NORMAL_MERCHANT_API_TOKEN: 'default-token',
   CALLBACK_URL_DEPOSIT: 'https://merchant.example.com/deposit',
   CALLBACK_URL_SUBSCRIPTION: 'https://merchant.example.com/subscription',
   SUBSCRIPTION_PLAN: 'PLAN-001',
@@ -38,7 +36,7 @@ describe('request builders', () => {
     const request = createDepositRequest(env, 'linepay', makeId);
 
     expect(request.url).toBe('https://example.test/s2s/v1/intents/deposit');
-    expect(request.headers?.Authorization).toBe('ApiKey deposit-token');
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
     expect(request.payload).toMatchObject({
       product_no: 'DEP-LINEPAY_ONLINE-ONLINE-TWD',
       merchant_ref: 'TEST_ORDER_fixed-id',
@@ -110,7 +108,7 @@ describe('request builders', () => {
     const request = createPayoutRequest(env, 'co_wallet', makeId);
 
     expect(request.url).toBe('https://example.test/s2s/v1/payout/orders/co/mobile-money');
-    expect(request.headers?.Authorization).toBe('ApiKey payout-token');
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
     expect(request.payload).toMatchObject({
       product_no: 'PAY-FUTUREPAY_COLLECT-MOBILEMONEY-COP',
       merchant_reference: 'TEST_ORDER_fixed-id',
@@ -122,7 +120,7 @@ describe('request builders', () => {
     const request = createSubscriptionRequest(env, makeId, { planId: 'PLAN-OVERRIDE' });
 
     expect(request.url).toBe('https://example.test/s2s/v1/subscriptions');
-    expect(request.headers?.Authorization).toBe('ApiKey subscription-token');
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
     expect(request.payload).toMatchObject({
       subs_plan_id: 'PLAN-OVERRIDE',
       merchant_ref: 'TEST_ORDER_fixed-id',
@@ -282,7 +280,7 @@ describe('request builders', () => {
       makeId,
     });
 
-    expect(result.overrides.apiKey).toBe('deposit-token');
+    expect(result.overrides.apiKey).toBe('default-token');
     expect(result.overrides.signKey).toBe('sign-key');
     expect(result.overrides.returnUrl).toBe('https://merchant.example.com/deposit');
     expect(chunks.join('')).toContain('Deposit setup');
@@ -294,7 +292,7 @@ describe('request builders', () => {
   test('deposit env persistence updates env file values', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'examine-api-'));
     const envFilePath = join(tempDir, '.env');
-    await upsertEnvValue(envFilePath, 'MERCHANT_API_TOKEN_DEPOSIT', 'manual-deposit-token');
+    await upsertEnvValue(envFilePath, 'NORMAL_MERCHANT_API_TOKEN', 'manual-deposit-token');
     await upsertEnvValue(envFilePath, 'MERCHANT_SIGN', 'manual-sign-key');
     await upsertEnvValue(
       envFilePath,
@@ -303,7 +301,7 @@ describe('request builders', () => {
     );
 
     const savedEnv = await readFile(envFilePath, 'utf8');
-    expect(savedEnv).toContain('MERCHANT_API_TOKEN_DEPOSIT=manual-deposit-token');
+    expect(savedEnv).toContain('NORMAL_MERCHANT_API_TOKEN=manual-deposit-token');
     expect(savedEnv).toContain('MERCHANT_SIGN=manual-sign-key');
     expect(savedEnv).toContain('CALLBACK_URL_DEPOSIT=https://webhook.site/8760c026-c3c4-4ee8-8194-192321a7676b');
   });

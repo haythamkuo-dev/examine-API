@@ -44,9 +44,9 @@ export const getCliEnv = (env: NodeJS.ProcessEnv = process.env): CliEnv => ({
   callbackUrlSubscription: env.CALLBACK_URL_SUBSCRIPTION,
   subscriptionPlan: env.SUBSCRIPTION_PLAN || '01KKTEEJCJ5W12EMC01469Z4ZJ',
   tokens: {
-    deposit: env.MERCHANT_API_TOKEN_DEPOSIT || '',
-    subscription: env.MERCHANT_API_TOKEN_SUBSCRIPTION || '',
-    payout: env.MERCHANT_API_TOKEN_PAYOUT || '',
+    deposit: env.NORMAL_MERCHANT_API_TOKEN || '',
+    subscription: env.NORMAL_MERCHANT_API_TOKEN || '',
+    payout: env.NORMAL_MERCHANT_API_TOKEN || '',
   },
   payoutUrls: {
     co_bank: env.PAYOUT_URL_BANK || '/s2s/v1/payout/orders/co/bank-transfer',

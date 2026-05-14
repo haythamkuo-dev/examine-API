@@ -23,7 +23,7 @@ import { join } from 'path';
 const env = getCliEnv({
   API_BASE_URL: 'https://example.test',
   MERCHANT_SIGN: 'sign-key',
-  MERCHANT_API_TOKEN_DEPOSIT: 'deposit-token',
+  NORMAL_MERCHANT_API_TOKEN: 'default-token',
   CALLBACK_URL_DEPOSIT: 'https://merchant.example.com/deposit',
   DEPOSIT_SOUTHAFICA_CARDS: 'DEP-BOUND-USD',
 });
@@ -65,7 +65,7 @@ describe('deposit web helpers', () => {
 
     const request = buildDepositRequestFromForm(env, values, makeId);
     expect(request.url).toBe('https://example.test/s2s/v1/intents/deposit');
-    expect(request.headers?.Authorization).toBe('ApiKey deposit-token');
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
     expect((request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_217_fixed-id');
   });
 

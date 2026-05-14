@@ -183,7 +183,7 @@ export const promptDepositFlow = async ({
         validate: isNonEmpty,
         errorMessage: 'API key is required.',
       });
-      await upsertEnvValue(envFilePath, 'MERCHANT_API_TOKEN_DEPOSIT', apiKey);
+      await upsertEnvValue(envFilePath, 'NORMAL_MERCHANT_API_TOKEN', apiKey);
     }
 
     let signKey = seed?.signKey || env.signKey;
