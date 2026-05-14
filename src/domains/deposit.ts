@@ -1,4 +1,10 @@
-import { type CliEnv, type DepositChannel, joinUrl } from '../core/env';
+import {
+  getMerchantToken,
+  resolveDepositMerchantTokenKey,
+  type CliEnv,
+  type DepositChannel,
+  joinUrl,
+} from '../core/env';
 import { createUniqueReference, generateSign } from '../utils';
 import type { CommandRequest } from '../runner';
 import type { DepositChannelValues, DepositCommonValues } from '../deposit/web';
@@ -295,6 +301,16 @@ export const createDepositPayload = (
   };
 };
 
+/**
+ * Builds a deposit command request and resolves the correct merchant token from the selected channel.
+ *
+ * @param env Runtime environment containing endpoints, signing config, and merchant tokens.
+ * @param channel Deposit channel selected by the caller.
+ * @param makeId ID factory used to create unique merchant references.
+ * @param overrides Optional request overrides for manual CLI-driven testing.
+ * @returns A runner-compatible deposit request with channel-scoped authorization.
+ * @throws {TypeError} When the configured base URL or deposit URL cannot be composed into a valid request URL.
+ */
 export const createDepositRequest = (
   env: CliEnv,
   channel: DepositChannel,
@@ -305,7 +321,8 @@ export const createDepositRequest = (
   method: 'POST',
   url: joinUrl(overrides.baseUrl || env.baseUrl, overrides.depositUrl || env.depositUrl),
   headers: {
-    Authorization: `ApiKey ${overrides.apiKey || env.tokens.deposit}`,
+    Authorization:
+      `ApiKey ${overrides.apiKey || getMerchantToken(env, resolveDepositMerchantTokenKey(channel))}`,
     'Content-Type': 'application/json',
   },
   payload: createDepositPayload(env, channel, makeId, overrides),
@@ -343,6 +360,16 @@ export const createStructuredDepositPayload = (
   };
 };
 
+/**
+ * Builds a structured deposit command request from form values and resolves channel-scoped authorization.
+ *
+ * @param env Runtime environment containing endpoints, signing config, and merchant tokens.
+ * @param channel Deposit channel selected by the caller.
+ * @param makeId ID factory used to create unique merchant references.
+ * @param overrides Structured form-derived values and optional transport overrides.
+ * @returns A runner-compatible deposit request with channel-scoped authorization.
+ * @throws {TypeError} When the configured base URL or deposit URL cannot be composed into a valid request URL.
+ */
 export const createStructuredDepositRequest = (
   env: CliEnv,
   channel: DepositChannel,
@@ -353,7 +380,8 @@ export const createStructuredDepositRequest = (
   method: 'POST',
   url: joinUrl(overrides.baseUrl || env.baseUrl, overrides.depositUrl || env.depositUrl),
   headers: {
-    Authorization: `ApiKey ${overrides.apiKey || env.tokens.deposit}`,
+    Authorization:
+      `ApiKey ${overrides.apiKey || getMerchantToken(env, resolveDepositMerchantTokenKey(channel))}`,
     'Content-Type': 'application/json',
   },
   payload: createStructuredDepositPayload(env, channel, makeId, overrides),

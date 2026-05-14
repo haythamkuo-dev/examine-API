@@ -11,6 +11,8 @@ const env = getCliEnv({
   API_BASE_URL: 'https://example.test',
   MERCHANT_SIGN: 'sign-key',
   NORMAL_MERCHANT_API_TOKEN: 'default-token',
+  INDIA_MERCHANT_API_TOKEN: 'india-token',
+  BANGLADESH_MERCHANT_API_TOKEN: 'bangladesh-token',
   PAYOUT_URL_BANK: '/s2s/v1/payout/orders/co/bank-transfer',
   PAYOUT_URL_CO_WALLET: '/s2s/v1/payout/orders/co/mobile-money',
   PAYOUT_URL_IMPS: '/s2s/v1/payout/orders/in/imps',
@@ -80,8 +82,15 @@ describe('payout web helpers', () => {
 
     const request = buildPayoutRequestFromForm(env, values, makeId);
     expect(request.url).toBe('https://example.test/s2s/v1/payout/orders/in/imps');
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(request.headers?.Authorization).toBe('ApiKey india-token');
     expect((request.payload as Record<string, unknown>).merchant_reference).toBe('TEST_IMPS_001_fixed-id');
+  });
+
+  test('uses Bangladesh merchant token for bd_wallet payout requests', async () => {
+    const defaults = toPayoutDefaultsResponse('bd_wallet', await loadPayoutPresets({ dirPath: presetDirPath, makeId }));
+    const request = buildPayoutRequestFromForm(env, defaults.form, makeId);
+
+    expect(request.headers?.Authorization).toBe('ApiKey bangladesh-token');
   });
 
   test('prunes optional placeholder and blank payout fields before signing', async () => {

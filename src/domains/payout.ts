@@ -1,4 +1,10 @@
-import { type CliEnv, type PayoutChannel, joinUrl } from '../core/env';
+import {
+  getMerchantToken,
+  resolvePayoutMerchantTokenKey,
+  type CliEnv,
+  type PayoutChannel,
+  joinUrl,
+} from '../core/env';
 import { generateSign } from '../utils';
 import type { CommandRequest } from '../runner';
 
@@ -133,6 +139,15 @@ export const createPayoutPayload = (
   };
 };
 
+/**
+ * Builds a payout command request and resolves the correct merchant token from the selected channel.
+ *
+ * @param env Runtime environment containing endpoints, signing config, and merchant tokens.
+ * @param channel Payout channel selected by the caller.
+ * @param makeId ID factory used to create unique merchant references.
+ * @returns A runner-compatible payout request with channel-scoped authorization.
+ * @throws {TypeError} When the configured base URL or payout URL cannot be composed into a valid request URL.
+ */
 export const createPayoutRequest = (
   env: CliEnv,
   channel: PayoutChannel,
@@ -142,7 +157,7 @@ export const createPayoutRequest = (
   method: 'POST',
   url: joinUrl(env.baseUrl, env.payoutUrls[channel]),
   headers: {
-    Authorization: `ApiKey ${env.tokens.payout}`,
+    Authorization: `ApiKey ${getMerchantToken(env, resolvePayoutMerchantTokenKey(channel))}`,
     'Content-Type': 'application/json',
   },
   payload: createPayoutPayload(env, channel, makeId),

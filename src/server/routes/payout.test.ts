@@ -146,9 +146,11 @@ describe('payout API routes', () => {
 
   test('POST /api/payout/create proxies upstream status and prunes optional remitter fields', async () => {
     let upstreamBody: Record<string, unknown> | null = null;
+    let upstreamAuthorization = '';
 
     globalThis.fetch = mock(async (_input, init) => {
       upstreamBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+      upstreamAuthorization = String((init?.headers as Record<string, string> | undefined)?.Authorization || '');
 
       return new Response(JSON.stringify({ ok: true, transaction_id: 'po_123' }), {
         status: 201,
@@ -184,6 +186,7 @@ describe('payout API routes', () => {
     const body = (await response.json()) as Record<string, unknown>;
     expect(body.ok).toBe(true);
     expect(body.status).toBe(201);
+    expect(upstreamAuthorization).toBe('ApiKey bangladesh-token');
     expect(upstreamBody).not.toBeNull();
     const upstreamPayoutInfo = ((upstreamBody as unknown) as Record<string, unknown>)['payout_info'] as
       | Record<string, unknown>

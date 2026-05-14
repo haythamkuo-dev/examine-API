@@ -24,6 +24,8 @@ const env = getCliEnv({
   API_BASE_URL: 'https://example.test',
   MERCHANT_SIGN: 'sign-key',
   NORMAL_MERCHANT_API_TOKEN: 'default-token',
+  INDIA_MERCHANT_API_TOKEN: 'india-token',
+  BANGLADESH_MERCHANT_API_TOKEN: 'bangladesh-token',
   CALLBACK_URL_DEPOSIT: 'https://merchant.example.com/deposit',
   DEPOSIT_SOUTHAFICA_CARDS: 'DEP-BOUND-USD',
 });
@@ -67,6 +69,19 @@ describe('deposit web helpers', () => {
     expect(request.url).toBe('https://example.test/s2s/v1/intents/deposit');
     expect(request.headers?.Authorization).toBe('ApiKey default-token');
     expect((request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_217_fixed-id');
+  });
+
+  test('uses channel-scoped merchant token for India deposit channels', () => {
+    const values: DepositFormValues = {
+      ...toDepositDefaultsResponse('inr_upi', createSeedDepositPresets(env, makeId)).form,
+      commonValues: {
+        ...toDepositDefaultsResponse('inr_upi', createSeedDepositPresets(env, makeId)).form.commonValues,
+        merchantRef: 'TEST_ORDER_IN_217',
+      },
+    };
+
+    const request = buildDepositRequestFromForm(env, values, makeId);
+    expect(request.headers?.Authorization).toBe('ApiKey india-token');
   });
 
   test('creates a unique merchant reference when form value is blank', () => {
