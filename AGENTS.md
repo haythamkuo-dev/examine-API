@@ -7,8 +7,8 @@
 
 ## Build and Test Commands
 - TypeScript 檢查: `tsc --noEmit`
-- 執行全域測試: `bun test`
-- 執行特定測試並顯示覆蓋率: `bun test --coverage`
+- 執行全域測試: `bun test --preload ./tests/setup.ts` (使用 preload 載入全域設定與環境變數，避免副作用)
+- 執行特定測試並顯示覆蓋率: `bun test --preload ./tests/setup.ts --coverage`
 - GitNexus 索引更新: `npx gitnexus analyze`
 - GitNexus 影響分析: `gitnexus_impact({target: "symbolName", direction: "upstream"})`
 - GitNexus 變更偵測: `gitnexus_detect_changes()`
@@ -37,10 +37,30 @@
 
 
 ## When writing Tests
-- 測試規範：全面使用 `bun test`，嚴禁引入 Jest 或 Vitest 等其他工具。測試檔案需命名為 `*.test.ts` 並放在對應模組的同一層或 `__tests__` 目錄中。
-- 前置探索：在撰寫特定渠道測試前，必須先執行 `gitnexus_query({query: "channel config payload"})` 了解結構，並從 Source of Truth（如 `src/deposit/presets.ts`）解析介面定義，了解必/選填欄位。
-- 資料隔離：本專案無資料庫，嚴禁在測試期間真實寫入或覆蓋原始的 JSON 檔案。API 狀態變更必須在 `beforeEach` 中處理或透過記憶體 Mock 替換。
-- 負面測試：必須針對「必填欄位缺失」與「邊界值」撰寫 Negative Tests。
+
+### 測試規範與全域設定 (Global Setup)：
+- **DO:** 全面使用 `bun test`，嚴禁引入 Jest 或 Vitest 等其他工具。測試檔案需命名為 `*.test.ts` 並放在對應模組的同一層或 `__tests__` 目錄中。
+- **DO:** 將全域的 Mock 與通用測試輔助函式統一放置於獨立的全域設定檔（如 `tests/setup.ts`），並透過 `--preload` 指令載入。
+
+### 環境變數管理 (Environment Variables)：
+- **DO:** 測試專屬的環境變數（如 Mock 金鑰、測試用端點）必須統一透過 `.env.test` 載入，並嚴格遵循從 `src/core/env.ts` 讀取的專案標準
+- **DO NOT:** 嚴禁在測試程式碼中 `Hard-coding` 任何環境變數或配置字串
+
+### 前置探索(Pre-exploration)：
+- **DO:** 在撰寫特定渠道測試前，必須先執行 `gitnexus_query({query: "channel config payload"})` 了解結構，並從 Source of Truth（如 `src/deposit/presets.ts`）解析介面定義，了解必/選填欄位。
+
+### 非同步生命週期管理 (Async Lifecycle Hooks):
+- **DO:** 針對後端 API 測試，必須使用非同步的 `beforeAll` 啟動獨立的測試伺服器實例，並強制在 `afterAll` 中優雅關閉 (graceful shutdown) 伺服器並釋放記憶體。
+
+### 資料隔離 (Data Isolation)：
+- **DO NOT:** 本專案無資料庫，**嚴禁**在測試期間真實寫入或覆蓋原始的 JSON 檔案。
+- **DO:** API 狀態變更與資料重置必須在 `beforeEach` 中處理，或透過記憶體 Mock (In-memory Mock) 替換，確保測試案例之間絕對獨立。
+
+### 負面測試 (Negative Testing)：
+- **DO:** 必須針對「必填欄位缺失」與「邊界值」撰寫 Negative Tests。
+
+
+
 
 ## When Using GitNexus
 - 維護索引：若工具警告索引已過期 (stale)，優先在終端機執行 `npx gitnexus analyze`。
