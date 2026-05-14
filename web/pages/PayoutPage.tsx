@@ -48,6 +48,62 @@ const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
   }
 };
 
+const extractCreateMessage = (statusText: string, body: unknown): string => {
+  if (body && typeof body === 'object') {
+    const record = body as Record<string, unknown>;
+    if (typeof record.message === 'string' && record.message.trim()) {
+      return record.message;
+    }
+    if (typeof record.error === 'string' && record.error.trim()) {
+      return record.error;
+    }
+  }
+
+  return statusText || 'Request failed';
+};
+
+/**
+ * Normalizes payout create API responses into a panel-friendly result object.
+ *
+ * @param response Raw fetch response from `/api/payout/create`.
+ * @returns Normalized payload for API result panel rendering.
+ */
+export const normalizeCreateResult = async (response: Response): Promise<PayoutCreateResponse> => {
+  const rawBody = await response.text();
+  const contentType = response.headers.get('content-type') || '';
+  let parsedBody: unknown = null;
+
+  if (rawBody.trim()) {
+    if (contentType.includes('application/json')) {
+      try {
+        parsedBody = JSON.parse(rawBody) as unknown;
+      } catch {
+        parsedBody = rawBody;
+      }
+    } else {
+      parsedBody = rawBody;
+    }
+  }
+
+  if (parsedBody && typeof parsedBody === 'object') {
+    return parsedBody as PayoutCreateResponse;
+  }
+
+  return {
+    requestName: 'payout:create',
+    ok: response.ok,
+    status: response.status,
+    request: {
+      method: 'POST',
+      url: '/api/payout/create',
+      payload: null,
+    },
+    response: parsedBody,
+    message: extractCreateMessage(response.statusText, parsedBody),
+    durationMs: 0,
+  };
+};
+
 const JsonPanel = ({
   title,
   body,
@@ -401,15 +457,25 @@ export function PayoutPage() {
     setSaveMessage(null);
 
     try {
-      const response = await fetchJson<PayoutCreateResponse>('/api/payout/create', {
+      const response = await fetch('/api/payout/create', {
         method: 'POST',
         headers: jsonHeaders,
         body: JSON.stringify(form),
       });
-      setResult(response);
+      setResult(await normalizeCreateResult(response));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-      setResult(null);
+      setResult({
+        requestName: 'payout:create',
+        ok: false,
+        request: {
+          method: 'POST',
+          url: '/api/payout/create',
+          payload: form,
+        },
+        error: caught instanceof Error ? caught.message : String(caught),
+        message: caught instanceof Error ? caught.message : String(caught),
+        durationMs: 0,
+      });
     } finally {
       setLoading(null);
     }

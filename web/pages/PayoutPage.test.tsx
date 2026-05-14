@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { PayoutFieldMap } from '../../src/payout/web';
-import { shouldHidePayoutField } from './PayoutPage';
+import { normalizeCreateResult, shouldHidePayoutField } from './PayoutPage';
 
 describe('shouldHidePayoutField', () => {
   const schema: PayoutFieldMap = {
@@ -72,5 +72,40 @@ describe('shouldHidePayoutField', () => {
         optional_identification: '其他識別編號 (非必填)',
       }),
     ).toBe(false);
+  });
+});
+
+describe('normalizeCreateResult', () => {
+  test('keeps JSON object response as-is for success payloads', async () => {
+    const response = new Response(
+      JSON.stringify({
+        requestName: 'payout:create:co_bank',
+        ok: true,
+        status: 200,
+        request: { method: 'POST', url: 'https://example.test', payload: { value: 1 } },
+        response: { ok: true },
+        durationMs: 10,
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+
+    const result = await normalizeCreateResult(response);
+    expect(result.ok).toBe(true);
+    expect(result.status).toBe(200);
+    expect(result.requestName).toBe('payout:create:co_bank');
+  });
+
+  test('builds fallback error object for non-JSON failure response', async () => {
+    const response = new Response('gateway failed', {
+      status: 502,
+      statusText: 'Bad Gateway',
+      headers: { 'Content-Type': 'text/plain' },
+    });
+
+    const result = await normalizeCreateResult(response);
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(502);
+    expect(result.message).toBe('Bad Gateway');
+    expect(result.response).toBe('gateway failed');
   });
 });

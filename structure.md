@@ -1,6 +1,7 @@
 .
 ├── AGENTS.md
 ├── CLAUDE.md
+├── .env.test
 ├── README.md
 ├── bun.lock
 ├── data
@@ -63,6 +64,9 @@
 │   │       └── payout.ts
 │   └── utils.ts
 ├── structure.md
+├── tests
+│   ├── server-setup.ts
+│   └── setup.ts
 ├── tsconfig.json
 ├── tsconfig.server.json
 ├── tsconfig.web.json
