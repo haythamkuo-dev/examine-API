@@ -5,6 +5,14 @@
 ### Project Structure
 - see `structure.md`
 
+#### Project Structure & Directory Map
+雖然詳細結構請參閱 `structure.md`，但在進行開發與修改時，請嚴格遵守以下路徑分界：
+* **[Backend] 核心邏輯 (純 TS)**: `src/domains/` (包含 Subscription, Payout, Deposit 業務邏輯)
+* **[Backend] API 路由與控制器**: `src/server/routes/` (僅處理 HTTP 傳輸，不含業務邏輯)
+* **[Frontend] UI 畫面與元件**: `web/` (React + Tailwind 相關程式碼，嚴禁混入後端 Node/Bun API)
+* **[Tests] 後端測試**: 與後端源碼同層或位於 `__tests__` 中，並透過 `tests/server-setup.ts` 初始化環境。
+* **[Tests] 前端測試**: 位於 `web/` 內部對應元件旁，並透過 `web-setup.ts` 初始化瀏覽器環境。
+
 ## Build and Test Commands
 - TypeScript 檢查: `tsc --noEmit`
 - 執行全域測試: `bun test --preload ./tests/setup.ts` (使用 preload 載入全域設定與環境變數，避免副作用)
@@ -74,7 +82,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **examine_api** (1156 symbols, 1815 relationships, 60 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **examine_api** (1157 symbols, 1803 relationships, 56 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 <!-- > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

@@ -37,8 +37,10 @@ const getAvailablePort = async (): Promise<number> =>
 export type ApiTestServerContext = {
   baseUrl: string;
   env: CliEnv;
+  depositPresetDirPath: string;
   payoutPresetDirPath: string;
   subscriptionPresetDirPath: string;
+  resetDepositFixtures: () => Promise<void>;
   resetPayoutFixtures: () => Promise<void>;
   resetSubscriptionFixtures: () => Promise<void>;
   stop: () => Promise<void>;
@@ -98,8 +100,10 @@ export const startApiTestServer = async (): Promise<ApiTestServerContext> => {
   return {
     baseUrl: `http://127.0.0.1:${server.port}`,
     env,
+    depositPresetDirPath,
     payoutPresetDirPath,
     subscriptionPresetDirPath,
+    resetDepositFixtures,
     resetPayoutFixtures,
     resetSubscriptionFixtures,
     stop: async (): Promise<void> => {
