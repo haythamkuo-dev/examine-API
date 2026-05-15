@@ -18,6 +18,39 @@ const loadingLabels = {
   save: 'Saving defaults',
 } as const;
 
+type ApiAction = 'preview' | 'create' | 'save';
+
+type ApiResultView = {
+  ok: boolean;
+  action: ApiAction;
+  status: number | null;
+  message: string;
+  details?: string;
+  raw: unknown;
+};
+
+class ApiRequestError extends Error {
+  readonly status: number;
+  readonly url: string;
+  readonly rawBody: string;
+  readonly contentType: string;
+
+  constructor(params: {
+    message: string;
+    status: number;
+    url: string;
+    rawBody: string;
+    contentType: string;
+  }) {
+    super(params.message);
+    this.name = 'ApiRequestError';
+    this.status = params.status;
+    this.url = params.url;
+    this.rawBody = params.rawBody;
+    this.contentType = params.contentType;
+  }
+}
+
 const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, init);
   const rawBody = await response.text();
@@ -25,22 +58,90 @@ const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
 
   if (!response.ok) {
     const summary = rawBody.trim() || response.statusText || 'Empty response body';
-    throw new Error(`API ${response.status} from ${url}: ${summary}`);
+    throw new ApiRequestError({
+      message: `API ${response.status} from ${url}: ${summary}`,
+      status: response.status,
+      url,
+      rawBody,
+      contentType,
+    });
   }
 
   if (!rawBody.trim()) {
-    throw new Error(`Empty response from ${url}`);
+    throw new ApiRequestError({
+      message: `Empty response from ${url}`,
+      status: response.status,
+      url,
+      rawBody,
+      contentType,
+    });
   }
 
   if (!contentType.includes('application/json')) {
-    throw new Error(`Expected JSON from ${url} but received ${contentType || 'unknown content type'}`);
+    throw new ApiRequestError({
+      message: `Expected JSON from ${url} but received ${contentType || 'unknown content type'}`,
+      status: response.status,
+      url,
+      rawBody,
+      contentType,
+    });
   }
 
   try {
     return JSON.parse(rawBody) as T;
   } catch {
-    throw new Error(`Invalid JSON from ${url}`);
+    throw new ApiRequestError({
+      message: `Invalid JSON from ${url}`,
+      status: response.status,
+      url,
+      rawBody,
+      contentType,
+    });
   }
+};
+
+const getNumericStatus = (value: unknown): number | null => {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const candidate = (value as { status?: unknown }).status;
+  return typeof candidate === 'number' ? candidate : null;
+};
+
+const buildFailureResult = (action: ApiAction, caught: unknown): ApiResultView => {
+  if (caught instanceof ApiRequestError) {
+    return {
+      ok: false,
+      action,
+      status: caught.status,
+      message: caught.message,
+      details: caught.rawBody.trim() || undefined,
+      raw: {
+        ok: false,
+        action,
+        status: caught.status,
+        url: caught.url,
+        message: caught.message,
+        contentType: caught.contentType || 'unknown',
+        body: caught.rawBody,
+      },
+    };
+  }
+
+  const message = caught instanceof Error ? caught.message : String(caught);
+  return {
+    ok: false,
+    action,
+    status: null,
+    message,
+    raw: {
+      ok: false,
+      action,
+      status: null,
+      message,
+    },
+  };
 };
 
 const JsonPanel = ({
@@ -269,10 +370,9 @@ export function DepositPage() {
   const [channelSchema, setChannelSchema] = useState<DepositFieldMap>({});
   const [channels, setChannels] = useState<string[]>([]);
   const [preview, setPreview] = useState<DepositPreviewResponse | null>(null);
-  const [result, setResult] = useState<DepositCreateResponse | null>(null);
+  const [apiResult, setApiResult] = useState<ApiResultView | null>(null);
   const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'save' | null>('defaults');
   const [error, setError] = useState<string | null>(null);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const applyBundle = (response: DepositDefaultsResponse | DepositDefaultsSavedResponse) => {
     setChannels(response.availableChannels);
@@ -284,9 +384,8 @@ export function DepositPage() {
   const loadDefaults = async (channel?: string) => {
     setLoading('defaults');
     setError(null);
-    setSaveMessage(null);
     setPreview(null);
-    setResult(null);
+    setApiResult(null);
 
     try {
       const query = channel ? `?channel=${encodeURIComponent(channel)}` : '';
@@ -336,8 +435,6 @@ export function DepositPage() {
     if (!form) return;
 
     setLoading('preview');
-    setError(null);
-    setSaveMessage(null);
 
     try {
       const response = await fetchJson<DepositPreviewResponse>('/api/deposit/preview', {
@@ -346,9 +443,21 @@ export function DepositPage() {
         body: JSON.stringify(form),
       });
       setPreview(response);
+      setApiResult({
+        ok: true,
+        action: 'preview',
+        status: getNumericStatus(response),
+        message: 'Preview completed.',
+        raw: {
+          ok: true,
+          action: 'preview',
+          status: getNumericStatus(response),
+          data: response,
+        },
+      });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
       setPreview(null);
+      setApiResult(buildFailureResult('preview', caught));
     } finally {
       setLoading(null);
     }
@@ -358,8 +467,6 @@ export function DepositPage() {
     if (!form) return;
 
     setLoading('create');
-    setError(null);
-    setSaveMessage(null);
 
     try {
       const response = await fetchJson<DepositCreateResponse>('/api/deposit/create', {
@@ -367,10 +474,20 @@ export function DepositPage() {
         headers: jsonHeaders,
         body: JSON.stringify(form),
       });
-      setResult(response);
+      setApiResult({
+        ok: true,
+        action: 'create',
+        status: getNumericStatus(response),
+        message: 'Request sent successfully.',
+        raw: {
+          ok: true,
+          action: 'create',
+          status: getNumericStatus(response),
+          data: response,
+        },
+      });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-      setResult(null);
+      setApiResult(buildFailureResult('create', caught));
     } finally {
       setLoading(null);
     }
@@ -380,8 +497,6 @@ export function DepositPage() {
     if (!form) return;
 
     setLoading('save');
-    setError(null);
-    setSaveMessage(null);
 
     try {
       const response = await fetchJson<DepositDefaultsSavedResponse>(
@@ -393,9 +508,20 @@ export function DepositPage() {
         },
       );
       applyBundle(response);
-      setSaveMessage(`Saved defaults for ${response.channel}.`);
+      setApiResult({
+        ok: true,
+        action: 'save',
+        status: getNumericStatus(response),
+        message: `Saved defaults for ${response.channel}.`,
+        raw: {
+          ok: true,
+          action: 'save',
+          status: getNumericStatus(response),
+          data: response,
+        },
+      });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      setApiResult(buildFailureResult('save', caught));
     } finally {
       setLoading(null);
     }
@@ -526,8 +652,6 @@ export function DepositPage() {
             </button>
           </div>
 
-          {error ? <p className="text-[rgba(245,243,237,0.72)]">{error}</p> : null}
-          {saveMessage ? <p className="text-sky-200">{saveMessage}</p> : null}
         </form>
 
         <section className="[display:grid] gap-6 content-start min-w-0">
@@ -540,16 +664,27 @@ export function DepositPage() {
           <article className="flex min-w-0 flex-col rounded-3xl border border-white/10 bg-[rgba(14,18,23,0.74)] p-[22px] shadow-[0_20px_70px_rgba(0,0,0,0.25)] backdrop-blur-[10px]">
             <div className="mb-[18px] flex items-baseline justify-between gap-3">
               <h2 className="m-0 font-['Iowan_Old_Style','Georgia',serif]">API result</h2>
-              {result?.status ? <span className="text-[13px] text-amber-300">Status {result.status}</span> : null}
+              {apiResult ? (
+                <span className="text-[13px] text-amber-300">
+                  {apiResult.action.toUpperCase()} {apiResult.status !== null ? `Status ${apiResult.status}` : ''}
+                </span>
+              ) : null}
             </div>
-            {result?.hint ? (
-              <div className="mb-[14px] rounded-2xl border border-red-500/50 bg-red-900/30 px-4 py-[14px] text-red-200">
-                {result.hint}
+            {apiResult ? (
+              <div
+                className={`mb-[14px] rounded-2xl px-4 py-[14px] ${
+                  apiResult.ok
+                    ? 'border border-emerald-500/50 bg-emerald-900/30 text-emerald-200'
+                    : 'border border-red-500/50 bg-red-900/30 text-red-200'
+                }`}
+              >
+                {apiResult.message}
+                {apiResult.details ? <p className="mb-0 mt-2 whitespace-pre-wrap break-words text-[13px]">{apiResult.details}</p> : null}
               </div>
             ) : null}
             <pre className="m-0 max-h-[420px] min-w-0 flex-1 overflow-auto rounded-[18px] bg-black/30 p-4 text-xs text-[#dce6ef]">
-              {result
-                ? JSON.stringify(result, null, 2)
+              {apiResult
+                ? JSON.stringify(apiResult.raw, null, 2)
                 : 'Send a request to capture the raw response, status code, and any diagnostic hint.'}
             </pre>
           </article>
