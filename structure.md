@@ -40,6 +40,7 @@
 │   │   └── index.ts
 │   ├── core
 │   │   ├── env.ts
+│   │   ├── formValidation.ts
 │   │   └── output.ts
 │   ├── deposit
 │   │   ├── failureHint.ts
@@ -77,6 +78,7 @@
 │   └── utils.ts
 ├── structure.md
 ├── tests
+│   ├── formValidation.test.ts
 │   ├── server-setup.ts
 │   └── setup.ts
 ├── tsconfig.json
@@ -95,4 +97,4 @@
     │   └── SubscriptionPage.tsx
     └── styles.css
 
-16 directories, 67 files
+16 directories, 69 files

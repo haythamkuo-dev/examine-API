@@ -47,7 +47,7 @@
 - **DO NOT:** 嚴禁在測試程式碼中 `Hard-coding` 任何環境變數或配置字串
 
 ### 前置探索(Pre-exploration)：
-- **DO:** 在撰寫特定渠道測試前，必須先執行 `gitnexus_query({query: "channel config payload"})` 了解結構，並從 Source of Truth（如 `src/deposit/presets.ts`）解析介面定義，了解必/選填欄位。
+- **DO:** 在撰寫特定渠道測試前，必須先執行 `gitnexus_query({query: "channel config payload"})` 了解結構，並從 Source of Truth（如 `src/deposit/presets.ts`, `src/payout/presets.ts`, `src/subscription/presets.ts`）解析介面定義，了解必/選填欄位。
 
 ### 非同步生命週期管理 (Async Lifecycle Hooks):
 - **DO:** 針對後端 API 測試，必須使用非同步的 `beforeAll` 啟動獨立的測試伺服器實例，並強制在 `afterAll` 中優雅關閉 (graceful shutdown) 伺服器並釋放記憶體。
@@ -77,7 +77,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **examine_api** (871 symbols, 1312 relationships, 38 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **examine_api** (1156 symbols, 1815 relationships, 60 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 <!-- > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
