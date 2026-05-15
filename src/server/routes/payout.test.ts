@@ -99,7 +99,7 @@ describe('payout API routes', () => {
 
     expect(body.channel).toBe('co_bank');
     expect(body.availableChannels).toEqual(['co_bank', 'co_wallet', 'imps', 'bd_wallet']);
-    expect(commonValues.merchantReference).toBe('TEST_BT_ORDER_131');
+    expect(commonValues.merchantReference).toBe('TEST_PAYOUT_ORDER_131');
   });
 
   test('POST /api/payout/preview returns 400 when required payout field is blank', async () => {

@@ -26,6 +26,10 @@
 │       │   ├── co_wallet.json
 │       │   └── imps.json
 │       └── common.json
+│   └── subscription
+│       ├── channels
+│       │   └── default.json
+│       └── common.json
 ├── index.html
 ├── index.ts
 ├── package.json
@@ -50,6 +54,12 @@
 │   │   ├── validation.ts
 │   │   ├── web.test.ts
 │   │   └── web.ts
+│   ├── subscription
+│   │   ├── presets.ts
+│   │   ├── service.ts
+│   │   ├── validation.ts
+│   │   ├── web.test.ts
+│   │   └── web.ts
 │   ├── domains
 │   │   ├── deposit.ts
 │   │   ├── payout.ts
@@ -61,7 +71,9 @@
 │   │   └── routes
 │   │       ├── deposit.ts
 │   │       ├── payout.test.ts
-│   │       └── payout.ts
+│   │       ├── payout.ts
+│   │       ├── subscription.test.ts
+│   │       └── subscription.ts
 │   └── utils.ts
 ├── structure.md
 ├── tests
@@ -77,7 +89,10 @@
     ├── main.tsx
     ├── pages
     │   ├── DepositPage.tsx
-    │   └── PayoutPage.tsx
+    │   ├── PayoutPage.test.tsx
+    │   ├── PayoutPage.tsx
+    │   ├── SubscriptionPage.test.tsx
+    │   └── SubscriptionPage.tsx
     └── styles.css
 
-16 directories, 64 files
+16 directories, 67 files

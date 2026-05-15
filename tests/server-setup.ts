@@ -8,6 +8,7 @@ import { createApiServer } from '../src/server/index';
 const dataRootDirPath = resolve(process.cwd(), 'data');
 const depositSourceDirPath = join(dataRootDirPath, 'deposit');
 const payoutSourceDirPath = join(dataRootDirPath, 'payout');
+const subscriptionSourceDirPath = join(dataRootDirPath, 'subscription');
 const makeId = (prefix: string): string => `${prefix}fixed-id`;
 
 const getAvailablePort = async (): Promise<number> =>
@@ -37,7 +38,9 @@ export type ApiTestServerContext = {
   baseUrl: string;
   env: CliEnv;
   payoutPresetDirPath: string;
+  subscriptionPresetDirPath: string;
   resetPayoutFixtures: () => Promise<void>;
+  resetSubscriptionFixtures: () => Promise<void>;
   stop: () => Promise<void>;
 };
 
@@ -59,6 +62,7 @@ export const startApiTestServer = async (): Promise<ApiTestServerContext> => {
   const tempRootDirPath = await mkdtemp(join(tmpdir(), 'api-server-test-'));
   const depositPresetDirPath = join(tempRootDirPath, 'deposit');
   const payoutPresetDirPath = join(tempRootDirPath, 'payout');
+  const subscriptionPresetDirPath = join(tempRootDirPath, 'subscription');
   const env = createTestCliEnv();
 
   const resetDepositFixtures = async (): Promise<void> => {
@@ -71,14 +75,21 @@ export const startApiTestServer = async (): Promise<ApiTestServerContext> => {
     await cp(payoutSourceDirPath, payoutPresetDirPath, { recursive: true });
   };
 
+  const resetSubscriptionFixtures = async (): Promise<void> => {
+    await rm(subscriptionPresetDirPath, { recursive: true, force: true });
+    await cp(subscriptionSourceDirPath, subscriptionPresetDirPath, { recursive: true });
+  };
+
   await resetDepositFixtures();
   await resetPayoutFixtures();
+  await resetSubscriptionFixtures();
   const port = await getAvailablePort();
 
   const server = createApiServer({
     env,
     depositPresetDirPath,
     payoutPresetDirPath,
+    subscriptionPresetDirPath,
     logger: console,
     makeId,
     port,
@@ -88,7 +99,9 @@ export const startApiTestServer = async (): Promise<ApiTestServerContext> => {
     baseUrl: `http://127.0.0.1:${server.port}`,
     env,
     payoutPresetDirPath,
+    subscriptionPresetDirPath,
     resetPayoutFixtures,
+    resetSubscriptionFixtures,
     stop: async (): Promise<void> => {
       server.stop(true);
       await rm(tempRootDirPath, { recursive: true, force: true });

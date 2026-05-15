@@ -13,9 +13,11 @@ export const DEPOSIT_CHANNELS = [
 ] as const;
 
 export const PAYOUT_CHANNELS = ['co_bank', 'co_wallet', 'imps', 'bd_wallet'] as const;
+export const SUBSCRIPTION_CHANNELS = ['default'] as const;
 
 export type DepositChannel = (typeof DEPOSIT_CHANNELS)[number];
 export type PayoutChannel = (typeof PAYOUT_CHANNELS)[number];
+export type SubscriptionChannel = (typeof SUBSCRIPTION_CHANNELS)[number];
 
 export enum MerchantTokenKey {
   Normal = 'NORMAL_MERCHANT_API_TOKEN',

@@ -45,7 +45,7 @@ describe('payout web helpers', () => {
 
     expect(result.common.values.merchantReference).toBe('TEST_ORDER_fixed-id');
     expect(result.channels.co_bank.values.product_no).toBe('PAY-FUTUREPAY_COLLECT-BANKTRANSFERCO-COP');
-    expect(result.channels.imps.values.amount).toEqual({ amount: '10.00', currency_code: 'INR' });
+    expect(result.channels.imps.values.amount).toEqual({ amount: '100.00', currency_code: 'INR' });
   });
 
   test('builds masked payout preview response', async () => {

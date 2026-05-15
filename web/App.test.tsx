@@ -26,4 +26,16 @@ describe('web app routing', () => {
     expect(html).toContain('Payout Operator Console');
     expect(html).toContain('Payout');
   });
+
+  test('renders the subscription workbench on the subscription route', () => {
+    const html = renderToString(
+      <MemoryRouter initialEntries={['/subscription']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain('Payment Test Workbench');
+    expect(html).toContain('Subscription Operator Console');
+    expect(html).toContain('Subscription');
+  });
 });

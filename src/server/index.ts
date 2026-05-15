@@ -4,28 +4,32 @@ import { getCliEnv, type CliEnv } from '../core/env';
 import { corsHeaders, json, notFound } from './http';
 import { handleDepositRoute } from './routes/deposit';
 import { handlePayoutRoute } from './routes/payout';
+import { handleSubscriptionRoute } from './routes/subscription';
 
 const DEFAULT_PORT = Number(process.env.API_SERVER_PORT || 3000);
 const DEFAULT_DEPOSIT_PRESET_DIR_PATH = resolve(process.cwd(), 'data/deposit');
 const DEFAULT_PAYOUT_PRESET_DIR_PATH = resolve(process.cwd(), 'data/payout');
+const DEFAULT_SUBSCRIPTION_PRESET_DIR_PATH = resolve(process.cwd(), 'data/subscription');
 const defaultMakeId = (prefix: string): string => `${prefix}${crypto.randomUUID()}`;
 
 export type ApiServerOptions = {
   env: CliEnv;
   depositPresetDirPath: string;
   payoutPresetDirPath: string;
+  subscriptionPresetDirPath: string;
   logger: Console;
   makeId: (prefix: string) => string;
   port?: number;
 };
 
 /**
- * Creates the Bun HTTP server for deposit and payout APIs.
+ * Creates the Bun HTTP server for deposit, payout, and subscription APIs.
  *
  * @param options Runtime dependencies for environment, preset storage, and logging.
  * @param options.env Application environment used by route services.
  * @param options.depositPresetDirPath Directory containing deposit preset fixtures.
  * @param options.payoutPresetDirPath Directory containing payout preset fixtures.
+ * @param options.subscriptionPresetDirPath Directory containing subscription preset fixtures.
  * @param options.logger Logger used by the underlying runner and startup output.
  * @param options.makeId Factory for merchant reference identifiers.
  * @param options.port Port to bind. Uses `API_SERVER_PORT` or `3000` when omitted.
@@ -74,6 +78,20 @@ export const createApiServer = (options: ApiServerOptions) =>
         return payoutResponse;
       }
 
+      const subscriptionResponse = await handleSubscriptionRoute({
+        request,
+        url,
+        deps: {
+          env: options.env,
+          presetDirPath: options.subscriptionPresetDirPath,
+          makeId: options.makeId,
+          logger: options.logger,
+        },
+      });
+      if (subscriptionResponse) {
+        return subscriptionResponse;
+      }
+
       return notFound();
     },
   });
@@ -83,6 +101,7 @@ if (import.meta.main) {
     env: getCliEnv(),
     depositPresetDirPath: DEFAULT_DEPOSIT_PRESET_DIR_PATH,
     payoutPresetDirPath: DEFAULT_PAYOUT_PRESET_DIR_PATH,
+    subscriptionPresetDirPath: DEFAULT_SUBSCRIPTION_PRESET_DIR_PATH,
     logger: console,
     makeId: defaultMakeId,
   });
