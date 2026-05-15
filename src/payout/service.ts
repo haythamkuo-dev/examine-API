@@ -1,12 +1,12 @@
 import { PAYOUT_CHANNELS, type CliEnv, type PayoutChannel } from '../core/env';
-import { createRunner, type CommandResult, type Logger } from '../runner';
+import { createPresetBackedService } from '../core/createPresetBackedService';
+import type { Logger } from '../runner';
 import {
   buildPayoutCreateResponse,
   buildPayoutPreviewResponse,
   buildPayoutRequestFromForm,
   type PayoutCreateResponse,
   type PayoutDefaultsResponse,
-  type PayoutDefaultsSavedResponse,
   type PayoutFormValues,
 } from './web';
 import { loadPayoutPresets, toPayoutDefaultsResponse, updatePayoutPreset } from './presets';
@@ -36,52 +36,31 @@ export const getRequestedPayoutChannel = (url: URL): PayoutChannel => {
  * @returns The payout service API used by the HTTP layer.
  */
 export const createPayoutService = (deps: PayoutServiceDeps) => {
-  const runner = createRunner({
-    httpClient: fetch,
+  return createPresetBackedService<
+    PayoutChannel,
+    PayoutFormValues,
+    Awaited<ReturnType<typeof loadPayoutPresets>>,
+    PayoutDefaultsResponse,
+    ReturnType<typeof buildPayoutPreviewResponse>,
+    PayoutCreateResponse
+  >({
+    loadPresets: () =>
+      loadPayoutPresets({
+        dirPath: deps.presetDirPath,
+        makeId: deps.makeId,
+      }),
+    toDefaultsResponse: toPayoutDefaultsResponse,
+    updatePreset: (channel, values) =>
+      updatePayoutPreset({
+        dirPath: deps.presetDirPath,
+        channel,
+        values,
+        makeId: deps.makeId,
+      }),
+    buildPreviewResponse: (values) => buildPayoutPreviewResponse(deps.env, values, deps.makeId),
+    buildRequestFromForm: (values) => buildPayoutRequestFromForm(deps.env, values, deps.makeId),
+    buildCreateResponse: buildPayoutCreateResponse,
     logger: deps.logger,
-    now: () => new Date(),
     makeId: deps.makeId,
   });
-
-  const getDefaults = async (channel: PayoutChannel): Promise<PayoutDefaultsResponse> => {
-    const presets = await loadPayoutPresets({
-      dirPath: deps.presetDirPath,
-      makeId: deps.makeId,
-    });
-
-    return toPayoutDefaultsResponse(channel, presets);
-  };
-
-  const saveDefaults = async (
-    channel: PayoutChannel,
-    values: PayoutFormValues,
-  ): Promise<PayoutDefaultsSavedResponse> => {
-    const presets = await updatePayoutPreset({
-      dirPath: deps.presetDirPath,
-      channel,
-      values,
-      makeId: deps.makeId,
-    });
-
-    return {
-      ok: true,
-      ...toPayoutDefaultsResponse(channel, presets),
-    };
-  };
-
-  const preview = (values: PayoutFormValues) =>
-    buildPayoutPreviewResponse(deps.env, values, deps.makeId);
-
-  const execute = async (values: PayoutFormValues): Promise<PayoutCreateResponse> => {
-    const request = buildPayoutRequestFromForm(deps.env, values, deps.makeId);
-    const result: CommandResult = await runner.run(request);
-    return buildPayoutCreateResponse(result);
-  };
-
-  return {
-    getDefaults,
-    saveDefaults,
-    preview,
-    execute,
-  };
 };

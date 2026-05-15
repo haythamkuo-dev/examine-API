@@ -1,15 +1,15 @@
 import { DEPOSIT_CHANNELS, type CliEnv, type DepositChannel } from '../core/env';
-import { createRunner, type CommandResult, type Logger } from '../runner';
+import { createPresetBackedService } from '../core/createPresetBackedService';
+import type { Logger } from '../runner';
 import {
   buildDepositCreateResponse,
   buildDepositPreviewResponse,
+  buildDepositRequestFromForm,
   type DepositCreateResponse,
   type DepositDefaultsResponse,
-  type DepositDefaultsSavedResponse,
   type DepositFormValues,
 } from './web';
 import { loadDepositPresets, toDepositDefaultsResponse, updateDepositPreset } from './presets';
-import { buildDepositRequestFromForm } from './web';
 
 export type DepositServiceDeps = {
   env: CliEnv;
@@ -18,60 +18,51 @@ export type DepositServiceDeps = {
   logger: Logger;
 };
 
+/**
+ * Resolves the requested deposit channel from the query string.
+ *
+ * @param url Request URL carrying the optional `channel` search param.
+ * @returns A valid deposit channel, defaulting to `southafrica_cards`.
+ */
 export const getRequestedDepositChannel = (url: URL): DepositChannel => {
   const channel = (url.searchParams.get('channel') || 'southafrica_cards') as DepositChannel;
   return DEPOSIT_CHANNELS.includes(channel) ? channel : 'southafrica_cards';
 };
 
+/**
+ * Creates the deposit application service used by HTTP routes.
+ *
+ * @param deps Runtime dependencies for preset IO and outbound execution.
+ * @returns The deposit service API used by the HTTP layer.
+ */
 export const createDepositService = (deps: DepositServiceDeps) => {
-  const runner = createRunner({
-    httpClient: fetch,
+  return createPresetBackedService<
+    DepositChannel,
+    DepositFormValues,
+    Awaited<ReturnType<typeof loadDepositPresets>>,
+    DepositDefaultsResponse,
+    ReturnType<typeof buildDepositPreviewResponse>,
+    DepositCreateResponse
+  >({
+    loadPresets: () =>
+      loadDepositPresets({
+        dirPath: deps.presetDirPath,
+        env: deps.env,
+        makeId: deps.makeId,
+      }),
+    toDefaultsResponse: toDepositDefaultsResponse,
+    updatePreset: (channel, values) =>
+      updateDepositPreset({
+        dirPath: deps.presetDirPath,
+        channel,
+        values,
+        env: deps.env,
+        makeId: deps.makeId,
+      }),
+    buildPreviewResponse: (values) => buildDepositPreviewResponse(deps.env, values, deps.makeId),
+    buildRequestFromForm: (values) => buildDepositRequestFromForm(deps.env, values, deps.makeId),
+    buildCreateResponse: buildDepositCreateResponse,
     logger: deps.logger,
-    now: () => new Date(),
     makeId: deps.makeId,
   });
-
-  const getDefaults = async (channel: DepositChannel): Promise<DepositDefaultsResponse> => {
-    const presets = await loadDepositPresets({
-      dirPath: deps.presetDirPath,
-      env: deps.env,
-      makeId: deps.makeId,
-    });
-
-    return toDepositDefaultsResponse(channel, presets);
-  };
-
-  const saveDefaults = async (
-    channel: DepositChannel,
-    values: DepositFormValues,
-  ): Promise<DepositDefaultsSavedResponse> => {
-    const presets = await updateDepositPreset({
-      dirPath: deps.presetDirPath,
-      channel,
-      values,
-      env: deps.env,
-      makeId: deps.makeId,
-    });
-
-    return {
-      ok: true,
-      ...toDepositDefaultsResponse(channel, presets),
-    };
-  };
-
-  const preview = (values: DepositFormValues) =>
-    buildDepositPreviewResponse(deps.env, values, deps.makeId);
-
-  const execute = async (values: DepositFormValues): Promise<DepositCreateResponse> => {
-    const request = buildDepositRequestFromForm(deps.env, values, deps.makeId);
-    const result: CommandResult = await runner.run(request);
-    return buildDepositCreateResponse(result);
-  };
-
-  return {
-    getDefaults,
-    saveDefaults,
-    preview,
-    execute,
-  };
 };

@@ -58,7 +58,7 @@
 - **DO NOT:** 本專案無資料庫，**嚴禁** 在測試期間真實寫入或覆蓋原始的 JSON 檔案。
 
 #### When writing Frontend Tests (Bun + Happy DOM)
-- **DO:** 必須透過 `--preload ./tests/web.setup.ts` 來註冊 `@happy-dom/global-registrator`。嚴禁將此設定檔用於後端測試，以避免環境污染。
+- **DO:** 必須透過 `--preload ./tests/web-setup.ts` 來註冊 `@happy-dom/global-registrator`。嚴禁將此設定檔用於後端測試，以避免環境污染。
 - **DO:** 必須在前端測試檔案的頂部加上 `/// <reference lib="dom" />`，確保 TypeScript 能正確識別瀏覽器 API 的型別。
 - **DO:** 使用 `@testing-library/react` 來渲染及驗證 React 元件。
 - **DO:** 對於 UI 結構測試，使用 `.toMatchSnapshot()` 或 `.toMatchInlineSnapshot()` 將元件結構儲存成快照防範破壞。
@@ -81,7 +81,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **examine_api** (1157 symbols, 1803 relationships, 56 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **examine_api** (1218 symbols, 1880 relationships, 56 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 <!-- > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

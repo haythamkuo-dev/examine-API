@@ -1,12 +1,12 @@
 import { SUBSCRIPTION_CHANNELS, type CliEnv, type SubscriptionChannel } from '../core/env';
-import { createRunner, type CommandResult, type Logger } from '../runner';
+import { createPresetBackedService } from '../core/createPresetBackedService';
+import type { Logger } from '../runner';
 import {
   buildSubscriptionCreateResponse,
   buildSubscriptionPreviewResponse,
   buildSubscriptionRequestFromForm,
   type SubscriptionCreateResponse,
   type SubscriptionDefaultsResponse,
-  type SubscriptionDefaultsSavedResponse,
   type SubscriptionFormValues,
 } from './web';
 import {
@@ -40,54 +40,33 @@ export const getRequestedSubscriptionChannel = (url: URL): SubscriptionChannel =
  * @returns The subscription service API used by the HTTP layer.
  */
 export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
-  const runner = createRunner({
-    httpClient: fetch,
+  return createPresetBackedService<
+    SubscriptionChannel,
+    SubscriptionFormValues,
+    Awaited<ReturnType<typeof loadSubscriptionPresets>>,
+    SubscriptionDefaultsResponse,
+    ReturnType<typeof buildSubscriptionPreviewResponse>,
+    SubscriptionCreateResponse
+  >({
+    loadPresets: () =>
+      loadSubscriptionPresets({
+        dirPath: deps.presetDirPath,
+        env: deps.env,
+        makeId: deps.makeId,
+      }),
+    toDefaultsResponse: toSubscriptionDefaultsResponse,
+    updatePreset: (channel, values) =>
+      updateSubscriptionPreset({
+        dirPath: deps.presetDirPath,
+        channel,
+        values,
+        env: deps.env,
+        makeId: deps.makeId,
+      }),
+    buildPreviewResponse: (values) => buildSubscriptionPreviewResponse(deps.env, values, deps.makeId),
+    buildRequestFromForm: (values) => buildSubscriptionRequestFromForm(deps.env, values, deps.makeId),
+    buildCreateResponse: buildSubscriptionCreateResponse,
     logger: deps.logger,
-    now: () => new Date(),
     makeId: deps.makeId,
   });
-
-  const getDefaults = async (channel: SubscriptionChannel): Promise<SubscriptionDefaultsResponse> => {
-    const presets = await loadSubscriptionPresets({
-      dirPath: deps.presetDirPath,
-      env: deps.env,
-      makeId: deps.makeId,
-    });
-
-    return toSubscriptionDefaultsResponse(channel, presets);
-  };
-
-  const saveDefaults = async (
-    channel: SubscriptionChannel,
-    values: SubscriptionFormValues,
-  ): Promise<SubscriptionDefaultsSavedResponse> => {
-    const presets = await updateSubscriptionPreset({
-      dirPath: deps.presetDirPath,
-      channel,
-      values,
-      env: deps.env,
-      makeId: deps.makeId,
-    });
-
-    return {
-      ok: true,
-      ...toSubscriptionDefaultsResponse(channel, presets),
-    };
-  };
-
-  const preview = (values: SubscriptionFormValues) =>
-    buildSubscriptionPreviewResponse(deps.env, values, deps.makeId);
-
-  const execute = async (values: SubscriptionFormValues): Promise<SubscriptionCreateResponse> => {
-    const request = buildSubscriptionRequestFromForm(deps.env, values, deps.makeId);
-    const result: CommandResult = await runner.run(request);
-    return buildSubscriptionCreateResponse(result);
-  };
-
-  return {
-    getDefaults,
-    saveDefaults,
-    preview,
-    execute,
-  };
 };
