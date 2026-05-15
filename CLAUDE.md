@@ -36,30 +36,26 @@
 - UI 規範：使用 Tailwind CSS 進行響應式設計。
 
 
-## When writing Tests
-
-### 測試規範與全域設定 (Global Setup)：
+#### When writing Tests (Global 通用規範)
 - **DO:** 全面使用 `bun test`，嚴禁引入 Jest 或 Vitest 等其他工具。測試檔案需命名為 `*.test.ts` 並放在對應模組的同一層或 `__tests__` 目錄中。
-- **DO:** 將全域的 Mock 與通用測試輔助函式統一放置於獨立的全域設定檔（如 `tests/setup.ts`），並透過 `--preload` 指令載入。
-
-### 環境變數管理 (Environment Variables)：
-- **DO:** 測試專屬的環境變數（如 Mock 金鑰、測試用端點）必須統一透過 `.env.test` 載入，並嚴格遵循從 `src/core/env.ts` 讀取的專案標準
-- **DO NOT:** 嚴禁在測試程式碼中 `Hard-coding` 任何環境變數或配置字串
-
-### 前置探索(Pre-exploration)：
-- **DO:** 在撰寫特定渠道測試前，必須先執行 `gitnexus_query({query: "channel config payload"})` 了解結構，並從 Source of Truth（如 `src/deposit/presets.ts`）解析介面定義，了解必/選填欄位。
-
-### 非同步生命週期管理 (Async Lifecycle Hooks):
-- **DO:** 針對後端 API 測試，必須使用非同步的 `beforeAll` 啟動獨立的測試伺服器實例，並強制在 `afterAll` 中優雅關閉 (graceful shutdown) 伺服器並釋放記憶體。
-
-### 資料隔離 (Data Isolation)：
-- **DO NOT:** 本專案無資料庫，**嚴禁**在測試期間真實寫入或覆蓋原始的 JSON 檔案。
-- **DO:** API 狀態變更與資料重置必須在 `beforeEach` 中處理，或透過記憶體 Mock (In-memory Mock) 替換，確保測試案例之間絕對獨立。
-
-### 負面測試 (Negative Testing)：
+- **DO:** 測試專屬的環境變數（如 Mock 金鑰、測試用端點）必須統一透過 `.env.test` 載入，並嚴格遵循從 `src/core/env.ts` 讀取的專案標準。
+- **DO NOT:** 嚴禁在測試程式碼中 `Hard-coding` 任何環境變數或配置字串。
 - **DO:** 必須針對「必填欄位缺失」與「邊界值」撰寫 Negative Tests。
 
+#### When writing Backend Tests
+- **DO:** 在撰寫特定渠道測試前，必須先執行 `gitnexus_query({query: "channel config payload"})` 了解結構，並從 Source of Truth（如 `src/deposit/presets.ts`, `src/payout/presets.ts`, `src/subscription/presets.ts`）解析介面定義，了解必/選填欄位。
+- **DO:** 必須透過 `--preload ./tests/server-setup.ts` 載入後端專用的全域 Mock 與伺服器設定，確保測試環境中絕對不包含 `window` 或 `document` 等前端物件。
+- **DO:** 必須使用非同步的 `beforeAll` 啟動獨立的測試伺服器實例，並強制在 `afterAll` 中優雅關閉 (graceful shutdown) 伺服器並釋放記憶體。
+- **DO:** API 狀態變更與資料重置必須在 `beforeEach` 中處理，或透過記憶體 Mock (In-memory Mock) 替換，確保測試案例之間絕對獨立。
+- **DO NOT:** 本專案無資料庫，**嚴禁** 在測試期間真實寫入或覆蓋原始的 JSON 檔案。
 
+#### When writing Frontend Tests (Bun + Happy DOM)
+- **DO:** 必須透過 `--preload ./tests/web.setup.ts` 來註冊 `@happy-dom/global-registrator`。嚴禁將此設定檔用於後端測試，以避免環境污染。
+- **DO:** 必須在前端測試檔案的頂部加上 `/// <reference lib="dom" />`，確保 TypeScript 能正確識別瀏覽器 API 的型別。
+- **DO:** 使用 `@testing-library/react` 來渲染及驗證 React 元件。
+- **DO:** 對於 UI 結構測試，使用 `.toMatchSnapshot()` 或 `.toMatchInlineSnapshot()` 將元件結構儲存成快照防範破壞。
+- **DO:** 搭配生命週期鉤子（如 `beforeEach`）重置 DOM 狀態，並確實呼叫測試庫提供的清理函式（例如 React Testing Library 的 `cleanup`），確保測試間不會互相污染。
+- **DO NOT:** 避免在單一測試中建立過多龐大的 DOM 元素，以維持大型測試的效能與穩定性。
 
 
 ## When Using GitNexus
@@ -71,6 +67,7 @@
   - 嚴禁忽視 HIGH / CRITICAL 警告。
   - 嚴禁使用「尋找與取代 (find-and-replace)」來重新命名，必須使用 `gitnexus_rename`。
   - 嚴禁未執行 `gitnexus_detect_changes()` 就逕自提交 (Commit) 程式碼。
+
 
 
 
