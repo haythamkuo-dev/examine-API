@@ -1,23 +1,113 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: dark;
   font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
-  color: #f5f3ed;
+  --color-primary: #f59e0b;
+  --color-secondary: #fbbf24;
+  --color-cta: #8b5cf6;
+  --color-background: #0f172a;
+  --color-text: #f8fafc;
+  --color-text-muted: rgba(248, 250, 252, 0.74);
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  color: var(--color-text);
   background:
-    radial-gradient(circle at top left, rgba(224, 95, 47, 0.25), transparent 28%),
-    radial-gradient(circle at top right, rgba(29, 78, 137, 0.35), transparent 34%),
-    linear-gradient(135deg, #181614 0%, #26211d 42%, #121519 100%);
+    radial-gradient(circle at 10% 15%, rgba(245, 158, 11, 0.18), transparent 24%),
+    radial-gradient(circle at 88% 18%, rgba(139, 92, 246, 0.18), transparent 28%),
+    radial-gradient(circle at 50% 100%, rgba(251, 191, 36, 0.08), transparent 30%),
+    linear-gradient(180deg, #020617 0%, #0b1120 42%, #0f172a 100%);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+  background: var(--color-background);
+}
+
 body {
   margin: 0;
   min-height: 100vh;
+  background: transparent;
+  color: var(--color-text);
+  text-rendering: optimizeLegibility;
 }
 
 #root {
   min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease,
+    color 200ms ease,
+    opacity 200ms ease,
+    box-shadow 200ms ease,
+    transform 200ms ease;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.35);
+  color: var(--color-text);
+}
+
+.operator-pre {
+  margin: 0;
+  min-width: 0;
+  max-height: 420px;
+  overflow: auto;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background:
+    linear-gradient(180deg, rgba(2, 6, 23, 0.96), rgba(15, 23, 42, 0.84));
+  padding: 1rem;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: #dce6ef;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

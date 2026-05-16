@@ -8,8 +8,19 @@ import type {
   DepositFormValues,
   DepositPreviewResponse,
 } from '../../src/deposit/web';
+import { ActionButton, JsonPanel, LoadingHero, PageCard, PageHero, ResultPanel, SectionHeading } from './pageChrome';
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
+const fieldsetClassName = 'mb-4 rounded-[22px] border border-white/10 bg-white/[0.03] p-4';
+const fieldLabelClassName = 'mb-4 grid gap-2';
+const fieldLabelTextClassName = 'text-[13px] font-medium tracking-[0.01em] text-[color:var(--color-text-muted)]';
+const inputClassName =
+  'w-full rounded-2xl border border-white/12 bg-white/5 px-4 py-3 text-[var(--color-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]';
+const textareaClassName = `${inputClassName} min-h-24 resize-y`;
+const pageTitle = 'Deposit Operator Console';
+const moduleName = 'Deposit Module';
+const previewEmptyState = 'Run a preview to inspect the exact request body, URL, and masked headers.';
+const resultEmptyState = 'Send a request to capture the raw response, status code, and any diagnostic hint.';
 
 const loadingLabels = {
   defaults: 'Loading defaults',
@@ -144,25 +155,6 @@ const buildFailureResult = (action: ApiAction, caught: unknown): ApiResultView =
   };
 };
 
-const JsonPanel = ({
-  title,
-  body,
-  emptyState,
-}: {
-  title: string;
-  body: unknown;
-  emptyState: string;
-}) => (
-  <article className="flex min-w-0 flex-col rounded-3xl border border-white/10 bg-[rgba(14,18,23,0.74)] p-[22px] shadow-[0_20px_70px_rgba(0,0,0,0.25)] backdrop-blur-[10px]">
-    <div className="mb-[18px] flex items-baseline justify-between gap-3">
-      <h2 className="m-0 font-['Iowan_Old_Style','Georgia',serif]">{title}</h2>
-    </div>
-    <pre className="m-0 max-h-[420px] min-w-0 flex-1 overflow-auto rounded-[18px] bg-black/30 p-4 text-xs text-[#dce6ef]">
-      {body ? JSON.stringify(body, null, 2) : emptyState}
-    </pre>
-  </article>
-);
-
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const updatePathValue = (
@@ -253,8 +245,8 @@ const renderSchemaMap = ({
     if (schema.kind === 'object') {
       const objectValues = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
       return (
-        <fieldset className="mb-[14px] rounded-[18px] border border-white/10 p-4" key={pathKey}>
-          <legend className="px-2 text-amber-300">
+        <fieldset className={fieldsetClassName} key={pathKey}>
+          <legend className="px-2 text-[13px] font-semibold uppercase tracking-[0.16em] text-[var(--color-primary)]">
             {schema.label}
             {schema.required ? ' *' : ''}
           </legend>
@@ -272,13 +264,13 @@ const renderSchemaMap = ({
       const items = Array.isArray(value) ? value : [];
       return (
         <div className="mb-[14px] grid gap-3" key={pathKey}>
-          <div className="flex items-center justify-between gap-3 text-[13px] text-[rgba(245,243,237,0.72)]">
+          <div className="flex items-center justify-between gap-3 text-[13px] text-[color:var(--color-text-muted)]">
             <span>{schema.label}</span>
             <span>{items.length} items</span>
           </div>
           {items.map((item, index) => (
-            <fieldset className="mb-[14px] rounded-[18px] border border-white/10 p-4" key={`${pathKey}.${index}`}>
-              <legend className="px-2 text-amber-300">
+            <fieldset className={fieldsetClassName} key={`${pathKey}.${index}`}>
+              <legend className="px-2 text-[13px] font-semibold uppercase tracking-[0.16em] text-[var(--color-primary)]">
                 {schema.itemLabel} {index + 1}
               </legend>
               {renderSchemaMap({
@@ -295,14 +287,14 @@ const renderSchemaMap = ({
 
     if (schema.kind === 'boolean') {
       return (
-        <label className="mb-[14px] flex items-center gap-3" key={pathKey}>
+        <label className="mb-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3" key={pathKey}>
           <input
-            className="w-auto"
+            className="h-4 w-4 accent-[var(--color-primary)]"
             type="checkbox"
             checked={Boolean(value)}
             onChange={(event) => onChange(fieldPath, event.target.checked)}
           />
-          <span>
+          <span className="text-sm text-[var(--color-text)]">
             {schema.label}
             {schema.required ? ' *' : ''}
           </span>
@@ -312,13 +304,13 @@ const renderSchemaMap = ({
 
     if (schema.kind === 'select') {
       return (
-        <label className="mb-[14px] grid gap-2" key={pathKey}>
-          <span className="text-[13px] text-[rgba(245,243,237,0.84)]">
+        <label className={fieldLabelClassName} key={pathKey}>
+          <span className={fieldLabelTextClassName}>
             {schema.label}
             {schema.required ? ' *' : ''}
           </span>
           <select
-            className="w-full rounded-[14px] border border-white/15 bg-white/5 px-[14px] py-3 text-inherit"
+            className={inputClassName}
             value={typeof value === 'string' ? value : ''}
             onChange={(event) => onChange(fieldPath, event.target.value)}
           >
@@ -335,13 +327,13 @@ const renderSchemaMap = ({
 
     if (schema.kind === 'textarea') {
       return (
-        <label className="mb-[14px] grid gap-2" key={pathKey}>
-          <span className="text-[13px] text-[rgba(245,243,237,0.84)]">
+        <label className={fieldLabelClassName} key={pathKey}>
+          <span className={fieldLabelTextClassName}>
             {schema.label}
             {schema.required ? ' *' : ''}
           </span>
           <textarea
-            className="min-h-24 w-full resize-y rounded-[14px] border border-white/15 bg-white/5 px-[14px] py-3 text-inherit"
+            className={textareaClassName}
             value={typeof value === 'string' ? value : ''}
             onChange={(event) => onChange(fieldPath, event.target.value)}
           />
@@ -350,13 +342,13 @@ const renderSchemaMap = ({
     }
 
     return (
-      <label className="mb-[14px] grid gap-2" key={pathKey}>
-        <span className="text-[13px] text-[rgba(245,243,237,0.84)]">
+      <label className={fieldLabelClassName} key={pathKey}>
+        <span className={fieldLabelTextClassName}>
           {schema.label}
           {schema.required ? ' *' : ''}
         </span>
         <input
-          className="w-full rounded-[14px] border border-white/15 bg-white/5 px-[14px] py-3 text-inherit"
+          className={inputClassName}
           value={typeof value === 'string' ? value : ''}
           onChange={(event) => onChange(fieldPath, event.target.value)}
         />
@@ -364,6 +356,11 @@ const renderSchemaMap = ({
     );
   });
 
+/**
+ * Renders the deposit operator page for editing defaults, previewing payloads, and sending test requests.
+ *
+ * @returns The deposit test workbench page.
+ */
 export function DepositPage() {
   const [form, setForm] = useState<DepositFormValues | null>(null);
   const [commonSchema, setCommonSchema] = useState<DepositFieldMap>({});
@@ -529,165 +526,95 @@ export function DepositPage() {
 
   if (!form) {
     return (
-      <section className="mb-6 grid gap-5 rounded-3xl border border-white/10 bg-[rgba(14,18,23,0.74)] p-7 shadow-[0_20px_70px_rgba(0,0,0,0.25)] backdrop-blur-[10px] md:grid-cols-[1.5fr_1fr]">
-        <div>
-          <p className="mb-2 text-xs uppercase tracking-[0.16em] text-amber-300">Deposit Module</p>
-          <h1 className="m-0 font-['Iowan_Old_Style','Georgia',serif] text-[clamp(2rem,4vw,4rem)] leading-[0.98]">Deposit Operator Console</h1>
-          <p className="text-[rgba(245,243,237,0.72)]">
-            {loading === 'defaults' ? 'Loading server-side defaults for the selected channel.' : error || 'Unable to load defaults.'}
-          </p>
-        </div>
-      </section>
+      <LoadingHero
+        eyebrow={moduleName}
+        title={pageTitle}
+        message={loading === 'defaults' ? 'Loading server-side defaults for the selected channel.' : error || 'Unable to load defaults.'}
+      />
     );
   }
 
   return (
     <>
-      <section className="mb-6 grid gap-5 rounded-3xl border border-white/10 bg-[rgba(14,18,23,0.74)] p-7 shadow-[0_20px_70px_rgba(0,0,0,0.25)] backdrop-blur-[10px] md:grid-cols-[1.5fr_1fr]">
-        <div>
-          <p className="mb-2 text-xs uppercase tracking-[0.16em] text-amber-300">Deposit Module</p>
-          <h1 className="m-0 font-['Iowan_Old_Style','Georgia',serif] text-[clamp(2rem,4vw,4rem)] leading-[0.98]">Deposit Operator Console</h1>
-          <p className="text-[rgba(245,243,237,0.72)]">
-            Edit shared request fields, switch channel-specific payload sections, preview the signed request, and run the test through the local Bun proxy.
-          </p>
-        </div>
-        <div className="self-end rounded-[18px] bg-white/5 p-[18px]">
-          <h2 className="m-0 font-['Iowan_Old_Style','Georgia',serif]">Execution mode</h2>
-          <p className="text-[rgba(245,243,237,0.72)]">
-            Credentials stay on the API server. The browser only edits test inputs and reads the proxied response.
-          </p>
-          <div className="mt-[18px] flex flex-wrap gap-2.5">
-            <span className="inline-flex min-h-[34px] items-center rounded-full border border-white/10 bg-white/5 px-[14px] text-[rgba(245,243,237,0.82)]">
-              Scope: Deposit
-            </span>
-            <span className="inline-flex min-h-[34px] items-center rounded-full border border-transparent bg-sky-300 px-[14px] text-[#141414]">
-              {loading ? loadingLabels[loading] : 'Ready to test'}
-            </span>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        eyebrow={moduleName}
+        title={pageTitle}
+        description="Edit shared request fields, switch channel-specific payload sections, preview the signed request, and run the test through the local Bun proxy."
+        scopeLabel="Deposit"
+        statusLabel={loading ? loadingLabels[loading] : 'Ready to test'}
+      />
 
-      <section className="[display:grid] gap-6 md:grid-cols-[minmax(320px,440px)_minmax(0,1fr)]">
+      <section className="grid gap-6 lg:grid-cols-[minmax(320px,460px)_minmax(0,1fr)]">
         <form
-          className="rounded-3xl border border-white/10 bg-[rgba(14,18,23,0.74)] p-[22px] shadow-[0_20px_70px_rgba(0,0,0,0.25)] backdrop-blur-[10px]"
+          className="contents"
           onSubmit={(event) => event.preventDefault()}
         >
-          <div className="mb-[18px] flex items-baseline justify-between gap-3">
-            <h2 className="m-0 font-['Iowan_Old_Style','Georgia',serif]">Request builder</h2>
-            <span className="text-[13px] text-amber-300">{loading ? loadingLabels[loading] : 'Form ready'}</span>
-          </div>
+          <PageCard className="p-6">
+            <SectionHeading title="Request builder" detail={loading ? loadingLabels[loading] : 'Form ready'} />
 
-          <label className="mb-[14px] grid gap-2">
-            <span className="text-[13px] text-[rgba(245,243,237,0.84)]">Channel</span>
-            <select
-              className="w-full rounded-[14px] border border-white/15 bg-white/5 px-[14px] py-3 text-inherit"
-              value={form.channel}
-              onChange={(event) => void loadDefaults(event.target.value)}
-            >
-              {channels.map((channel) => (
-                <option key={channel} value={channel}>
-                  {channel}
-                </option>
-              ))}
-            </select>
-          </label>
+            <label className={fieldLabelClassName}>
+              <span className={fieldLabelTextClassName}>Channel</span>
+              <select className={inputClassName} value={form.channel} onChange={(event) => void loadDefaults(event.target.value)}>
+                {channels.map((channel) => (
+                  <option key={channel} value={channel}>
+                    {channel}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <div className="mt-3 border-t border-white/10 pt-[18px]">
-            <h3 className="mb-3 m-0 font-['Iowan_Old_Style','Georgia',serif]">Shared fields</h3>
-            {renderSchemaMap({
-              schemaMap: commonSchema,
-              values: form.commonValues as Record<string, unknown>,
-              pathPrefix: [],
-              onChange: (path, value) => {
-                const key = path[0];
-                if (typeof key === 'string' && typeof value === 'string') {
-                  updateCommonValue(key, value);
-                }
-              },
-            })}
-          </div>
+            <div className="mt-4 border-t border-white/10 pt-5">
+              <SectionHeading title="Shared fields" />
+              {renderSchemaMap({
+                schemaMap: commonSchema,
+                values: form.commonValues as Record<string, unknown>,
+                pathPrefix: [],
+                onChange: (path, value) => {
+                  const key = path[0];
+                  if (typeof key === 'string' && typeof value === 'string') {
+                    updateCommonValue(key, value);
+                  }
+                },
+              })}
+            </div>
 
-          <div className="mt-3 border-t border-white/10 pt-[18px]">
-            <h3 className="mb-3 m-0 font-['Iowan_Old_Style','Georgia',serif]">Channel fields</h3>
-            {renderSchemaMap({
-              schemaMap: channelSchema,
-              values: form.channelValues,
-              pathPrefix: [],
-              onChange: updateChannelValue,
-            })}
-          </div>
+            <div className="mt-4 border-t border-white/10 pt-5">
+              <SectionHeading title="Channel fields" />
+              {renderSchemaMap({
+                schemaMap: channelSchema,
+                values: form.channelValues,
+                pathPrefix: [],
+                onChange: updateChannelValue,
+              })}
+            </div>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="cursor-pointer rounded-full bg-amber-300 px-[18px] py-3 text-[#141414] transition hover:-translate-y-px hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-              onClick={() => void loadDefaults(form.channel)}
-              disabled={loading !== null}
-            >
-              Reload defaults
-            </button>
-            <button
-              type="button"
-              className="cursor-pointer rounded-full bg-amber-300 px-[18px] py-3 text-[#141414] transition hover:-translate-y-px hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-              onClick={() => void submitPreview()}
-              disabled={loading !== null}
-            >
-              Preview request
-            </button>
-            <button
-              type="button"
-              className="cursor-pointer rounded-full bg-sky-300 px-[18px] py-3 text-[#141414] transition hover:-translate-y-px hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-              onClick={() => void submitCreate()}
-              disabled={loading !== null}
-            >
-              Send request
-            </button>
-            <button
-              type="button"
-              className="cursor-pointer rounded-full bg-white/10 px-[18px] py-3 text-[#f5f3ed] transition hover:-translate-y-px hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-              onClick={() => void saveDefaults()}
-              disabled={loading !== null}
-            >
-              Save defaults
-            </button>
-          </div>
-
+            <div className="mt-6 flex flex-wrap gap-3">
+              <ActionButton type="button" onClick={() => void loadDefaults(form.channel)} disabled={loading !== null}>
+                Reload defaults
+              </ActionButton>
+              <ActionButton type="button" onClick={() => void submitPreview()} disabled={loading !== null}>
+                Preview request
+              </ActionButton>
+              <ActionButton type="button" tone="primary" onClick={() => void submitCreate()} disabled={loading !== null}>
+                Send request
+              </ActionButton>
+              <ActionButton type="button" tone="ghost" onClick={() => void saveDefaults()} disabled={loading !== null}>
+                Save defaults
+              </ActionButton>
+            </div>
+          </PageCard>
         </form>
 
-        <section className="[display:grid] gap-6 content-start min-w-0">
-          <JsonPanel
-            title="Request preview"
-            body={preview}
-            emptyState="Run a preview to inspect the exact request body, URL, and masked headers."
+        <section className="grid min-w-0 content-start gap-6">
+          <JsonPanel title="Request preview" body={preview} emptyState={previewEmptyState} />
+          <ResultPanel
+            statusLabel={apiResult ? `${apiResult.action.toUpperCase()}${apiResult.status !== null ? ` Status ${apiResult.status}` : ''}` : null}
+            message={apiResult?.message ?? null}
+            details={apiResult?.details ?? null}
+            ok={apiResult?.ok}
+            raw={apiResult?.raw}
+            emptyState={resultEmptyState}
           />
-
-          <article className="flex min-w-0 flex-col rounded-3xl border border-white/10 bg-[rgba(14,18,23,0.74)] p-[22px] shadow-[0_20px_70px_rgba(0,0,0,0.25)] backdrop-blur-[10px]">
-            <div className="mb-[18px] flex items-baseline justify-between gap-3">
-              <h2 className="m-0 font-['Iowan_Old_Style','Georgia',serif]">API result</h2>
-              {apiResult ? (
-                <span className="text-[13px] text-amber-300">
-                  {apiResult.action.toUpperCase()} {apiResult.status !== null ? `Status ${apiResult.status}` : ''}
-                </span>
-              ) : null}
-            </div>
-            {apiResult ? (
-              <div
-                className={`mb-[14px] rounded-2xl px-4 py-[14px] ${
-                  apiResult.ok
-                    ? 'border border-emerald-500/50 bg-emerald-900/30 text-emerald-200'
-                    : 'border border-red-500/50 bg-red-900/30 text-red-200'
-                }`}
-              >
-                {apiResult.message}
-                {apiResult.details ? <p className="mb-0 mt-2 whitespace-pre-wrap break-words text-[13px]">{apiResult.details}</p> : null}
-              </div>
-            ) : null}
-            <pre className="m-0 max-h-[420px] min-w-0 flex-1 overflow-auto rounded-[18px] bg-black/30 p-4 text-xs text-[#dce6ef]">
-              {apiResult
-                ? JSON.stringify(apiResult.raw, null, 2)
-                : 'Send a request to capture the raw response, status code, and any diagnostic hint.'}
-            </pre>
-          </article>
         </section>
       </section>
     </>
