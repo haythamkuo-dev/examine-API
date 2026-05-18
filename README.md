@@ -94,3 +94,4 @@ This repo includes `render.yaml` for backend deployment.
 Notes:
 - `vite.config.ts` auto-detects GitHub Actions and sets the correct `base` path from `GITHUB_REPOSITORY`.
 - The workflow copies `dist/index.html` to `dist/404.html` for SPA route fallback.
+- GitHub Pages build injects `VITE_API_BASE_URL=https://examine-api.onrender.com`, so production frontend requests are sent to Render instead of relative `/api`.

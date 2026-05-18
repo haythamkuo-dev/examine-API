@@ -1,6 +1,12 @@
 const jsonContentTypeHeader = 'Content-Type';
 const jsonContentTypeValue = 'application/json';
 const unknownContentTypeLabel = 'unknown';
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() || '';
+const isLocalBrowserHost =
+  typeof window !== 'undefined' &&
+  ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const apiBaseUrl =
+  import.meta.env.DEV || isLocalBrowserHost ? '' : configuredApiBaseUrl;
 
 export const jsonHeaders = { [jsonContentTypeHeader]: jsonContentTypeValue };
 
@@ -51,6 +57,24 @@ export class ApiRequestError extends Error {
 }
 
 /**
+ * Resolves an API path against the active frontend runtime.
+ *
+ * Development keeps relative `/api` requests so Vite can proxy them locally.
+ * Production builds use `VITE_API_BASE_URL` when provided.
+ *
+ * @param path Absolute API path starting with `/`.
+ * @returns Relative path in development or fully qualified production URL.
+ * @throws {Error} When the provided path is not rooted.
+ */
+export const resolveApiUrl = (path: string): string => {
+  if (!path.startsWith('/')) {
+    throw new Error(`Expected rooted API path, received: ${path}`);
+  }
+
+  return apiBaseUrl ? new URL(path, apiBaseUrl).toString() : path;
+};
+
+/**
  * Fetches a JSON API endpoint and validates the response envelope.
  *
  * @param url Endpoint URL to request.
@@ -59,16 +83,17 @@ export class ApiRequestError extends Error {
  * @throws {ApiRequestError} When the response is non-OK, empty, non-JSON, or malformed.
  */
 export const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(url, init);
+  const requestUrl = resolveApiUrl(url);
+  const response = await fetch(requestUrl, init);
   const rawBody = await response.text();
   const contentType = response.headers.get('content-type') || '';
 
   if (!response.ok) {
     const summary = rawBody.trim() || response.statusText || 'Empty response body';
     throw new ApiRequestError({
-      message: `API ${response.status} from ${url}: ${summary}`,
+      message: `API ${response.status} from ${requestUrl}: ${summary}`,
       status: response.status,
-      url,
+      url: requestUrl,
       rawBody,
       contentType,
     });
@@ -76,9 +101,9 @@ export const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T>
 
   if (!rawBody.trim()) {
     throw new ApiRequestError({
-      message: `Empty response from ${url}`,
+      message: `Empty response from ${requestUrl}`,
       status: response.status,
-      url,
+      url: requestUrl,
       rawBody,
       contentType,
     });
@@ -86,9 +111,9 @@ export const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T>
 
   if (!contentType.includes(jsonContentTypeValue)) {
     throw new ApiRequestError({
-      message: `Expected JSON from ${url} but received ${contentType || `${unknownContentTypeLabel} content type`}`,
+      message: `Expected JSON from ${requestUrl} but received ${contentType || `${unknownContentTypeLabel} content type`}`,
       status: response.status,
-      url,
+      url: requestUrl,
       rawBody,
       contentType,
     });
@@ -98,9 +123,9 @@ export const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T>
     return JSON.parse(rawBody) as T;
   } catch {
     throw new ApiRequestError({
-      message: `Invalid JSON from ${url}`,
+      message: `Invalid JSON from ${requestUrl}`,
       status: response.status,
-      url,
+      url: requestUrl,
       rawBody,
       contentType,
     });

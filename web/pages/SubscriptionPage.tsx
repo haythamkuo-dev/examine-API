@@ -13,6 +13,7 @@ import {
   getNumericStatus,
   jsonHeaders,
   loadingLabels,
+  resolveApiUrl,
   type ApiResultView,
   updatePathValue,
 } from './operatorShared';
@@ -188,7 +189,7 @@ export function SubscriptionPage() {
     setLoading('create');
 
     try {
-      const response = await fetch('/api/subscription/create', {
+      const response = await fetch(resolveApiUrl('/api/subscription/create'), {
         method: 'POST',
         headers: jsonHeaders,
         body: JSON.stringify(form),

@@ -12,6 +12,7 @@ import {
   fetchJson,
   jsonHeaders,
   loadingLabels,
+  resolveApiUrl,
   type ApiResultView,
   updatePathValue,
 } from './operatorShared';
@@ -271,7 +272,7 @@ export function PayoutPage() {
     setSaveMessage(null);
 
     try {
-      const response = await fetch('/api/payout/create', {
+      const response = await fetch(resolveApiUrl('/api/payout/create'), {
         method: 'POST',
         headers: jsonHeaders,
         body: JSON.stringify(form),
