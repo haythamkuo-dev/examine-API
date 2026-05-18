@@ -15,6 +15,8 @@
     "build:web": "vite build",
     "prepublishOnly": "bun run build",
     "test": "bun test",
+    "test:api": "bun test --preload ./tests/setup.ts ./src/server",
+    "test:web": "bun test --preload ./tests/web-setup.ts ./web",
     "dev:api": "bun --hot run src/server/index.ts",
     "dev:web": "vite",
     "deposit": "bun run index.ts deposit create",
@@ -22,7 +24,8 @@
     "subscribe": "bun run index.ts subscription create",
     "preview:deposit": "bun run index.ts deposit preview",
     "preview:payout": "bun run index.ts payout preview",
-    "preview:subscription": "bun run index.ts subscription preview"
+    "preview:subscription": "bun run index.ts subscription preview",
+    "structure": "tree -a -L 4 -I 'node_modules|dist|design-system|.git|.claude|.codex|.DS_Store|.gitignore|.gitnexus' > structure.md"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.9.0",

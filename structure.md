@@ -1,4 +1,7 @@
 .
+├── .env
+├── .env.example
+├── .env.test
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── README.md
@@ -103,7 +106,8 @@
     │   ├── PayoutPage.test.tsx
     │   ├── PayoutPage.tsx
     │   ├── SubscriptionPage.test.tsx
-    │   └── SubscriptionPage.tsx
+    │   ├── SubscriptionPage.tsx
+    │   └── pageChrome.tsx
     └── styles.css
 
-21 directories, 86 files
+21 directories, 90 files

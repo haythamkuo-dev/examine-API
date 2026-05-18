@@ -29,6 +29,15 @@ const previewEmptyState = 'Run a preview to inspect the exact request body, URL,
 const resultEmptyState = 'Send a request to capture the raw response, status code, and diagnostics.';
 const optionalFieldMarker = '非必填';
 
+type PayoutResultView = {
+  ok: boolean;
+  action: 'create';
+  status: number | null;
+  message: string;
+  details?: string;
+  raw: unknown;
+};
+
 const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, init);
   const rawBody = await response.text();
@@ -68,13 +77,29 @@ const extractCreateMessage = (statusText: string, body: unknown): string => {
   return statusText || 'Request failed';
 };
 
+const extractCreateDetails = (body: unknown, message: string): string | undefined => {
+  if (typeof body === 'string') {
+    const summary = body.trim();
+    return summary && summary !== message ? summary : undefined;
+  }
+
+  if (body && typeof body === 'object') {
+    const record = body as Record<string, unknown>;
+    if (typeof record.error === 'string' && record.error.trim() && record.error !== message) {
+      return record.error;
+    }
+  }
+
+  return undefined;
+};
+
 /**
  * Normalizes payout create API responses into a panel-friendly result object.
  *
  * @param response Raw fetch response from `/api/payout/create`.
  * @returns Normalized payload for API result panel rendering.
  */
-export const normalizeCreateResult = async (response: Response): Promise<PayoutCreateResponse> => {
+export const normalizeCreateResult = async (response: Response): Promise<PayoutResultView> => {
   const rawBody = await response.text();
   const contentType = response.headers.get('content-type') || '';
   let parsedBody: unknown = null;
@@ -92,21 +117,41 @@ export const normalizeCreateResult = async (response: Response): Promise<PayoutC
   }
 
   if (parsedBody && typeof parsedBody === 'object') {
-    return parsedBody as PayoutCreateResponse;
+    const record = parsedBody as PayoutCreateResponse;
+    const ok = typeof record.ok === 'boolean' ? record.ok : response.ok;
+    const status = typeof record.status === 'number' ? record.status : response.status;
+    const message =
+      ok
+        ? typeof record.message === 'string' && record.message.trim()
+          ? record.message
+          : 'Request sent successfully.'
+        : extractCreateMessage(response.statusText, parsedBody);
+
+    return {
+      ok,
+      action: 'create',
+      status,
+      message,
+      details: ok ? undefined : extractCreateDetails(parsedBody, message),
+      raw: parsedBody,
+    };
   }
 
+  const message = response.ok ? 'Request sent successfully.' : extractCreateMessage(response.statusText, parsedBody);
+
   return {
-    requestName: 'payout:create',
     ok: response.ok,
+    action: 'create',
     status: response.status,
-    request: {
-      method: 'POST',
-      url: '/api/payout/create',
-      payload: null,
+    message,
+    details: response.ok ? undefined : extractCreateDetails(parsedBody, message),
+    raw: {
+      ok: response.ok,
+      action: 'create',
+      status: response.status,
+      contentType: contentType || 'unknown',
+      body: parsedBody,
     },
-    response: parsedBody,
-    message: extractCreateMessage(response.statusText, parsedBody),
-    durationMs: 0,
   };
 };
 
@@ -356,7 +401,7 @@ export function PayoutPage() {
   const [channelSchema, setChannelSchema] = useState<PayoutFieldMap>({});
   const [channels, setChannels] = useState<string[]>([]);
   const [preview, setPreview] = useState<PayoutPreviewResponse | null>(null);
-  const [result, setResult] = useState<PayoutCreateResponse | null>(null);
+  const [result, setResult] = useState<PayoutResultView | null>(null);
   const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'save' | null>('defaults');
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -457,16 +502,16 @@ export function PayoutPage() {
       setResult(await normalizeCreateResult(response));
     } catch (caught) {
       setResult({
-        requestName: 'payout:create',
         ok: false,
-        request: {
-          method: 'POST',
-          url: '/api/payout/create',
-          payload: form,
-        },
-        error: caught instanceof Error ? caught.message : String(caught),
+        action: 'create',
+        status: null,
         message: caught instanceof Error ? caught.message : String(caught),
-        durationMs: 0,
+        raw: {
+          ok: false,
+          action: 'create',
+          status: null,
+          message: caught instanceof Error ? caught.message : String(caught),
+        },
       });
     } finally {
       setLoading(null);
@@ -584,7 +629,14 @@ export function PayoutPage() {
 
         <section className="grid min-w-0 content-start gap-6">
           <JsonPanel title="Request preview" body={preview} emptyState={previewEmptyState} />
-          <ResultPanel statusLabel={result?.status ? `Status ${result.status}` : null} raw={result} emptyState={resultEmptyState} />
+          <ResultPanel
+            statusLabel={result?.status !== null && result?.status !== undefined ? `CREATE Status ${result.status}` : null}
+            message={result?.message ?? null}
+            details={result?.details ?? null}
+            ok={result?.ok}
+            raw={result?.raw}
+            emptyState={resultEmptyState}
+          />
         </section>
       </section>
     </>

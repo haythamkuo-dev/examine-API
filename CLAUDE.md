@@ -29,7 +29,7 @@
 3. 執行 `tsc --noEmit` 且退出碼為 0（確保無任何隱式 any 型別，若型別不可預測，強制使用 unknown 搭配 Type Guard）。
 4. 執行 `bun test` 且退出碼為 0（確保負責修改或新增的 API 具備對應的測試案例，且測試全數通過）。
 5. 執行 `gitnexus_detect_changes()` 且確認影響範圍僅限於預期的 Symbol 與執行流。
-6. 若有修改資料夾結構，已同步更新 `structure.md`。
+6. 若有修改資料夾結構，執行 `bun run structure`，更新 `structure.md`。
 
 
 ## When writing Backend API logic
@@ -45,20 +45,26 @@
 
 
 #### When writing Tests (Global 通用規範)
-- **DO:** 全面使用 `bun test`，嚴禁引入 Jest 或 Vitest 等其他工具。測試檔案需命名為 `*.test.ts` 並放在對應模組的同一層或 `__tests__` 目錄中。
+<!-- - **DO:** 全面使用 `bun test`，嚴禁引入 Jest 或 Vitest 等其他工具。測試檔案需命名為 `*.test.ts` 並放在對應模組的同一層或 `__tests__` 目錄中。 -->
+- **DO:** 全面使用 Bun 原生測試框架 (`bun:test`)，嚴禁引入 Jest 或 Vitest 等其他工具。測試檔案需命名為 `*.test.ts` 並放在對應模組的同一層或 `__tests__` 目錄中。
 - **DO:** 測試專屬的環境變數（如 Mock 金鑰、測試用端點）必須統一透過 `.env.test` 載入，並嚴格遵循從 `src/core/env.ts` 讀取的專案標準。
 - **DO NOT:** 嚴禁在測試程式碼中 `Hard-coding` 任何環境變數或配置字串。
 - **DO:** 必須針對「必填欄位缺失」與「邊界值」撰寫 Negative Tests。
 
 #### When writing Backend Tests
 - **DO:** 在撰寫特定渠道測試前，必須先執行 `gitnexus_query({query: "channel config payload"})` 了解結構，並從 Source of Truth（如 `src/deposit/presets.ts`, `src/payout/presets.ts`, `src/subscription/presets.ts`）解析介面定義，了解必/選填欄位。
-- **DO:** 必須透過 `--preload ./tests/server-setup.ts` 載入後端專用的全域 Mock 與伺服器設定，確保測試環境中絕對不包含 `window` 或 `document` 等前端物件。
-- **DO:** 必須使用非同步的 `beforeAll` 啟動獨立的測試伺服器實例，並強制在 `afterAll` 中優雅關閉 (graceful shutdown) 伺服器並釋放記憶體。
-- **DO:** API 狀態變更與資料重置必須在 `beforeEach` 中處理，或透過記憶體 Mock (In-memory Mock) 替換，確保測試案例之間絕對獨立。
-- **DO NOT:** 本專案無資料庫，**嚴禁** 在測試期間真實寫入或覆蓋原始的 JSON 檔案。
+- **DO:** 嚴禁直接全域執行 `bun test`。必須透過 `package.json` 的 `test:api` 腳本執行。該腳本需包含 `--preload ./tests/setup.ts` 以確保第一時間載入 `.env.test`，防止無聲 Fallback 污染 Stage 數據。
+- **DO:** 必須在測試檔案中引入伺服器配置（例如 `startApiTestServer`），並使用非同步的 `beforeAll` 啟動獨立的測試伺服器實例與隔離的 fixture。
+- **DO:** 強制在 `afterAll` 中呼叫伺服器回傳的 `stop()` 函式以優雅關閉 (graceful shutdown) 伺服器、刪除暫存資料夾並釋放記憶體。確保測試環境中絕對不包含 `window` 或 `document` 等前端物件。
+- **DO:** 本專案無資料庫，**嚴禁** 在測試期間真實寫入或覆蓋原始的 JSON 檔案。API 狀態變更與資料重置，必須在 `beforeEach` 中呼叫伺服器 context 提供的重置鉤子（如 `resetDepositFixtures()`）處理，以確保測試案例絕對獨立。
 
 #### When writing Frontend Tests (Bun + Happy DOM)
-- **DO:** 必須透過 `--preload ./tests/web.setup.ts` 來註冊 `@happy-dom/global-registrator`。嚴禁將此設定檔用於後端測試，以避免環境污染。
+<!-- - **DO:** 必須透過 `--preload ./tests/web-setup.ts` 來註冊 `@happy-dom/global-registrator`。嚴禁將此設定檔用於後端測試，以避免環境污染。 -->
+- **DO:** 必須透過 `test:web` 腳本（含 `--preload ./tests/web-setup.ts` 或是依官方建議設定 `bunfig.toml`）來統一註冊 `@happy-dom/global-registrator`。**嚴禁**將此設定用於後端測試以避免環境污染。
+- **DO:** 必須在前端測試檔案的頂部加上 `/// <reference lib="dom" />`，確保 TypeScript 能正確識別瀏覽器 API 的型別 [4, 11]。
+- **DO:** 使用 `@testing-library/react` 來渲染及驗證 React 元件 [4, 11]。
+
+
 - **DO:** 必須在前端測試檔案的頂部加上 `/// <reference lib="dom" />`，確保 TypeScript 能正確識別瀏覽器 API 的型別。
 - **DO:** 使用 `@testing-library/react` 來渲染及驗證 React 元件。
 - **DO:** 對於 UI 結構測試，使用 `.toMatchSnapshot()` 或 `.toMatchInlineSnapshot()` 將元件結構儲存成快照防範破壞。
@@ -82,7 +88,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **examine_api** (1207 symbols, 1862 relationships, 56 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **examine_api** (1256 symbols, 1913 relationships, 56 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 <!-- > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
