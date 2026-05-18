@@ -8,7 +8,6 @@ dist
 
 # code coverage
 coverage
-design-system/
 *.lcov
 
 # logs

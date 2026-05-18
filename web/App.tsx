@@ -1,10 +1,30 @@
-import { Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom';
+import { NavLink, Outlet, Route, Routes } from 'react-router-dom';
 import { DepositPage } from './pages/DepositPage';
 import { PayoutPage } from './pages/PayoutPage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
 
 const navBaseClassName =
   'inline-flex min-w-[118px] cursor-pointer items-center justify-center rounded-full border px-4 py-3 text-sm font-semibold transition duration-200';
+
+const optionCardClassName =
+  'group flex min-h-[120px] cursor-pointer flex-col justify-between rounded-2xl border border-white/15 bg-white/[0.04] p-5 transition duration-200 hover:border-[var(--color-primary)]/70 hover:bg-white/[0.08]';
+
+const HomePage = () => (
+  <section className="grid gap-4 sm:grid-cols-3" aria-label="Choose flow">
+    <NavLink to="/deposit" className={optionCardClassName}>
+      <h2 className="text-lg font-semibold text-[var(--color-text)]">Deposit</h2>
+      <p className="text-sm text-[color:var(--color-text-muted)]">Open deposit request builder.</p>
+    </NavLink>
+    <NavLink to="/payout" className={optionCardClassName}>
+      <h2 className="text-lg font-semibold text-[var(--color-text)]">Payout</h2>
+      <p className="text-sm text-[color:var(--color-text-muted)]">Open payout request builder.</p>
+    </NavLink>
+    <NavLink to="/subscription" className={optionCardClassName}>
+      <h2 className="text-lg font-semibold text-[var(--color-text)]">Subscription</h2>
+      <p className="text-sm text-[color:var(--color-text-muted)]">Open subscription request builder.</p>
+    </NavLink>
+  </section>
+);
 
 const AppShell = () => (
   <main className="mx-auto min-h-screen w-full max-w-[1440px] px-4 pb-16 pt-6 sm:px-6 lg:px-8">
@@ -84,7 +104,7 @@ export function App() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        <Route index element={<Navigate to="/deposit" replace />} />
+        <Route index element={<HomePage />} />
         <Route path="/deposit" element={<DepositPage />} />
         <Route path="/payout" element={<PayoutPage />} />
         <Route path="/subscription" element={<SubscriptionPage />} />

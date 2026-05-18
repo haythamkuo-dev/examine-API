@@ -4,6 +4,19 @@ import { MemoryRouter } from 'react-router-dom';
 import { App } from './App';
 
 describe('web app routing', () => {
+  test('renders homepage with three flow options', () => {
+    const html = renderToString(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain('Payment Test Workbench');
+    expect(html).toContain('Deposit');
+    expect(html).toContain('Payout');
+    expect(html).toContain('Subscription');
+  });
+
   test('renders the deposit workbench on the deposit route', () => {
     const html = renderToString(
       <MemoryRouter initialEntries={['/deposit']}>
