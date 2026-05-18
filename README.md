@@ -81,3 +81,16 @@ This repo includes `render.yaml` for backend deployment.
    - `INDIA_MERCHANT_API_TOKEN`
    - `BANGLADESH_MERCHANT_API_TOKEN`
    - and other required payout/deposit/subscription vars if your flow depends on them.
+
+## Deploy frontend to GitHub Pages
+
+1. Ensure your default branch is `master`.
+2. Push code with `.github/workflows/deploy-pages.yml`.
+3. In GitHub repository settings:
+   - Go to `Settings` → `Pages`.
+   - Set Source to `GitHub Actions`.
+4. Push to `master` (or manually run the workflow). The workflow builds with Vite and deploys `dist` to Pages.
+
+Notes:
+- `vite.config.ts` auto-detects GitHub Actions and sets the correct `base` path from `GITHUB_REPOSITORY`.
+- The workflow copies `dist/index.html` to `dist/404.html` for SPA route fallback.
