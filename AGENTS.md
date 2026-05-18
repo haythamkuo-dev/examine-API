@@ -83,7 +83,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **examine_api** (1218 symbols, 1805 relationships, 43 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **examine-API** (1226 symbols, 1813 relationships, 43 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 <!-- > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -106,10 +106,10 @@ This project is indexed by GitNexus as **examine_api** (1218 symbols, 1805 relat
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/examine_api/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/examine_api/clusters` | All functional areas |
-| `gitnexus://repo/examine_api/processes` | All execution flows |
-| `gitnexus://repo/examine_api/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/examine-API/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/examine-API/clusters` | All functional areas |
+| `gitnexus://repo/examine-API/processes` | All execution flows |
+| `gitnexus://repo/examine-API/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 
