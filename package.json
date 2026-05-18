@@ -12,7 +12,9 @@
   ],
   "scripts": {
     "build": "bun build index.ts --outdir dist --format esm --target node --minify",
+    "build:api": "bun build src/server/index.ts --outdir dist/server --format esm --target bun",
     "build:web": "vite build",
+    "start:api": "bun run dist/server/index.js",
     "prepublishOnly": "bun run build",
     "test": "bun test",
     "test:api": "bun test --preload ./tests/setup.ts ./src/server",

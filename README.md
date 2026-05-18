@@ -63,3 +63,21 @@ bun run build
 ```
 
 The published package exposes the `examine-api` bin and runs on a Node-compatible runtime.
+
+## Deploy backend to Render
+
+This repo includes `render.yaml` for backend deployment.
+
+1. Push this repo to GitHub.
+2. In Render, create a new Blueprint and select this repository.
+3. Render will use:
+   - `buildCommand`: install Bun + dependencies + build backend
+   - `startCommand`: run `dist/server/index.js`
+   - `healthCheckPath`: `/health`
+4. Set runtime env vars in Render Dashboard (from your `.env`):
+   - `API_BASE_URL`
+   - `MERCHANT_SIGN`
+   - `NORMAL_MERCHANT_API_TOKEN`
+   - `INDIA_MERCHANT_API_TOKEN`
+   - `BANGLADESH_MERCHANT_API_TOKEN`
+   - and other required payout/deposit/subscription vars if your flow depends on them.

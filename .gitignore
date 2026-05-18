@@ -8,6 +8,7 @@ dist
 
 # code coverage
 coverage
+design-system/
 *.lcov
 
 # logs
@@ -34,3 +35,4 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .DS_Store
 .gitnexus
 .codex
+
