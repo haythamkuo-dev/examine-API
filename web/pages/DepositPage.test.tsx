@@ -283,6 +283,8 @@ describe('DepositPage', () => {
     const view = render(<DepositPage />);
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByText('Request builder');
+    await view.findByLabelText('Currency code *');
 
     await act(async () => {
       fireEvent.change(view.getByLabelText('Currency code *'), {

@@ -61,11 +61,7 @@
 #### When writing Frontend Tests (Bun + Happy DOM)
 <!-- - **DO:** 必須透過 `--preload ./tests/web-setup.ts` 來註冊 `@happy-dom/global-registrator`。嚴禁將此設定檔用於後端測試，以避免環境污染。 -->
 - **DO:** 必須透過 `test:web` 腳本（含 `--preload ./tests/web-setup.ts` 或是依官方建議設定 `bunfig.toml`）來統一註冊 `@happy-dom/global-registrator`。**嚴禁**將此設定用於後端測試以避免環境污染。
-- **DO:** 必須在前端測試檔案的頂部加上 `/// <reference lib="dom" />`，確保 TypeScript 能正確識別瀏覽器 API 的型別 [4, 11]。
-- **DO:** 使用 `@testing-library/react` 來渲染及驗證 React 元件 [4, 11]。
-
-
-- **DO:** 必須在前端測試檔案的頂部加上 `/// <reference lib="dom" />`，確保 TypeScript 能正確識別瀏覽器 API 的型別。
+- **DO:** 必須在前端測試檔案的頂部加上 `/// <reference lib="dom" />`，確保 TypeScript 能正確識別瀏覽器 API 的型別
 - **DO:** 使用 `@testing-library/react` 來渲染及驗證 React 元件。
 - **DO:** 對於 UI 結構測試，使用 `.toMatchSnapshot()` 或 `.toMatchInlineSnapshot()` 將元件結構儲存成快照防範破壞。
 - **DO:** 搭配生命週期鉤子（如 `beforeEach`）重置 DOM 狀態，並確實呼叫測試庫提供的清理函式（例如 React Testing Library 的 `cleanup`），確保測試間不會互相污染。
@@ -87,7 +83,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **examine_api** (1256 symbols, 1913 relationships, 56 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **examine_api** (1285 symbols, 1952 relationships, 56 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 <!-- > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
