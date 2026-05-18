@@ -13,11 +13,31 @@
           "kind": "object",
           "label": "Collect payload",
           "fields": {
-            "country_code": { "kind": "text", "label": "Country code", "required": true },
-            "product_detail": { "kind": "textarea", "label": "Product detail", "required": true },
-            "product_name": { "kind": "text", "label": "Product name", "required": true },
-            "shopper_reference": { "kind": "text", "label": "Shopper reference", "required": true },
-            "origin": { "kind": "text", "label": "Origin", "required": true }
+            "country_code": {
+              "kind": "text",
+              "label": "Country code",
+              "required": true
+            },
+            "product_detail": {
+              "kind": "textarea",
+              "label": "Product detail",
+              "required": true
+            },
+            "product_name": {
+              "kind": "text",
+              "label": "Product name",
+              "required": true
+            },
+            "shopper_reference": {
+              "kind": "text",
+              "label": "Shopper reference",
+              "required": true
+            },
+            "origin": {
+              "kind": "text",
+              "label": "Origin",
+              "required": true
+            }
           }
         }
       }
