@@ -273,6 +273,24 @@ describe('DepositPage', () => {
     expect(view.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
   });
 
+  test('wraps request fields in a scroll container with a max height', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+    });
+
+    const view = render(<DepositPage />);
+
+    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByText('Request builder');
+
+    const fieldsContainer = view.getByTestId('request-builder-fields');
+
+    expect(fieldsContainer).toBeInTheDocument();
+    expect(fieldsContainer.className).toContain('overflow-y-auto');
+    expect(fieldsContainer.className).toContain('max-h-[32rem]');
+    expect(fieldsContainer.className).toContain('lg:max-h-[calc(100vh-18rem)]');
+  });
+
   test('submits the edited form to preview and renders the preview payload', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),

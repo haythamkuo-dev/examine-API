@@ -271,41 +271,46 @@ export function RequestBuilderCard(props: {
     <PageCard className="p-6">
       <SectionHeading title="Request builder" detail={loadingLabel} />
 
-      <label className={fieldLabelClassName}>
-        <span className={fieldLabelTextClassName}>Channel</span>
-        <select className={inputClassName} value={selectedChannel} onChange={(event) => onChannelChange(event.target.value)}>
-          {channels.map((channel) => (
-            <option key={channel} value={channel}>
-              {channel}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div
+        className="max-h-[32rem] min-w-0 overflow-y-auto pr-1 lg:max-h-[calc(100vh-18rem)]"
+        data-testid="request-builder-fields"
+      >
+        <label className={fieldLabelClassName}>
+          <span className={fieldLabelTextClassName}>Channel</span>
+          <select className={inputClassName} value={selectedChannel} onChange={(event) => onChannelChange(event.target.value)}>
+            {channels.map((channel) => (
+              <option key={channel} value={channel}>
+                {channel}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <div className="mt-4 border-t border-white/10 pt-5">
-        <SectionHeading title="Shared fields" />
-        <SchemaFields
-          schemaMap={commonSchema}
-          values={commonValues}
-          pathPrefix={[]}
-          onChange={(path, value) => {
-            const key = path[0];
-            if (typeof key === 'string' && typeof value === 'string') {
-              onCommonValueChange(key, value);
-            }
-          }}
-        />
-      </div>
+        <div className="mt-4 border-t border-white/10 pt-5">
+          <SectionHeading title="Shared fields" />
+          <SchemaFields
+            schemaMap={commonSchema}
+            values={commonValues}
+            pathPrefix={[]}
+            onChange={(path, value) => {
+              const key = path[0];
+              if (typeof key === 'string' && typeof value === 'string') {
+                onCommonValueChange(key, value);
+              }
+            }}
+          />
+        </div>
 
-      <div className="mt-4 border-t border-white/10 pt-5">
-        <SectionHeading title="Channel fields" />
-        <SchemaFields
-          schemaMap={channelSchema}
-          values={channelValues}
-          pathPrefix={[]}
-          onChange={onChannelValueChange}
-          visibilityResolver={visibilityResolver}
-        />
+        <div className="mt-4 border-t border-white/10 pt-5">
+          <SectionHeading title="Channel fields" />
+          <SchemaFields
+            schemaMap={channelSchema}
+            values={channelValues}
+            pathPrefix={[]}
+            onChange={onChannelValueChange}
+            visibilityResolver={visibilityResolver}
+          />
+        </div>
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">

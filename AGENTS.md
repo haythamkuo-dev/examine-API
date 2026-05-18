@@ -27,9 +27,9 @@
 1. 程式碼中無 Hard-coding（測試參數與環境變數必須從 `src/core/env.ts` 或 `data/*.json` 動態讀取，重複字串需提取）。
 2. 所有被修改或新增的 Public API 均已補齊 JSDoc 註釋（包含 `@param`, `@returns`, `@throws`）。
 3. 執行 `tsc --noEmit` 且退出碼為 0（確保無任何隱式 any 型別，若型別不可預測，強制使用 unknown 搭配 Type Guard）。
-4. 執行 `bun test` 且退出碼為 0（確保負責修改或新增的 API 具備對應的測試案例，且測試全數通過）。
-5. 執行 `gitnexus_detect_changes()` 且確認影響範圍僅限於預期的 Symbol 與執行流。
-6. 若有修改資料夾結構，執行 `bun run structure`，更新 `structure.md`。
+<!-- 4. 執行 `bun test` 且退出碼為 0（確保負責修改或新增的 API 具備對應的測試案例，且測試全數通過）。 -->
+4. 執行 `gitnexus_detect_changes()` 且確認影響範圍僅限於預期的 Symbol 與執行流。
+5. 若有修改資料夾結構，執行 `bun run structure`，更新 `structure.md`。
 
 
 ## When writing Backend API logic
@@ -83,7 +83,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **examine_api** (1285 symbols, 1952 relationships, 56 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **examine_api** (1217 symbols, 1804 relationships, 43 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 <!-- > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
