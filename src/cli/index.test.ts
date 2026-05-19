@@ -17,8 +17,7 @@ const env = getCliEnv({
   API_BASE_URL: 'https://example.test',
   MERCHANT_SIGN: 'sign-key',
   NORMAL_MERCHANT_API_TOKEN: 'default-token',
-  INDIA_MERCHANT_API_TOKEN: 'india-token',
-  BANGLADESH_MERCHANT_API_TOKEN: 'bangladesh-token',
+  INDIA_BANGLADESH_MERCHANT_API_TOKEN: 'india-bangladesh-token',
   CALLBACK_URL_DEPOSIT: 'https://merchant.example.com/deposit',
   CALLBACK_URL_SUBSCRIPTION: 'https://merchant.example.com/subscription',
   SUBSCRIPTION_PLAN: 'PLAN-001',
@@ -121,13 +120,13 @@ describe('request builders', () => {
   test('uses India token for inr_upi deposit requests', () => {
     const request = createDepositRequest(env, 'inr_upi', makeId);
 
-    expect(request.headers?.Authorization).toBe('ApiKey india-token');
+    expect(request.headers?.Authorization).toBe('ApiKey india-bangladesh-token');
   });
 
   test('uses Bangladesh token for bd_wallet payout requests', () => {
     const request = createPayoutRequest(env, 'bd_wallet', makeId);
 
-    expect(request.headers?.Authorization).toBe('ApiKey bangladesh-token');
+    expect(request.headers?.Authorization).toBe('ApiKey india-bangladesh-token');
   });
 
   test('builds subscription request with plan override', () => {

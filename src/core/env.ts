@@ -20,9 +20,9 @@ export type PayoutChannel = (typeof PAYOUT_CHANNELS)[number];
 export type SubscriptionChannel = (typeof SUBSCRIPTION_CHANNELS)[number];
 
 export enum MerchantTokenKey {
-  Normal = 'NORMAL_MERCHANT_API_TOKEN',
-  India = 'INDIA_MERCHANT_API_TOKEN',
-  Bangladesh = 'BANGLADESH_MERCHANT_API_TOKEN',
+  Normal = 'normal',
+  India = 'india',
+  Bangladesh = 'bangladesh',
 }
 
 export type CliEnv = {
@@ -118,8 +118,8 @@ export const getCliEnv = (env: NodeJS.ProcessEnv = process.env): CliEnv => ({
   },
   merchantTokens: {
     [MerchantTokenKey.Normal]: env.NORMAL_MERCHANT_API_TOKEN || '',
-    [MerchantTokenKey.India]: env.INDIA_MERCHANT_API_TOKEN || '',
-    [MerchantTokenKey.Bangladesh]: env.BANGLADESH_MERCHANT_API_TOKEN || '',
+    [MerchantTokenKey.India]: env.INDIA_BANGLADESH_MERCHANT_API_TOKEN || '',
+    [MerchantTokenKey.Bangladesh]: env.INDIA_BANGLADESH_MERCHANT_API_TOKEN || '',
   },
   payoutUrls: {
     co_bank: env.PAYOUT_URL_BANK || '/s2s/v1/payout/orders/co/bank-transfer',

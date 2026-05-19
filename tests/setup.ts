@@ -22,9 +22,7 @@ const loadTestEnvironment = (filePath: string): void => {
 
     const key = line.slice(0, separatorIndex).trim();
     const value = line.slice(separatorIndex + 1).trim().replace(/^['"]|['"]$/g, '');
-    if (!process.env[key]) {
-      process.env[key] = value;
-    }
+    process.env[key] = value;
   }
 };
 

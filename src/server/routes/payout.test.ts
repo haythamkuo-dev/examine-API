@@ -186,7 +186,7 @@ describe('payout API routes', () => {
     const body = (await response.json()) as Record<string, unknown>;
     expect(body.ok).toBe(true);
     expect(body.status).toBe(201);
-    expect(upstreamAuthorization).toBe('ApiKey bangladesh-token');
+    expect(upstreamAuthorization).toBe('ApiKey india-bangladesh-token');
     expect(upstreamBody).not.toBeNull();
     const upstreamPayoutInfo = ((upstreamBody as unknown) as Record<string, unknown>)['payout_info'] as
       | Record<string, unknown>

@@ -78,8 +78,7 @@ This repo includes `render.yaml` for backend deployment.
    - `API_BASE_URL`
    - `MERCHANT_SIGN`
    - `NORMAL_MERCHANT_API_TOKEN`
-   - `INDIA_MERCHANT_API_TOKEN`
-   - `BANGLADESH_MERCHANT_API_TOKEN`
+   - `INDIA_BANGLADESH_MERCHANT_API_TOKEN`
    - and other required payout/deposit/subscription vars if your flow depends on them.
 
 ## Deploy frontend to GitHub Pages
