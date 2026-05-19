@@ -2,7 +2,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from 'b
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { DEPOSIT_CHANNELS } from '../../core/env';
-import { startApiTestServer, type ApiTestServerContext } from '../../../tests/server-setup';
+import { targetEnvironmentHeaderName } from '../../core/targetEnvironment';
+import {
+  createTestCliEnvRegistry,
+  startApiTestServer,
+  type ApiTestServerContext,
+} from '../../../tests/server-setup';
 
 type DepositApiRequestBody = {
   channel: string;
@@ -47,7 +52,29 @@ describe('deposit API routes', () => {
     originalFetch(createRequestUrl(context.baseUrl, path), init);
 
   beforeAll(async () => {
-    context = await startApiTestServer();
+    const envRegistry = createTestCliEnvRegistry();
+
+    context = await startApiTestServer({
+      envRegistry: {
+        ...envRegistry,
+        product: {
+          ...envRegistry.product,
+          baseUrl: 'https://product.example.test',
+          tokens: {
+            ...envRegistry.product.tokens,
+            deposit: 'product-deposit-token',
+            payout: 'product-payout-token',
+            subscription: 'product-subscription-token',
+          },
+          merchantTokens: {
+            ...envRegistry.product.merchantTokens,
+            normal: 'product-deposit-token',
+            india: 'product-india-token',
+            bangladesh: 'product-india-token',
+          },
+        },
+      },
+    });
   });
 
   afterAll(async () => {
@@ -98,7 +125,10 @@ describe('deposit API routes', () => {
   test('POST /api/deposit/preview returns masked preview payload for valid deposit form', async () => {
     const response = await requestApi('/api/deposit/preview', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        [targetEnvironmentHeaderName]: 'local',
+      },
       body: JSON.stringify(createPreviewBody()),
     });
 
@@ -130,7 +160,10 @@ describe('deposit API routes', () => {
 
     const response = await requestApi('/api/deposit/create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        [targetEnvironmentHeaderName]: 'local',
+      },
       body: JSON.stringify(createPreviewBody()),
     });
 
@@ -142,6 +175,50 @@ describe('deposit API routes', () => {
     expect(upstreamAuthorization).toBe('ApiKey payout-token');
     expect(upstreamBody).not.toBeNull();
     expect(upstreamBody?.merchant_ref).toBe('TEST_DEPOSIT_ORDER_125_fixed-id');
+  });
+
+  test('POST /api/deposit/create switches to the product env when requested', async () => {
+    let upstreamUrl = '';
+    let upstreamAuthorization = '';
+
+    globalThis.fetch = mock(async (input, init) => {
+      upstreamUrl = String(input);
+      upstreamAuthorization = String((init?.headers as Record<string, string> | undefined)?.Authorization || '');
+
+      return new Response(JSON.stringify({ ok: true, intent_id: 'dep_prod_123' }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+
+    const response = await requestApi('/api/deposit/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        [targetEnvironmentHeaderName]: 'product',
+      },
+      body: JSON.stringify(createPreviewBody()),
+    });
+
+    expect(response.status).toBe(200);
+    expect(upstreamUrl).toBe('https://product.example.test/s2s/v1/intents/deposit');
+    expect(upstreamAuthorization).toBe('ApiKey product-deposit-token');
+  });
+
+  test('POST /api/deposit/create rejects unsupported target environments', async () => {
+    const response = await requestApi('/api/deposit/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        [targetEnvironmentHeaderName]: 'staging',
+      },
+      body: JSON.stringify(createPreviewBody()),
+    });
+
+    expect(response.status).toBe(400);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body.message).toBe('Unsupported target environment: staging');
   });
 
   test('PUT /api/deposit/defaults persists deposit defaults into the isolated fixture copy', async () => {

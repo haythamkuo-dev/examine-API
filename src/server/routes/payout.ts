@@ -1,4 +1,5 @@
 import type { PayoutServiceDeps } from '../../payout/service';
+import { resolveTargetEnvironment } from '../../core/targetEnvironment';
 import { createPayoutService, getRequestedPayoutChannel } from '../../payout/service';
 import { validatePayoutForm } from '../../payout/validation';
 import type { PayoutFormValues } from '../../payout/web';
@@ -39,19 +40,33 @@ export const handlePayoutRoute = async ({
   }
 
   if (request.method === 'POST' && url.pathname === '/api/payout/preview') {
+    let targetEnvironment;
+    try {
+      targetEnvironment = resolveTargetEnvironment(request.headers);
+    } catch (error) {
+      return badRequest(error instanceof Error ? error.message : String(error));
+    }
+
     const values = await readJson<PayoutFormValues>(request);
     const bundle = await service.getDefaults(values.channel);
     const error = validatePayoutForm(values, bundle.commonSchema, bundle.channelSchema);
     if (error) return badRequest(error);
-    return json(service.preview(values));
+    return json(service.preview(values, targetEnvironment));
   }
 
   if (request.method === 'POST' && url.pathname === '/api/payout/create') {
+    let targetEnvironment;
+    try {
+      targetEnvironment = resolveTargetEnvironment(request.headers);
+    } catch (error) {
+      return badRequest(error instanceof Error ? error.message : String(error));
+    }
+
     const values = await readJson<PayoutFormValues>(request);
     const bundle = await service.getDefaults(values.channel);
     const error = validatePayoutForm(values, bundle.commonSchema, bundle.channelSchema);
     if (error) return badRequest(error);
-    const result = await service.execute(values);
+    const result = await service.execute(values, targetEnvironment);
     return json(result, { status: result.ok ? 200 : result.status || 500 });
   }
 

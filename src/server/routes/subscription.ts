@@ -1,4 +1,5 @@
 import type { SubscriptionServiceDeps } from '../../subscription/service';
+import { resolveTargetEnvironment } from '../../core/targetEnvironment';
 import {
   createSubscriptionService,
   getRequestedSubscriptionChannel,
@@ -42,19 +43,33 @@ export const handleSubscriptionRoute = async ({
   }
 
   if (request.method === 'POST' && url.pathname === '/api/subscription/preview') {
+    let targetEnvironment;
+    try {
+      targetEnvironment = resolveTargetEnvironment(request.headers);
+    } catch (error) {
+      return badRequest(error instanceof Error ? error.message : String(error));
+    }
+
     const values = await readJson<SubscriptionFormValues>(request);
     const bundle = await service.getDefaults(values.channel);
     const error = validateSubscriptionForm(values, bundle.commonSchema, bundle.channelSchema);
     if (error) return badRequest(error);
-    return json(service.preview(values));
+    return json(service.preview(values, targetEnvironment));
   }
 
   if (request.method === 'POST' && url.pathname === '/api/subscription/create') {
+    let targetEnvironment;
+    try {
+      targetEnvironment = resolveTargetEnvironment(request.headers);
+    } catch (error) {
+      return badRequest(error instanceof Error ? error.message : String(error));
+    }
+
     const values = await readJson<SubscriptionFormValues>(request);
     const bundle = await service.getDefaults(values.channel);
     const error = validateSubscriptionForm(values, bundle.commonSchema, bundle.channelSchema);
     if (error) return badRequest(error);
-    const result = await service.execute(values);
+    const result = await service.execute(values, targetEnvironment);
     return json(result, { status: result.ok ? 200 : result.status || 500 });
   }
 

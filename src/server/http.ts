@@ -1,7 +1,9 @@
+import { targetEnvironmentHeaderName } from '../core/targetEnvironment';
+
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': `Content-Type,${targetEnvironmentHeaderName}`,
 };
 
 export const json = (body: unknown, init: ResponseInit = {}) =>

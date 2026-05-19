@@ -17,10 +17,10 @@ import {
 } from './pageChrome';
 import {
   buildApiLogContext,
+  buildOperatorHeaders,
   buildFailureResult,
   fetchJson,
   getNumericStatus,
-  jsonHeaders,
   loadingLabels,
   type ApiResultView,
   updatePathValue,
@@ -66,7 +66,9 @@ export function DepositPage() {
 
     try {
       const query = channel ? `?channel=${encodeURIComponent(channel)}` : '';
-      const response = await fetchJson<DepositDefaultsResponse>(`/api/deposit/defaults${query}`);
+      const response = await fetchJson<DepositDefaultsResponse>(`/api/deposit/defaults${query}`, {
+        headers: buildOperatorHeaders(theme.mode),
+      });
 
       startTransition(() => {
         applyBundle(response);
@@ -116,7 +118,7 @@ export function DepositPage() {
     try {
       const response = await fetchJson<DepositPreviewResponse>('/api/deposit/preview', {
         method: 'POST',
-        headers: jsonHeaders,
+        headers: buildOperatorHeaders(theme.mode),
         body: JSON.stringify(form),
       });
       setPreview(response);
@@ -149,7 +151,7 @@ export function DepositPage() {
     try {
       const response = await fetchJson<DepositCreateResponse>('/api/deposit/create', {
         method: 'POST',
-        headers: jsonHeaders,
+        headers: buildOperatorHeaders(theme.mode),
         body: JSON.stringify(form),
       });
       setApiResult({
@@ -182,7 +184,7 @@ export function DepositPage() {
         `/api/deposit/defaults?channel=${encodeURIComponent(form.channel)}`,
         {
           method: 'PUT',
-          headers: jsonHeaders,
+          headers: buildOperatorHeaders(theme.mode),
           body: JSON.stringify(form),
         },
       );

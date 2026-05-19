@@ -76,9 +76,12 @@ This repo includes `render.yaml` for backend deployment.
    - `healthCheckPath`: `/health`
 4. Set runtime env vars in Render Dashboard (from your `.env`):
    - `API_BASE_URL`
+   - `API_PROD_BASE_URL`
    - `MERCHANT_SIGN`
    - `NORMAL_MERCHANT_API_TOKEN`
    - `INDIA_BANGLADESH_MERCHANT_API_TOKEN`
+   - `PROD_MERCHANT_API_TOKEN`
+   - `PROD_MERCHANT_API_TOKEN_INDIA_BANGLADESH`
    - and other required payout/deposit/subscription vars if your flow depends on them.
 
 ## Deploy frontend to GitHub Pages
@@ -94,3 +97,4 @@ Notes:
 - `vite.config.ts` auto-detects GitHub Actions and sets the correct `base` path from `GITHUB_REPOSITORY`.
 - The workflow copies `dist/index.html` to `dist/404.html` for SPA route fallback.
 - GitHub Pages build injects `VITE_API_BASE_URL=https://examine-api.onrender.com`, so production frontend requests are sent to Render instead of relative `/api`.
+- The web operator now sends `X-Target-Environment: local | product` to the backend proxy so the server can switch between local and product upstream credentials per request.

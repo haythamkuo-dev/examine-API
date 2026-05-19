@@ -1,10 +1,17 @@
 import { createRunner, type CommandRequest, type CommandResult, type HttpClient, type Logger } from '../runner';
 
-export type PresetBackedService<Channel, FormValues, DefaultsResponse, PreviewResponse, CreateResponse> = {
+export type PresetBackedService<
+  Channel,
+  FormValues,
+  DefaultsResponse,
+  PreviewResponse,
+  CreateResponse,
+  ExecutionContext = void,
+> = {
   getDefaults: (channel: Channel) => Promise<DefaultsResponse>;
   saveDefaults: (channel: Channel, values: FormValues) => Promise<DefaultsResponse & { ok: true }>;
-  preview: (values: FormValues) => PreviewResponse;
-  execute: (values: FormValues) => Promise<CreateResponse>;
+  preview: (values: FormValues, context: ExecutionContext) => PreviewResponse;
+  execute: (values: FormValues, context: ExecutionContext) => Promise<CreateResponse>;
 };
 
 export type CreatePresetBackedServiceOptions<
@@ -14,12 +21,13 @@ export type CreatePresetBackedServiceOptions<
   DefaultsResponse,
   PreviewResponse,
   CreateResponse,
+  ExecutionContext = void,
 > = {
   loadPresets: () => Promise<Presets>;
   toDefaultsResponse: (channel: Channel, presets: Presets) => DefaultsResponse;
   updatePreset: (channel: Channel, values: FormValues) => Promise<Presets>;
-  buildPreviewResponse: (values: FormValues) => PreviewResponse;
-  buildRequestFromForm: (values: FormValues) => CommandRequest;
+  buildPreviewResponse: (values: FormValues, context: ExecutionContext) => PreviewResponse;
+  buildRequestFromForm: (values: FormValues, context: ExecutionContext) => CommandRequest;
   buildCreateResponse: (result: CommandResult) => CreateResponse;
   logger: Logger;
   makeId: (prefix: string) => string;
@@ -41,6 +49,7 @@ export const createPresetBackedService = <
   DefaultsResponse,
   PreviewResponse,
   CreateResponse,
+  ExecutionContext = void,
 >(
   options: CreatePresetBackedServiceOptions<
     Channel,
@@ -48,9 +57,17 @@ export const createPresetBackedService = <
     Presets,
     DefaultsResponse,
     PreviewResponse,
-    CreateResponse
+    CreateResponse,
+    ExecutionContext
   >,
-): PresetBackedService<Channel, FormValues, DefaultsResponse, PreviewResponse, CreateResponse> => {
+): PresetBackedService<
+  Channel,
+  FormValues,
+  DefaultsResponse,
+  PreviewResponse,
+  CreateResponse,
+  ExecutionContext
+> => {
   const runner = createRunner({
     httpClient: options.httpClient || fetch,
     logger: options.logger,
@@ -75,10 +92,11 @@ export const createPresetBackedService = <
     };
   };
 
-  const preview = (values: FormValues): PreviewResponse => options.buildPreviewResponse(values);
+  const preview = (values: FormValues, context: ExecutionContext): PreviewResponse =>
+    options.buildPreviewResponse(values, context);
 
-  const execute = async (values: FormValues): Promise<CreateResponse> => {
-    const request = options.buildRequestFromForm(values);
+  const execute = async (values: FormValues, context: ExecutionContext): Promise<CreateResponse> => {
+    const request = options.buildRequestFromForm(values, context);
     const result = await runner.run(request);
     return options.buildCreateResponse(result);
   };

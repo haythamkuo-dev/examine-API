@@ -1,7 +1,11 @@
 .
 ├── .env
 ├── .env.example
+├── .env.production
 ├── .env.test
+├── .github
+│   └── workflows
+│       └── deploy-pages.yml
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── README.md
@@ -46,7 +50,8 @@
 │   │   ├── createPresetBackedService.ts
 │   │   ├── env.ts
 │   │   ├── formValidation.ts
-│   │   └── output.ts
+│   │   ├── output.ts
+│   │   └── targetEnvironment.ts
 │   ├── deposit
 │   │   ├── failureHint.ts
 │   │   ├── presets.ts
@@ -107,7 +112,11 @@
     │   ├── PayoutPage.tsx
     │   ├── SubscriptionPage.test.tsx
     │   ├── SubscriptionPage.tsx
-    │   └── pageChrome.tsx
+    │   ├── operatorShared.test.ts
+    │   ├── operatorShared.ts
+    │   ├── pageChrome.tsx
+    │   ├── requestBuilder.test.tsx
+    │   └── requestBuilder.tsx
     └── styles.css
 
-21 directories, 90 files
+23 directories, 97 files

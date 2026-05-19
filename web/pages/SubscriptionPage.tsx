@@ -16,10 +16,10 @@ import {
 } from './pageChrome';
 import {
   buildApiLogContext,
+  buildOperatorHeaders,
   buildFailureResult,
   fetchJson,
   getNumericStatus,
-  jsonHeaders,
   loadingLabels,
   resolveApiUrl,
   type ApiResultView,
@@ -121,7 +121,12 @@ export function SubscriptionPage() {
 
     try {
       const query = channel ? `?channel=${encodeURIComponent(channel)}` : '';
-      const response = await fetchJson<SubscriptionDefaultsResponse>(`/api/subscription/defaults${query}`);
+      const response = await fetchJson<SubscriptionDefaultsResponse>(
+        `/api/subscription/defaults${query}`,
+        {
+          headers: buildOperatorHeaders(theme.mode),
+        },
+      );
 
       startTransition(() => {
         applyBundle(response);
@@ -171,7 +176,7 @@ export function SubscriptionPage() {
     try {
       const response = await fetchJson<SubscriptionPreviewResponse>('/api/subscription/preview', {
         method: 'POST',
-        headers: jsonHeaders,
+        headers: buildOperatorHeaders(theme.mode),
         body: JSON.stringify(form),
       });
       setPreview(response);
@@ -204,7 +209,7 @@ export function SubscriptionPage() {
     try {
       const response = await fetch(resolveApiUrl('/api/subscription/create'), {
         method: 'POST',
-        headers: jsonHeaders,
+        headers: buildOperatorHeaders(theme.mode),
         body: JSON.stringify(form),
       });
       setApiResult({
@@ -228,7 +233,7 @@ export function SubscriptionPage() {
         `/api/subscription/defaults?channel=${encodeURIComponent(form.channel)}`,
         {
           method: 'PUT',
-          headers: jsonHeaders,
+          headers: buildOperatorHeaders(theme.mode),
           body: JSON.stringify(form),
         },
       );

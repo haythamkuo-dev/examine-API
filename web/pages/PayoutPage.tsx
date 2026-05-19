@@ -17,8 +17,8 @@ import {
 } from './pageChrome';
 import {
   buildApiLogContext,
+  buildOperatorHeaders,
   fetchJson,
-  jsonHeaders,
   loadingLabels,
   resolveApiUrl,
   type ApiResultView,
@@ -212,7 +212,9 @@ export function PayoutPage() {
 
     try {
       const query = channel ? `?channel=${encodeURIComponent(channel)}` : '';
-      const response = await fetchJson<PayoutDefaultsResponse>(`/api/payout/defaults${query}`);
+      const response = await fetchJson<PayoutDefaultsResponse>(`/api/payout/defaults${query}`, {
+        headers: buildOperatorHeaders(theme.mode),
+      });
 
       startTransition(() => {
         applyBundle(response);
@@ -264,7 +266,7 @@ export function PayoutPage() {
     try {
       const response = await fetchJson<PayoutPreviewResponse>('/api/payout/preview', {
         method: 'POST',
-        headers: jsonHeaders,
+        headers: buildOperatorHeaders(theme.mode),
         body: JSON.stringify(form),
       });
       setPreview(response);
@@ -286,7 +288,7 @@ export function PayoutPage() {
     try {
       const response = await fetch(resolveApiUrl('/api/payout/create'), {
         method: 'POST',
-        headers: jsonHeaders,
+        headers: buildOperatorHeaders(theme.mode),
         body: JSON.stringify(form),
       });
       setResult({
@@ -324,7 +326,7 @@ export function PayoutPage() {
         `/api/payout/defaults?channel=${encodeURIComponent(form.channel)}`,
         {
           method: 'PUT',
-          headers: jsonHeaders,
+          headers: buildOperatorHeaders(theme.mode),
           body: JSON.stringify(form),
         },
       );

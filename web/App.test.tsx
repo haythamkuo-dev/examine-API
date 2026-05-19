@@ -60,7 +60,7 @@ describe('web app routing', () => {
     expect(html).toContain('Subscription');
   });
 
-  test('toggles the application color theme and persists it separately from environment mode', () => {
+  test('toggles the application color theme and persists it separately from target environment', () => {
     const view = render(
       <MemoryRouter initialEntries={['/']}>
         <App />
@@ -72,5 +72,17 @@ describe('web app routing', () => {
     expect(localStorage.getItem('examine-api.color-theme')).toBe('light');
     expect(localStorage.getItem('examine-api.operator-environment')).toBe('local');
     expect(view.getByText('Theme: 日間')).toBeInTheDocument();
+  });
+
+  test('toggles the operator target environment and persists the product target', () => {
+    const view = render(
+      <MemoryRouter initialEntries={['/deposit']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(view.getAllByRole('button', { name: '產品' })[0]!);
+
+    expect(localStorage.getItem('examine-api.operator-environment')).toBe('product');
   });
 });

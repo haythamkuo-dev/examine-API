@@ -1,6 +1,11 @@
 import crypto from 'crypto';
 import { resolve } from 'path';
-import { getCliEnv, type CliEnv } from '../core/env';
+import {
+  getCliEnvForTarget,
+  getCliEnvRegistry,
+  type CliEnv,
+  type CliEnvRegistry,
+} from '../core/env';
 import { corsHeaders, json, notFound } from './http';
 import { handleDepositRoute } from './routes/deposit';
 import { handlePayoutRoute } from './routes/payout';
@@ -13,7 +18,7 @@ const DEFAULT_SUBSCRIPTION_PRESET_DIR_PATH = resolve(process.cwd(), 'data/subscr
 const defaultMakeId = (prefix: string): string => `${prefix}${crypto.randomUUID()}`;
 
 export type ApiServerOptions = {
-  env: CliEnv;
+  envRegistry: CliEnvRegistry;
   depositPresetDirPath: string;
   payoutPresetDirPath: string;
   subscriptionPresetDirPath: string;
@@ -26,7 +31,7 @@ export type ApiServerOptions = {
  * Creates the Bun HTTP server for deposit, payout, and subscription APIs.
  *
  * @param options Runtime dependencies for environment, preset storage, and logging.
- * @param options.env Application environment used by route services.
+ * @param options.envRegistry Application environments keyed by target environment.
  * @param options.depositPresetDirPath Directory containing deposit preset fixtures.
  * @param options.payoutPresetDirPath Directory containing payout preset fixtures.
  * @param options.subscriptionPresetDirPath Directory containing subscription preset fixtures.
@@ -54,7 +59,7 @@ export const createApiServer = (options: ApiServerOptions) =>
         request,
         url,
         deps: {
-          env: options.env,
+          getEnvForTarget: (target) => getCliEnvForTarget(options.envRegistry, target),
           presetDirPath: options.depositPresetDirPath,
           makeId: options.makeId,
           logger: options.logger,
@@ -68,7 +73,7 @@ export const createApiServer = (options: ApiServerOptions) =>
         request,
         url,
         deps: {
-          env: options.env,
+          getEnvForTarget: (target) => getCliEnvForTarget(options.envRegistry, target),
           presetDirPath: options.payoutPresetDirPath,
           makeId: options.makeId,
           logger: options.logger,
@@ -82,7 +87,7 @@ export const createApiServer = (options: ApiServerOptions) =>
         request,
         url,
         deps: {
-          env: options.env,
+          getEnvForTarget: (target) => getCliEnvForTarget(options.envRegistry, target),
           presetDirPath: options.subscriptionPresetDirPath,
           makeId: options.makeId,
           logger: options.logger,
@@ -98,7 +103,7 @@ export const createApiServer = (options: ApiServerOptions) =>
 
 if (import.meta.main) {
   const server = createApiServer({
-    env: getCliEnv(),
+    envRegistry: getCliEnvRegistry(),
     depositPresetDirPath: DEFAULT_DEPOSIT_PRESET_DIR_PATH,
     payoutPresetDirPath: DEFAULT_PAYOUT_PRESET_DIR_PATH,
     subscriptionPresetDirPath: DEFAULT_SUBSCRIPTION_PRESET_DIR_PATH,

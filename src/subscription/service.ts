@@ -1,5 +1,6 @@
 import { SUBSCRIPTION_CHANNELS, type CliEnv, type SubscriptionChannel } from '../core/env';
 import { createPresetBackedService } from '../core/createPresetBackedService';
+import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
 import {
   buildSubscriptionCreateResponse,
@@ -16,7 +17,7 @@ import {
 } from './presets';
 
 export type SubscriptionServiceDeps = {
-  env: CliEnv;
+  getEnvForTarget: (target: TargetEnvironment) => CliEnv;
   presetDirPath: string;
   makeId: (prefix: string) => string;
   logger: Logger;
@@ -46,12 +47,13 @@ export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
     Awaited<ReturnType<typeof loadSubscriptionPresets>>,
     SubscriptionDefaultsResponse,
     ReturnType<typeof buildSubscriptionPreviewResponse>,
-    SubscriptionCreateResponse
+    SubscriptionCreateResponse,
+    TargetEnvironment
   >({
     loadPresets: () =>
       loadSubscriptionPresets({
         dirPath: deps.presetDirPath,
-        env: deps.env,
+        env: deps.getEnvForTarget('local'),
         makeId: deps.makeId,
       }),
     toDefaultsResponse: toSubscriptionDefaultsResponse,
@@ -60,11 +62,13 @@ export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
         dirPath: deps.presetDirPath,
         channel,
         values,
-        env: deps.env,
+        env: deps.getEnvForTarget('local'),
         makeId: deps.makeId,
       }),
-    buildPreviewResponse: (values) => buildSubscriptionPreviewResponse(deps.env, values, deps.makeId),
-    buildRequestFromForm: (values) => buildSubscriptionRequestFromForm(deps.env, values, deps.makeId),
+    buildPreviewResponse: (values, target) =>
+      buildSubscriptionPreviewResponse(deps.getEnvForTarget(target), values, deps.makeId),
+    buildRequestFromForm: (values, target) =>
+      buildSubscriptionRequestFromForm(deps.getEnvForTarget(target), values, deps.makeId),
     buildCreateResponse: buildSubscriptionCreateResponse,
     logger: deps.logger,
     makeId: deps.makeId,

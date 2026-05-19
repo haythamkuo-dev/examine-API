@@ -1,4 +1,5 @@
 import type { DepositServiceDeps } from '../../deposit/service';
+import { resolveTargetEnvironment } from '../../core/targetEnvironment';
 import { createDepositService, getRequestedDepositChannel } from '../../deposit/service';
 import { validateDepositForm } from '../../deposit/validation';
 import type { DepositFormValues } from '../../deposit/web';
@@ -29,19 +30,33 @@ export const handleDepositRoute = async ({
   }
 
   if (request.method === 'POST' && url.pathname === '/api/deposit/preview') {
+    let targetEnvironment;
+    try {
+      targetEnvironment = resolveTargetEnvironment(request.headers);
+    } catch (error) {
+      return badRequest(error instanceof Error ? error.message : String(error));
+    }
+
     const values = await readJson<DepositFormValues>(request);
     const bundle = await service.getDefaults(values.channel);
     const error = validateDepositForm(values, bundle.commonSchema, bundle.channelSchema);
     if (error) return badRequest(error);
-    return json(service.preview(values));
+    return json(service.preview(values, targetEnvironment));
   }
 
   if (request.method === 'POST' && url.pathname === '/api/deposit/create') {
+    let targetEnvironment;
+    try {
+      targetEnvironment = resolveTargetEnvironment(request.headers);
+    } catch (error) {
+      return badRequest(error instanceof Error ? error.message : String(error));
+    }
+
     const values = await readJson<DepositFormValues>(request);
     const bundle = await service.getDefaults(values.channel);
     const error = validateDepositForm(values, bundle.commonSchema, bundle.channelSchema);
     if (error) return badRequest(error);
-    const result = await service.execute(values);
+    const result = await service.execute(values, targetEnvironment);
     return json(result, { status: result.ok ? 200 : result.status || 500 });
   }
 

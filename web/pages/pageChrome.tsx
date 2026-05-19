@@ -27,7 +27,7 @@ const operatorEnvironmentStorageKey = 'examine-api.operator-environment';
 const darkThemeLabel = '夜間';
 const lightThemeLabel = '日間';
 const localEnvironmentToggleLabel = '本地';
-const onlineEnvironmentToggleLabel = '線上';
+const productEnvironmentToggleLabel = '產品';
 
 export type ColorThemeMode = 'dark' | 'light';
 
@@ -178,7 +178,7 @@ const readStoredEnvironmentMode = (): OperatorEnvironmentMode => {
   }
 
   const storedMode = window.localStorage.getItem(operatorEnvironmentStorageKey);
-  return storedMode === 'online' ? 'online' : 'local';
+  return storedMode === 'product' ? 'product' : 'local';
 };
 
 const SegmentedToggle = <T extends string>({
@@ -227,6 +227,11 @@ const LogContextSummary = ({ logContext }: { logContext: ApiLogContext }) => (
     <p className="break-all">{logContext.requestUrl}</p>
   </div>
 );
+
+const environmentModeOptions = [
+  ['local', localEnvironmentToggleLabel],
+  ['product', productEnvironmentToggleLabel],
+] as const;
 
 /**
  * Provides the shared frontend color theme and operator environment state.
@@ -348,10 +353,10 @@ export function ColorThemeToggle({
 }
 
 /**
- * Renders the shared local/online environment toggle used by operator pages.
+ * Renders the shared local/product environment toggle used by operator pages.
  *
  * @param props Current operator environment plus setter callback.
- * @returns Segmented control for switching between local and online targets.
+ * @returns Segmented control for switching between local and product targets.
  */
 export function EnvironmentModeToggle({
   mode,
@@ -365,10 +370,7 @@ export function EnvironmentModeToggle({
       ariaLabel="Operator environment mode"
       mode={mode}
       onChange={onChange}
-      options={[
-        ['local', localEnvironmentToggleLabel],
-        ['online', onlineEnvironmentToggleLabel],
-      ]}
+      options={environmentModeOptions}
     />
   );
 }

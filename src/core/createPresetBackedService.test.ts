@@ -22,8 +22,8 @@ describe('createPresetBackedService', () => {
       loadPresets,
       toDefaultsResponse,
       updatePreset,
-      buildPreviewResponse: (values: { id: string }) => ({ preview: values.id }),
-      buildRequestFromForm: (values: { id: string }) => ({
+      buildPreviewResponse: (values: { id: string }, target: string) => ({ preview: `${values.id}:${target}` }),
+      buildRequestFromForm: (values: { id: string }, _target: string) => ({
         name: 'create-test',
         method: 'POST',
         url: 'https://example.test/requests',
@@ -80,8 +80,8 @@ describe('createPresetBackedService', () => {
       loadPresets: async () => ({ version: 'loaded' }),
       toDefaultsResponse: (channel: string, presets: { version: string }) => ({ channel, version: presets.version }),
       updatePreset: async (_channel: string, values: { id: string }) => ({ version: values.id }),
-      buildPreviewResponse: (values: { id: string }) => ({ preview: values.id }),
-      buildRequestFromForm: (values: { id: string }) => ({
+      buildPreviewResponse: (values: { id: string }, target: string) => ({ preview: `${values.id}:${target}` }),
+      buildRequestFromForm: (values: { id: string }, _target: string) => ({
         name: 'create-test',
         method: 'POST',
         url: 'https://example.test/requests',
@@ -94,8 +94,8 @@ describe('createPresetBackedService', () => {
       httpClient,
     });
 
-    expect(service.preview({ id: 'preview-me' })).toEqual({ preview: 'preview-me' });
-    await expect(service.execute({ id: 'preview-me' })).resolves.toEqual({
+    expect(service.preview({ id: 'preview-me' }, 'local')).toEqual({ preview: 'preview-me:local' });
+    await expect(service.execute({ id: 'preview-me' }, 'product')).resolves.toEqual({
       ok: true,
       status: 202,
       code: 'accepted',

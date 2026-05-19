@@ -1,5 +1,6 @@
 import { PAYOUT_CHANNELS, type CliEnv, type PayoutChannel } from '../core/env';
 import { createPresetBackedService } from '../core/createPresetBackedService';
+import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
 import {
   buildPayoutCreateResponse,
@@ -12,7 +13,7 @@ import {
 import { loadPayoutPresets, toPayoutDefaultsResponse, updatePayoutPreset } from './presets';
 
 export type PayoutServiceDeps = {
-  env: CliEnv;
+  getEnvForTarget: (target: TargetEnvironment) => CliEnv;
   presetDirPath: string;
   makeId: (prefix: string) => string;
   logger: Logger;
@@ -42,7 +43,8 @@ export const createPayoutService = (deps: PayoutServiceDeps) => {
     Awaited<ReturnType<typeof loadPayoutPresets>>,
     PayoutDefaultsResponse,
     ReturnType<typeof buildPayoutPreviewResponse>,
-    PayoutCreateResponse
+    PayoutCreateResponse,
+    TargetEnvironment
   >({
     loadPresets: () =>
       loadPayoutPresets({
@@ -57,8 +59,10 @@ export const createPayoutService = (deps: PayoutServiceDeps) => {
         values,
         makeId: deps.makeId,
       }),
-    buildPreviewResponse: (values) => buildPayoutPreviewResponse(deps.env, values, deps.makeId),
-    buildRequestFromForm: (values) => buildPayoutRequestFromForm(deps.env, values, deps.makeId),
+    buildPreviewResponse: (values, target) =>
+      buildPayoutPreviewResponse(deps.getEnvForTarget(target), values, deps.makeId),
+    buildRequestFromForm: (values, target) =>
+      buildPayoutRequestFromForm(deps.getEnvForTarget(target), values, deps.makeId),
     buildCreateResponse: buildPayoutCreateResponse,
     logger: deps.logger,
     makeId: deps.makeId,

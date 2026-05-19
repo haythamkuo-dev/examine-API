@@ -408,21 +408,21 @@ describe('DepositPage', () => {
     expect(firstView.getByText('環境: 本地')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(firstView.getByRole('button', { name: '線上' }));
+      fireEvent.click(firstView.getByRole('button', { name: '產品' }));
     });
 
     await waitFor(() => {
-      expect(firstView.getByText('環境: 線上')).toBeInTheDocument();
+      expect(firstView.getByText('環境: 產品')).toBeInTheDocument();
     });
 
-    expect(localStorage.getItem('examine-api.operator-environment')).toBe('online');
+    expect(localStorage.getItem('examine-api.operator-environment')).toBe('product');
 
     firstView.unmount();
 
     const secondView = renderDepositPage();
 
     await secondView.findByRole('heading', { name: 'Deposit Operator Console' });
-    expect(secondView.getByText('環境: 線上')).toBeInTheDocument();
+    expect(secondView.getByText('環境: 產品')).toBeInTheDocument();
   });
 
   test('saves defaults and applies the returned bundle', async () => {

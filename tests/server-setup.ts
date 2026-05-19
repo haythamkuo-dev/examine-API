@@ -2,7 +2,7 @@ import { cp, mkdtemp, rm } from 'fs/promises';
 import net from 'net';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
-import { getCliEnv, type CliEnv } from '../src/core/env';
+import { getCliEnv, getCliEnvRegistry, type CliEnv, type CliEnvRegistry } from '../src/core/env';
 import { createApiServer } from '../src/server/index';
 
 const dataRootDirPath = resolve(process.cwd(), 'data');
@@ -36,7 +36,7 @@ const getAvailablePort = async (): Promise<number> =>
 
 export type ApiTestServerContext = {
   baseUrl: string;
-  env: CliEnv;
+  envRegistry: CliEnvRegistry;
   depositPresetDirPath: string;
   payoutPresetDirPath: string;
   subscriptionPresetDirPath: string;
@@ -47,9 +47,17 @@ export type ApiTestServerContext = {
 };
 
 /**
- * Creates the CLI environment used by backend API tests from `.env.test`.
+ * Creates the CLI environment registry used by backend API tests from `.env.test`.
  *
- * @returns A normalized environment object for route and server tests.
+ * @returns A normalized environment registry for route and server tests.
+ * @throws {TypeError} When the environment shape cannot be read from `process.env`.
+ */
+export const createTestCliEnvRegistry = (): CliEnvRegistry => getCliEnvRegistry(process.env);
+
+/**
+ * Creates the local CLI environment used by legacy backend tests from `.env.test`.
+ *
+ * @returns A normalized local environment object for route and service tests.
  * @throws {TypeError} When the environment shape cannot be read from `process.env`.
  */
 export const createTestCliEnv = (): CliEnv => getCliEnv(process.env);
@@ -60,12 +68,14 @@ export const createTestCliEnv = (): CliEnv => getCliEnv(process.env);
  * @returns A running server context with base URL, env, reset hook, and shutdown hook.
  * @throws {Error} When Bun fails to start the HTTP server or fixture copies cannot be created.
  */
-export const startApiTestServer = async (): Promise<ApiTestServerContext> => {
+export const startApiTestServer = async (options?: {
+  envRegistry?: CliEnvRegistry;
+}): Promise<ApiTestServerContext> => {
   const tempRootDirPath = await mkdtemp(join(tmpdir(), 'api-server-test-'));
   const depositPresetDirPath = join(tempRootDirPath, 'deposit');
   const payoutPresetDirPath = join(tempRootDirPath, 'payout');
   const subscriptionPresetDirPath = join(tempRootDirPath, 'subscription');
-  const env = createTestCliEnv();
+  const envRegistry = options?.envRegistry || createTestCliEnvRegistry();
 
   const resetDepositFixtures = async (): Promise<void> => {
     await rm(depositPresetDirPath, { recursive: true, force: true });
@@ -88,7 +98,7 @@ export const startApiTestServer = async (): Promise<ApiTestServerContext> => {
   const port = await getAvailablePort();
 
   const server = createApiServer({
-    env,
+    envRegistry,
     depositPresetDirPath,
     payoutPresetDirPath,
     subscriptionPresetDirPath,
@@ -99,7 +109,7 @@ export const startApiTestServer = async (): Promise<ApiTestServerContext> => {
 
   return {
     baseUrl: `http://127.0.0.1:${server.port}`,
-    env,
+    envRegistry,
     depositPresetDirPath,
     payoutPresetDirPath,
     subscriptionPresetDirPath,

@@ -1,5 +1,6 @@
 import { DEPOSIT_CHANNELS, type CliEnv, type DepositChannel } from '../core/env';
 import { createPresetBackedService } from '../core/createPresetBackedService';
+import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
 import {
   buildDepositCreateResponse,
@@ -12,7 +13,7 @@ import {
 import { loadDepositPresets, toDepositDefaultsResponse, updateDepositPreset } from './presets';
 
 export type DepositServiceDeps = {
-  env: CliEnv;
+  getEnvForTarget: (target: TargetEnvironment) => CliEnv;
   presetDirPath: string;
   makeId: (prefix: string) => string;
   logger: Logger;
@@ -42,12 +43,13 @@ export const createDepositService = (deps: DepositServiceDeps) => {
     Awaited<ReturnType<typeof loadDepositPresets>>,
     DepositDefaultsResponse,
     ReturnType<typeof buildDepositPreviewResponse>,
-    DepositCreateResponse
+    DepositCreateResponse,
+    TargetEnvironment
   >({
     loadPresets: () =>
       loadDepositPresets({
         dirPath: deps.presetDirPath,
-        env: deps.env,
+        env: deps.getEnvForTarget('local'),
         makeId: deps.makeId,
       }),
     toDefaultsResponse: toDepositDefaultsResponse,
@@ -56,11 +58,13 @@ export const createDepositService = (deps: DepositServiceDeps) => {
         dirPath: deps.presetDirPath,
         channel,
         values,
-        env: deps.env,
+        env: deps.getEnvForTarget('local'),
         makeId: deps.makeId,
       }),
-    buildPreviewResponse: (values) => buildDepositPreviewResponse(deps.env, values, deps.makeId),
-    buildRequestFromForm: (values) => buildDepositRequestFromForm(deps.env, values, deps.makeId),
+    buildPreviewResponse: (values, target) =>
+      buildDepositPreviewResponse(deps.getEnvForTarget(target), values, deps.makeId),
+    buildRequestFromForm: (values, target) =>
+      buildDepositRequestFromForm(deps.getEnvForTarget(target), values, deps.makeId),
     buildCreateResponse: buildDepositCreateResponse,
     logger: deps.logger,
     makeId: deps.makeId,

@@ -1,8 +1,14 @@
+import {
+  defaultTargetEnvironment,
+  targetEnvironmentHeaderName,
+  type TargetEnvironment,
+} from '../../src/core/targetEnvironment';
+
 const jsonContentTypeHeader = 'Content-Type';
 const jsonContentTypeValue = 'application/json';
 const unknownContentTypeLabel = 'unknown';
 const localEnvironmentLabel = '本地';
-const onlineEnvironmentLabel = '線上';
+const productEnvironmentLabel = '產品';
 const localTargetLabel = '本地代理';
 const remoteTargetLabel = '線上 API';
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() || '';
@@ -14,7 +20,7 @@ const apiBaseUrl =
 
 export const jsonHeaders = { [jsonContentTypeHeader]: jsonContentTypeValue };
 
-export type OperatorEnvironmentMode = 'local' | 'online';
+export type OperatorEnvironmentMode = TargetEnvironment;
 
 export const loadingLabels = {
   defaults: 'Loading defaults',
@@ -26,7 +32,7 @@ export const loadingLabels = {
 export type ApiAction = 'preview' | 'create' | 'save';
 
 export type ApiLogContext = {
-  environmentLabel: typeof localEnvironmentLabel | typeof onlineEnvironmentLabel;
+  environmentLabel: typeof localEnvironmentLabel | typeof productEnvironmentLabel;
   requestUrl: string;
   targetLabel: typeof localTargetLabel | typeof remoteTargetLabel;
 };
@@ -45,12 +51,31 @@ export type ApiResultView = {
  * Returns the localized environment label for the active operator theme mode.
  *
  * @param mode Operator environment selected in the frontend UI.
- * @returns `本地` for local mode or `線上` for online mode.
+ * @returns `本地` for local mode or `產品` for product mode.
  */
 export const getOperatorEnvironmentLabel = (
   mode: OperatorEnvironmentMode,
 ): ApiLogContext['environmentLabel'] =>
-  mode === 'online' ? onlineEnvironmentLabel : localEnvironmentLabel;
+  mode === 'product' ? productEnvironmentLabel : localEnvironmentLabel;
+
+/**
+ * Merges standard JSON and target-environment headers for operator requests.
+ *
+ * @param targetEnvironment Operator environment selected in the frontend UI.
+ * @param headers Optional request headers to merge with the operator metadata.
+ * @returns Headers object carrying both JSON and target-environment metadata.
+ */
+export const buildOperatorHeaders = (
+  targetEnvironment: OperatorEnvironmentMode,
+  headers?: HeadersInit,
+): Headers => {
+  const mergedHeaders = new Headers(headers);
+
+  mergedHeaders.set(jsonContentTypeHeader, jsonContentTypeValue);
+  mergedHeaders.set(targetEnvironmentHeaderName, targetEnvironment);
+
+  return mergedHeaders;
+};
 
 /**
  * Represents a structured API request failure from the operator pages.
@@ -128,8 +153,14 @@ export const buildApiLogContext = (
  * @throws {ApiRequestError} When the response is non-OK, empty, non-JSON, or malformed.
  */
 export const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
+  const targetEnvironment = init?.headers instanceof Headers
+    ? init.headers.get(targetEnvironmentHeaderName) || defaultTargetEnvironment
+    : defaultTargetEnvironment;
   const requestUrl = resolveApiUrl(url);
-  const response = await fetch(requestUrl, init);
+  const response = await fetch(requestUrl, {
+    ...init,
+    headers: buildOperatorHeaders(targetEnvironment, init?.headers),
+  });
   const rawBody = await response.text();
   const contentType = response.headers.get('content-type') || '';
 
