@@ -1,7 +1,15 @@
-import { describe, expect, test } from 'bun:test';
+/// <reference lib="dom" />
+
+import '../tests/web-setup';
+import { beforeEach, describe, expect, test } from 'bun:test';
+import { fireEvent, render } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { App } from './App';
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 describe('web app routing', () => {
   test('renders homepage with three flow options', () => {
@@ -50,5 +58,19 @@ describe('web app routing', () => {
     expect(html).toContain('Payment Test Workbench');
     expect(html).toContain('Subscription Operator Console');
     expect(html).toContain('Subscription');
+  });
+
+  test('toggles the application color theme and persists it separately from environment mode', () => {
+    const view = render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(view.getByRole('button', { name: '日間' }));
+
+    expect(localStorage.getItem('examine-api.color-theme')).toBe('light');
+    expect(localStorage.getItem('examine-api.operator-environment')).toBe('local');
+    expect(view.getByText('Theme: 日間')).toBeInTheDocument();
   });
 });

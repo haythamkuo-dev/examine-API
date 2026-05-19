@@ -7,8 +7,16 @@ import type {
   DepositFormValues,
   DepositPreviewResponse,
 } from '../../src/deposit/web';
-import { JsonPanel, LoadingHero, PageHero, ResultPanel } from './pageChrome';
 import {
+  JsonPanel,
+  LoadingHero,
+  OperatorThemeFrame,
+  PageHero,
+  ResultPanel,
+  useOperatorTheme,
+} from './pageChrome';
+import {
+  buildApiLogContext,
   buildFailureResult,
   fetchJson,
   getNumericStatus,
@@ -30,6 +38,7 @@ const resultEmptyState = 'Send a request to capture the raw response, status cod
  * @returns The deposit test workbench page.
  */
 export function DepositPage() {
+  const theme = useOperatorTheme();
   const [form, setForm] = useState<DepositFormValues | null>(null);
   const [commonSchema, setCommonSchema] = useState<DepositFieldMap>({});
   const [channelSchema, setChannelSchema] = useState<DepositFieldMap>({});
@@ -38,6 +47,9 @@ export function DepositPage() {
   const [apiResult, setApiResult] = useState<ApiResultView | null>(null);
   const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'save' | null>('defaults');
   const [error, setError] = useState<string | null>(null);
+  const defaultsLogContext = buildApiLogContext('/api/deposit/defaults', theme.mode);
+  const previewLogContext = buildApiLogContext('/api/deposit/preview', theme.mode);
+  const createLogContext = buildApiLogContext('/api/deposit/create', theme.mode);
 
   const applyBundle = (response: DepositDefaultsResponse | DepositDefaultsSavedResponse) => {
     setChannels(response.availableChannels);
@@ -113,6 +125,7 @@ export function DepositPage() {
         action: 'preview',
         status: getNumericStatus(response),
         message: 'Preview completed.',
+        logContext: previewLogContext,
         raw: {
           ok: true,
           action: 'preview',
@@ -122,7 +135,7 @@ export function DepositPage() {
       });
     } catch (caught) {
       setPreview(null);
-      setApiResult(buildFailureResult('preview', caught));
+      setApiResult(buildFailureResult('preview', caught, previewLogContext));
     } finally {
       setLoading(null);
     }
@@ -144,6 +157,7 @@ export function DepositPage() {
         action: 'create',
         status: getNumericStatus(response),
         message: 'Request sent successfully.',
+        logContext: createLogContext,
         raw: {
           ok: true,
           action: 'create',
@@ -152,7 +166,7 @@ export function DepositPage() {
         },
       });
     } catch (caught) {
-      setApiResult(buildFailureResult('create', caught));
+      setApiResult(buildFailureResult('create', caught, createLogContext));
     } finally {
       setLoading(null);
     }
@@ -178,6 +192,7 @@ export function DepositPage() {
         action: 'save',
         status: getNumericStatus(response),
         message: `Saved defaults for ${response.channel}.`,
+        logContext: defaultsLogContext,
         raw: {
           ok: true,
           action: 'save',
@@ -186,7 +201,7 @@ export function DepositPage() {
         },
       });
     } catch (caught) {
-      setApiResult(buildFailureResult('save', caught));
+      setApiResult(buildFailureResult('save', caught, defaultsLogContext));
     } finally {
       setLoading(null);
     }
@@ -194,22 +209,32 @@ export function DepositPage() {
 
   if (!form) {
     return (
-      <LoadingHero
-        eyebrow={moduleName}
-        title={pageTitle}
-        message={loading === 'defaults' ? 'Loading server-side defaults for the selected channel.' : error || 'Unable to load defaults.'}
-      />
+      <OperatorThemeFrame>
+        <LoadingHero
+          eyebrow={moduleName}
+          title={pageTitle}
+          message={loading === 'defaults' ? 'Loading server-side defaults for the selected channel.' : error || 'Unable to load defaults.'}
+          environmentMode={theme.mode}
+          onEnvironmentChange={theme.setMode}
+          environmentLabel={theme.environmentLabel}
+          targetLabel={defaultsLogContext.targetLabel}
+        />
+      </OperatorThemeFrame>
     );
   }
 
   return (
-    <>
+    <OperatorThemeFrame>
       <PageHero
         eyebrow={moduleName}
         title={pageTitle}
-        description="Edit shared request fields, switch channel-specific payload sections, preview the signed request, and run the test through the local Bun proxy."
+        description="Edit shared request fields, switch channel-specific payload sections, preview the signed request, and run the test through the active API target."
         scopeLabel="Deposit"
         statusLabel={loading ? loadingLabels[loading] : 'Ready to test'}
+        environmentMode={theme.mode}
+        onEnvironmentChange={theme.setMode}
+        environmentLabel={theme.environmentLabel}
+        targetLabel={createLogContext.targetLabel}
       />
 
       <section className="grid gap-6 lg:grid-cols-[minmax(320px,460px)_minmax(0,1fr)]">
@@ -239,7 +264,7 @@ export function DepositPage() {
         </form>
 
         <section className="grid min-w-0 content-start gap-6">
-          <JsonPanel title="Request preview" body={preview} emptyState={previewEmptyState} />
+          <JsonPanel title="Request preview" body={preview} emptyState={previewEmptyState} logContext={previewLogContext} />
           <ResultPanel
             statusLabel={apiResult ? `${apiResult.action.toUpperCase()}${apiResult.status !== null ? ` Status ${apiResult.status}` : ''}` : null}
             message={apiResult?.message ?? null}
@@ -247,9 +272,10 @@ export function DepositPage() {
             ok={apiResult?.ok}
             raw={apiResult?.raw}
             emptyState={resultEmptyState}
+            logContext={apiResult?.logContext ?? createLogContext}
           />
         </section>
       </section>
-    </>
+    </OperatorThemeFrame>
   );
 }

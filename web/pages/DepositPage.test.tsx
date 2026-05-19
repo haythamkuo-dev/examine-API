@@ -14,6 +14,7 @@ import type {
   DepositPreviewResponse,
 } from '../../src/deposit/web';
 import { DepositPage } from './DepositPage';
+import { AppThemeProvider } from './pageChrome';
 
 const defaultsEndpoint = '/api/deposit/defaults';
 const previewEndpoint = '/api/deposit/preview';
@@ -219,6 +220,13 @@ const textResponse = (body: string, init?: ResponseInit): Response =>
 const fetchRecords: FetchRequestRecord[] = [];
 let routeHandlers = new Map<string, MockRouteHandler>();
 
+const renderDepositPage = () =>
+  render(
+    <AppThemeProvider>
+      <DepositPage />
+    </AppThemeProvider>,
+  );
+
 const setRouteHandlers = (handlers: Record<string, MockRouteHandler>): void => {
   routeHandlers = new Map(Object.entries(handlers));
 };
@@ -234,6 +242,7 @@ const readPostedForm = (body: BodyInit | null | undefined): DepositFormValues | 
 beforeEach(() => {
   fetchRecords.length = 0;
   routeHandlers = new Map();
+  localStorage.clear();
 
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -261,7 +270,7 @@ describe('DepositPage', () => {
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
     });
 
-    const view = render(<DepositPage />);
+    const view = renderDepositPage();
 
     expect(view.getByText('Loading server-side defaults for the selected channel.')).toBeInTheDocument();
 
@@ -278,7 +287,7 @@ describe('DepositPage', () => {
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
     });
 
-    const view = render(<DepositPage />);
+    const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
     await view.findByText('Request builder');
@@ -298,7 +307,7 @@ describe('DepositPage', () => {
         jsonResponse(createPreviewResponse(`MERCHANT-${primaryChannel}`)),
     });
 
-    const view = render(<DepositPage />);
+    const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
     await view.findByText('Request builder');
@@ -352,7 +361,7 @@ describe('DepositPage', () => {
         ),
     });
 
-    const view = render(<DepositPage />);
+    const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
 
@@ -375,7 +384,7 @@ describe('DepositPage', () => {
       'POST /api/deposit/create': async () => jsonResponse(createResponseBody),
     });
 
-    const view = render(<DepositPage />);
+    const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
     await act(async () => {
@@ -384,6 +393,36 @@ describe('DepositPage', () => {
 
     await view.findByText('Request sent successfully.');
     expect(view.getByText(/"requestName": "deposit:create:test"/)).toBeInTheDocument();
+    expect(view.getAllByText('模式 本地 · 目標 本地代理').length).toBeGreaterThan(0);
+    expect(view.getByText('/api/deposit/create')).toBeInTheDocument();
+  });
+
+  test('toggles the operator environment mode and persists the selected target', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+    });
+
+    const firstView = renderDepositPage();
+
+    await firstView.findByRole('heading', { name: 'Deposit Operator Console' });
+    expect(firstView.getByText('環境: 本地')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(firstView.getByRole('button', { name: '線上' }));
+    });
+
+    await waitFor(() => {
+      expect(firstView.getByText('環境: 線上')).toBeInTheDocument();
+    });
+
+    expect(localStorage.getItem('examine-api.operator-environment')).toBe('online');
+
+    firstView.unmount();
+
+    const secondView = renderDepositPage();
+
+    await secondView.findByRole('heading', { name: 'Deposit Operator Console' });
+    expect(secondView.getByText('環境: 線上')).toBeInTheDocument();
   });
 
   test('saves defaults and applies the returned bundle', async () => {
@@ -393,7 +432,7 @@ describe('DepositPage', () => {
         jsonResponse(createSavedDefaultsResponse(primaryChannel, 'PROD-SAVED')),
     });
 
-    const view = render(<DepositPage />);
+    const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
     await act(async () => {
@@ -410,7 +449,7 @@ describe('DepositPage', () => {
         textResponse('defaults unavailable', { status: 503, statusText: 'Service Unavailable' }),
     });
 
-    const view = render(<DepositPage />);
+    const view = renderDepositPage();
 
     await view.findByText('API 503 from /api/deposit/defaults: defaults unavailable');
     expect(view.queryByRole('heading', { name: 'Request builder' })).not.toBeInTheDocument();
@@ -426,7 +465,7 @@ describe('DepositPage', () => {
         }),
     });
 
-    const view = render(<DepositPage />);
+    const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
 

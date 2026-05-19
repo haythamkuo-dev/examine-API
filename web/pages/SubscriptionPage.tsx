@@ -6,8 +6,16 @@ import type {
   SubscriptionFormValues,
   SubscriptionPreviewResponse,
 } from '../../src/subscription/web';
-import { JsonPanel, LoadingHero, PageHero, ResultPanel } from './pageChrome';
 import {
+  JsonPanel,
+  LoadingHero,
+  OperatorThemeFrame,
+  PageHero,
+  ResultPanel,
+  useOperatorTheme,
+} from './pageChrome';
+import {
+  buildApiLogContext,
   buildFailureResult,
   fetchJson,
   getNumericStatus,
@@ -85,6 +93,7 @@ export const normalizeCreateResult = async (response: Response): Promise<ApiResu
  * @returns The subscription test workbench page.
  */
 export function SubscriptionPage() {
+  const theme = useOperatorTheme();
   const [form, setForm] = useState<SubscriptionFormValues | null>(null);
   const [commonSchema, setCommonSchema] = useState<SubscriptionFieldMap>({});
   const [channelSchema, setChannelSchema] = useState<SubscriptionFieldMap>({});
@@ -93,6 +102,9 @@ export function SubscriptionPage() {
   const [apiResult, setApiResult] = useState<ApiResultView | null>(null);
   const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'save' | null>('defaults');
   const [error, setError] = useState<string | null>(null);
+  const defaultsLogContext = buildApiLogContext('/api/subscription/defaults', theme.mode);
+  const previewLogContext = buildApiLogContext('/api/subscription/preview', theme.mode);
+  const createLogContext = buildApiLogContext('/api/subscription/create', theme.mode);
 
   const applyBundle = (response: SubscriptionDefaultsResponse | SubscriptionDefaultsSavedResponse) => {
     setChannels(response.availableChannels);
@@ -168,6 +180,7 @@ export function SubscriptionPage() {
         action: 'preview',
         status: getNumericStatus(response),
         message: 'Preview completed.',
+        logContext: previewLogContext,
         raw: {
           ok: true,
           action: 'preview',
@@ -177,7 +190,7 @@ export function SubscriptionPage() {
       });
     } catch (caught) {
       setPreview(null);
-      setApiResult(buildFailureResult('preview', caught));
+      setApiResult(buildFailureResult('preview', caught, previewLogContext));
     } finally {
       setLoading(null);
     }
@@ -194,9 +207,12 @@ export function SubscriptionPage() {
         headers: jsonHeaders,
         body: JSON.stringify(form),
       });
-      setApiResult(await normalizeCreateResult(response));
+      setApiResult({
+        ...(await normalizeCreateResult(response)),
+        logContext: createLogContext,
+      });
     } catch (caught) {
-      setApiResult(buildFailureResult('create', caught));
+      setApiResult(buildFailureResult('create', caught, createLogContext));
     } finally {
       setLoading(null);
     }
@@ -222,6 +238,7 @@ export function SubscriptionPage() {
         action: 'save',
         status: getNumericStatus(response),
         message: `Saved defaults for ${response.channel}.`,
+        logContext: defaultsLogContext,
         raw: {
           ok: true,
           action: 'save',
@@ -230,7 +247,7 @@ export function SubscriptionPage() {
         },
       });
     } catch (caught) {
-      setApiResult(buildFailureResult('save', caught));
+      setApiResult(buildFailureResult('save', caught, defaultsLogContext));
     } finally {
       setLoading(null);
     }
@@ -238,22 +255,32 @@ export function SubscriptionPage() {
 
   if (!form) {
     return (
-      <LoadingHero
-        eyebrow={moduleName}
-        title={pageTitle}
-        message={loading === 'defaults' ? 'Loading server-side defaults for the selected channel.' : error || 'Unable to load defaults.'}
-      />
+      <OperatorThemeFrame>
+        <LoadingHero
+          eyebrow={moduleName}
+          title={pageTitle}
+          message={loading === 'defaults' ? 'Loading server-side defaults for the selected channel.' : error || 'Unable to load defaults.'}
+          environmentMode={theme.mode}
+          onEnvironmentChange={theme.setMode}
+          environmentLabel={theme.environmentLabel}
+          targetLabel={defaultsLogContext.targetLabel}
+        />
+      </OperatorThemeFrame>
     );
   }
 
   return (
-    <>
+    <OperatorThemeFrame>
       <PageHero
         eyebrow={moduleName}
         title={pageTitle}
-        description="Edit shared subscription fields, review the signed payload preview, and run the test flow through the local Bun proxy."
+        description="Edit shared subscription fields, review the signed payload preview, and run the test flow through the active API target."
         scopeLabel="Subscription"
         statusLabel={loading ? loadingLabels[loading] : 'Ready to test'}
+        environmentMode={theme.mode}
+        onEnvironmentChange={theme.setMode}
+        environmentLabel={theme.environmentLabel}
+        targetLabel={createLogContext.targetLabel}
       />
 
       <section className="grid gap-6 lg:grid-cols-[minmax(320px,460px)_minmax(0,1fr)]">
@@ -283,7 +310,7 @@ export function SubscriptionPage() {
         </form>
 
         <section className="grid min-w-0 content-start gap-6">
-          <JsonPanel title="Request preview" body={preview} emptyState={previewEmptyState} />
+          <JsonPanel title="Request preview" body={preview} emptyState={previewEmptyState} logContext={previewLogContext} />
           <ResultPanel
             statusLabel={apiResult ? `${apiResult.action.toUpperCase()}${apiResult.status !== null ? ` Status ${apiResult.status}` : ''}` : null}
             message={apiResult?.message ?? null}
@@ -291,9 +318,10 @@ export function SubscriptionPage() {
             ok={apiResult?.ok}
             raw={apiResult?.raw}
             emptyState={resultEmptyState}
+            logContext={apiResult?.logContext ?? createLogContext}
           />
         </section>
       </section>
-    </>
+    </OperatorThemeFrame>
   );
 }

@@ -7,8 +7,16 @@ import type {
   PayoutFormValues,
   PayoutPreviewResponse,
 } from '../../src/payout/web';
-import { JsonPanel, LoadingHero, PageHero, ResultPanel } from './pageChrome';
 import {
+  JsonPanel,
+  LoadingHero,
+  OperatorThemeFrame,
+  PageHero,
+  ResultPanel,
+  useOperatorTheme,
+} from './pageChrome';
+import {
+  buildApiLogContext,
   fetchJson,
   jsonHeaders,
   loadingLabels,
@@ -174,6 +182,7 @@ export const shouldHidePayoutField = (
  * @returns The payout test workbench page.
  */
 export function PayoutPage() {
+  const theme = useOperatorTheme();
   const [form, setForm] = useState<PayoutFormValues | null>(null);
   const [commonSchema, setCommonSchema] = useState<PayoutFieldMap>({});
   const [channelSchema, setChannelSchema] = useState<PayoutFieldMap>({});
@@ -183,6 +192,9 @@ export function PayoutPage() {
   const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'save' | null>('defaults');
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const defaultsLogContext = buildApiLogContext('/api/payout/defaults', theme.mode);
+  const previewLogContext = buildApiLogContext('/api/payout/preview', theme.mode);
+  const createLogContext = buildApiLogContext('/api/payout/create', theme.mode);
 
   const applyBundle = (response: PayoutDefaultsResponse | PayoutDefaultsSavedResponse) => {
     setChannels(response.availableChannels);
@@ -277,13 +289,17 @@ export function PayoutPage() {
         headers: jsonHeaders,
         body: JSON.stringify(form),
       });
-      setResult(await normalizeCreateResult(response));
+      setResult({
+        ...(await normalizeCreateResult(response)),
+        logContext: createLogContext,
+      });
     } catch (caught) {
       setResult({
         ok: false,
         action: 'create',
         status: null,
         message: caught instanceof Error ? caught.message : String(caught),
+        logContext: createLogContext,
         raw: {
           ok: false,
           action: 'create',
@@ -323,22 +339,32 @@ export function PayoutPage() {
 
   if (!form) {
     return (
-      <LoadingHero
-        eyebrow={moduleName}
-        title={pageTitle}
-        message={loading === 'defaults' ? 'Loading server-side defaults for the selected channel.' : error || 'Unable to load defaults.'}
-      />
+      <OperatorThemeFrame>
+        <LoadingHero
+          eyebrow={moduleName}
+          title={pageTitle}
+          message={loading === 'defaults' ? 'Loading server-side defaults for the selected channel.' : error || 'Unable to load defaults.'}
+          environmentMode={theme.mode}
+          onEnvironmentChange={theme.setMode}
+          environmentLabel={theme.environmentLabel}
+          targetLabel={defaultsLogContext.targetLabel}
+        />
+      </OperatorThemeFrame>
     );
   }
 
   return (
-    <>
+    <OperatorThemeFrame>
       <PageHero
         eyebrow={moduleName}
         title={pageTitle}
-        description="Edit shared payout fields, switch channel-specific payload sections, preview the signed request, and run the test through the local Bun proxy."
+        description="Edit shared payout fields, switch channel-specific payload sections, preview the signed request, and run the test through the active API target."
         scopeLabel="Payout"
         statusLabel={loading ? loadingLabels[loading] : 'Ready to test'}
+        environmentMode={theme.mode}
+        onEnvironmentChange={theme.setMode}
+        environmentLabel={theme.environmentLabel}
+        targetLabel={createLogContext.targetLabel}
       />
 
       <section className="grid gap-6 lg:grid-cols-[minmax(320px,460px)_minmax(0,1fr)]">
@@ -368,14 +394,14 @@ export function PayoutPage() {
             footer={
               <>
                 {error ? <p className="text-sm text-[color:var(--color-text-muted)]">{error}</p> : null}
-                {saveMessage ? <p className="text-sm text-emerald-200">{saveMessage}</p> : null}
+                {saveMessage ? <p className="text-sm text-[var(--status-success-text)]">{saveMessage}</p> : null}
               </>
             }
           />
         </form>
 
         <section className="grid min-w-0 content-start gap-6">
-          <JsonPanel title="Request preview" body={preview} emptyState={previewEmptyState} />
+          <JsonPanel title="Request preview" body={preview} emptyState={previewEmptyState} logContext={previewLogContext} />
           <ResultPanel
             statusLabel={result?.status !== null && result?.status !== undefined ? `CREATE Status ${result.status}` : null}
             message={result?.message ?? null}
@@ -383,9 +409,10 @@ export function PayoutPage() {
             ok={result?.ok}
             raw={result?.raw}
             emptyState={resultEmptyState}
+            logContext={result?.logContext ?? createLogContext}
           />
         </section>
       </section>
-    </>
+    </OperatorThemeFrame>
   );
 }

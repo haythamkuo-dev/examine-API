@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { ActionButton, PageCard, SectionHeading } from './pageChrome';
 
-const fieldsetClassName = 'mb-4 rounded-[22px] border border-white/10 bg-white/[0.03] p-4';
+const fieldsetClassName =
+  'mb-4 rounded-[22px] border border-[var(--operator-card-soft-border)] bg-[var(--operator-card-soft-bg)] p-4';
 const fieldLabelClassName = 'mb-4 grid gap-2';
 const fieldLabelTextClassName =
   'text-[13px] font-medium tracking-[0.01em] text-[color:var(--color-text-muted)]';
 const inputClassName =
-  'w-full rounded-2xl border border-white/12 bg-white/5 px-4 py-3 text-[var(--color-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]';
+  'w-full rounded-2xl border border-[var(--operator-input-border)] bg-[var(--operator-input-bg)] px-4 py-3 text-[var(--color-text)] shadow-[var(--operator-input-shadow)] transition duration-200';
 const textareaClassName = `${inputClassName} min-h-24 resize-y`;
 const helperTextClassName = 'text-xs leading-5 text-[color:var(--color-text-muted)]/80';
 
@@ -160,7 +161,7 @@ export function SchemaFields(props: {
     if (schema.kind === 'boolean') {
       return (
         <label
-          className="mb-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"
+          className="mb-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-[var(--operator-card-soft-border)] bg-[var(--operator-card-soft-bg)] px-4 py-3"
           key={pathKey}
         >
           <input
@@ -286,7 +287,7 @@ export function RequestBuilderCard(props: {
           </select>
         </label>
 
-        <div className="mt-4 border-t border-white/10 pt-5">
+        <div className="mt-4 border-t border-[var(--operator-card-soft-border)] pt-5">
           <SectionHeading title="Shared fields" />
           <SchemaFields
             schemaMap={commonSchema}
@@ -301,7 +302,7 @@ export function RequestBuilderCard(props: {
           />
         </div>
 
-        <div className="mt-4 border-t border-white/10 pt-5">
+        <div className="mt-4 border-t border-[var(--operator-card-soft-border)] pt-5">
           <SectionHeading title="Channel fields" />
           <SchemaFields
             schemaMap={channelSchema}

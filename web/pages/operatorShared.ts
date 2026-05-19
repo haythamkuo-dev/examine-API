@@ -1,6 +1,10 @@
 const jsonContentTypeHeader = 'Content-Type';
 const jsonContentTypeValue = 'application/json';
 const unknownContentTypeLabel = 'unknown';
+const localEnvironmentLabel = '本地';
+const onlineEnvironmentLabel = '線上';
+const localTargetLabel = '本地代理';
+const remoteTargetLabel = '線上 API';
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() || '';
 const isLocalBrowserHost =
   typeof window !== 'undefined' &&
@@ -9,6 +13,8 @@ const apiBaseUrl =
   import.meta.env.DEV || isLocalBrowserHost ? '' : configuredApiBaseUrl;
 
 export const jsonHeaders = { [jsonContentTypeHeader]: jsonContentTypeValue };
+
+export type OperatorEnvironmentMode = 'local' | 'online';
 
 export const loadingLabels = {
   defaults: 'Loading defaults',
@@ -19,14 +25,32 @@ export const loadingLabels = {
 
 export type ApiAction = 'preview' | 'create' | 'save';
 
+export type ApiLogContext = {
+  environmentLabel: typeof localEnvironmentLabel | typeof onlineEnvironmentLabel;
+  requestUrl: string;
+  targetLabel: typeof localTargetLabel | typeof remoteTargetLabel;
+};
+
 export type ApiResultView = {
   ok: boolean;
   action: ApiAction;
   status: number | null;
   message: string;
   details?: string;
+  logContext?: ApiLogContext;
   raw: unknown;
 };
+
+/**
+ * Returns the localized environment label for the active operator theme mode.
+ *
+ * @param mode Operator environment selected in the frontend UI.
+ * @returns `本地` for local mode or `線上` for online mode.
+ */
+export const getOperatorEnvironmentLabel = (
+  mode: OperatorEnvironmentMode,
+): ApiLogContext['environmentLabel'] =>
+  mode === 'online' ? onlineEnvironmentLabel : localEnvironmentLabel;
 
 /**
  * Represents a structured API request failure from the operator pages.
@@ -72,6 +96,27 @@ export const resolveApiUrl = (path: string): string => {
   }
 
   return apiBaseUrl ? new URL(path, apiBaseUrl).toString() : path;
+};
+
+/**
+ * Builds the environment and target metadata shown alongside operator request logs.
+ *
+ * @param path Absolute API path starting with `/`.
+ * @param mode Operator environment selected in the frontend UI.
+ * @returns Display metadata describing the selected UI environment and resolved API target.
+ * @throws {Error} When the provided path is not rooted.
+ */
+export const buildApiLogContext = (
+  path: string,
+  mode: OperatorEnvironmentMode,
+): ApiLogContext => {
+  const requestUrl = resolveApiUrl(path);
+
+  return {
+    environmentLabel: getOperatorEnvironmentLabel(mode),
+    requestUrl,
+    targetLabel: requestUrl.startsWith('http') ? remoteTargetLabel : localTargetLabel,
+  };
 };
 
 /**
@@ -157,6 +202,7 @@ export const getNumericStatus = (value: unknown): number | null => {
 export const buildFailureResult = (
   action: ApiAction,
   caught: unknown,
+  logContext?: ApiLogContext,
 ): ApiResultView => {
   if (caught instanceof ApiRequestError) {
     return {
@@ -165,6 +211,7 @@ export const buildFailureResult = (
       status: caught.status,
       message: caught.message,
       details: caught.rawBody.trim() || undefined,
+      logContext,
       raw: {
         ok: false,
         action,
@@ -183,6 +230,7 @@ export const buildFailureResult = (
     action,
     status: null,
     message,
+    logContext,
     raw: {
       ok: false,
       action,

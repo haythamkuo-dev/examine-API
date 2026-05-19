@@ -12,6 +12,7 @@ import type {
   PayoutFormValues,
 } from '../../src/payout/web';
 import { normalizeCreateResult, PayoutPage, shouldHidePayoutField } from './PayoutPage';
+import { AppThemeProvider } from './pageChrome';
 
 const defaultsEndpoint = '/api/payout/defaults';
 const createEndpoint = '/api/payout/create';
@@ -148,6 +149,13 @@ const textResponse = (body: string, init?: ResponseInit): Response =>
 const fetchRecords: FetchRequestRecord[] = [];
 let routeHandlers = new Map<string, MockRouteHandler>();
 
+const renderPayoutPage = () =>
+  render(
+    <AppThemeProvider>
+      <PayoutPage />
+    </AppThemeProvider>,
+  );
+
 const setRouteHandler = (url: string, handler: MockRouteHandler) => {
   routeHandlers.set(url, handler);
 };
@@ -155,6 +163,7 @@ const setRouteHandler = (url: string, handler: MockRouteHandler) => {
 beforeEach(() => {
   fetchRecords.length = 0;
   routeHandlers = new Map<string, MockRouteHandler>();
+  localStorage.clear();
 
   setRouteHandler(defaultsEndpoint, () => jsonResponse(createDefaultsResponse(primaryChannel)));
 
@@ -271,7 +280,7 @@ describe('PayoutPage', () => {
       } satisfies PayoutCreateResponse),
     );
 
-    const view = render(<PayoutPage />);
+    const view = renderPayoutPage();
 
     await waitFor(() => {
       expect(view.getByRole('button', { name: 'Send request' })).toBeEnabled();
@@ -284,6 +293,7 @@ describe('PayoutPage', () => {
     await waitFor(() => {
       expect(view.getByText('Request sent successfully.')).toBeInTheDocument();
       expect(view.getByText('CREATE Status 200')).toBeInTheDocument();
+      expect(view.getAllByText('模式 本地 · 目標 本地代理').length).toBeGreaterThan(0);
     });
   });
 
@@ -295,7 +305,7 @@ describe('PayoutPage', () => {
       }),
     );
 
-    const view = render(<PayoutPage />);
+    const view = renderPayoutPage();
 
     await waitFor(() => {
       expect(view.getByRole('button', { name: 'Send request' })).toBeEnabled();
@@ -309,6 +319,7 @@ describe('PayoutPage', () => {
       expect(view.getByText('Bad Gateway')).toBeInTheDocument();
       expect(view.getByText('gateway failed')).toBeInTheDocument();
       expect(view.getByText('CREATE Status 502')).toBeInTheDocument();
+      expect(view.getAllByText('模式 本地 · 目標 本地代理').length).toBeGreaterThan(0);
     });
   });
 });
