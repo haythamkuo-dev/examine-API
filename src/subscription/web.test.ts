@@ -70,7 +70,7 @@ describe('subscription web helpers', () => {
     const payload = preview.request.payload as Record<string, unknown>;
 
     expect(preview.request.headers?.Authorization).toBe('ApiKey ****-token');
-    expect(payload.merchant_ref).toBe('TEST_SUB_217_fixed-id');
+    expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
     expect(payload.return_url).toBe('https://merchant.example.com/subscription/callback');
   });
 
@@ -92,7 +92,7 @@ describe('subscription web helpers', () => {
 
     expect(request.url).toBe('https://example.test/s2s/v1/subscriptions');
     expect(request.headers?.Authorization).toBe('ApiKey subscription-token');
-    expect(payload.merchant_ref).toBe('TEST_SUB_001_fixed-id');
+    expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
     expect(payload.return_url).toBe('https://merchant.example.com/subscription/return');
     expect(payload.sign).toBe(
       generateSign(

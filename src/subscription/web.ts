@@ -97,11 +97,7 @@ const sanitizeMerchantReference = (
   merchantReference: string,
   makeId: (prefix: string) => string,
 ): string => {
-  if (merchantReference.trim()) {
-    return createUniqueReference(merchantReference, makeId, 'TEST_ORDER_');
-  }
-
-  return makeId('TEST_ORDER_');
+  return createUniqueReference(merchantReference, makeId, 'TEST_ORDER_');
 };
 
 const buildPayloadFromForm = (

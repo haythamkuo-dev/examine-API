@@ -62,7 +62,7 @@ describe('payout web helpers', () => {
     const beneficiary = payoutInfo.beneficiary as Record<string, unknown>;
 
     expect(preview.request.headers?.Authorization).toBe('ApiKey ****-token');
-    expect(payload.merchant_reference).toBe('TEST_ORDER_217_fixed-id');
+    expect(payload.merchant_reference).toBe('TEST_ORDER_fixed-id');
     expect(beneficiary.identification).toBeUndefined();
     expect(beneficiary.date_of_birth).toBeUndefined();
     expect(beneficiary.contact_number).toBeUndefined();
@@ -82,7 +82,7 @@ describe('payout web helpers', () => {
     const request = buildPayoutRequestFromForm(env, values, makeId);
     expect(request.url).toBe('https://example.test/s2s/v1/payout/orders/in/imps');
     expect(request.headers?.Authorization).toBe('ApiKey india-bangladesh-token');
-    expect((request.payload as Record<string, unknown>).merchant_reference).toBe('TEST_IMPS_001_fixed-id');
+    expect((request.payload as Record<string, unknown>).merchant_reference).toBe('TEST_ORDER_fixed-id');
   });
 
   test('uses Bangladesh merchant token for bd_wallet payout requests', async () => {

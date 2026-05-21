@@ -52,7 +52,7 @@ describe('deposit web helpers', () => {
     const preview = buildDepositPreviewResponse(env, values, makeId);
 
     expect(preview.request.headers?.Authorization).toBe('ApiKey ****-token');
-    expect((preview.request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_217_fixed-id');
+    expect((preview.request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
   test('builds request from form values', () => {
@@ -67,7 +67,7 @@ describe('deposit web helpers', () => {
     const request = buildDepositRequestFromForm(env, values, makeId);
     expect(request.url).toBe('https://example.test/s2s/v1/intents/deposit');
     expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect((request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_217_fixed-id');
+    expect((request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
   test('uses channel-scoped merchant token for India deposit channels', () => {

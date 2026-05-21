@@ -33,12 +33,12 @@ export const generateSign = (
 };
 
 /**
- * Creates a merchant reference using a generated ID prefix.
+ * Creates a merchant reference using the unified generated ID prefix.
  *
- * @param value Optional user-provided prefix source.
+ * @param value Retained for compatibility with existing call sites.
  * @param makeId ID factory used to produce the final reference string.
- * @param fallbackPrefix Prefix used when `value` is empty or whitespace only.
- * @returns A generated reference derived from `value` or the fallback prefix.
+ * @param fallbackPrefix Prefix used for every generated reference.
+ * @returns A generated reference derived from the fallback prefix.
  * @throws Never throws explicitly.
  */
 export const createUniqueReference = (
@@ -46,13 +46,8 @@ export const createUniqueReference = (
   makeId: (prefix: string) => string,
   fallbackPrefix: string,
 ): string => {
-  const trimmed = value?.trim();
-
-  if (!trimmed) {
-    return makeId(fallbackPrefix);
-  }
-
-  return makeId(`${trimmed}_`);
+  void value;
+  return makeId(fallbackPrefix);
 };
 
 

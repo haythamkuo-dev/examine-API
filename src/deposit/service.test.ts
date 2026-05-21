@@ -7,6 +7,7 @@ import { createDepositService, getRequestedDepositChannel } from './service';
 
 const env = createTestCliEnv();
 const makeId = (prefix: string) => `${prefix}fixed-id`;
+const getEnvForTarget = () => env;
 const sourceDirPath = resolve(process.cwd(), 'data/deposit');
 
 let presetDirPath = sourceDirPath;
@@ -46,6 +47,7 @@ describe('deposit service', () => {
   test('loads deposit defaults from the fixture bundle', async () => {
     const service = createDepositService({
       env,
+      getEnvForTarget,
       presetDirPath,
       makeId,
       logger: console,
@@ -62,6 +64,7 @@ describe('deposit service', () => {
   test('builds a masked preview response from deposit form values', async () => {
     const service = createDepositService({
       env,
+      getEnvForTarget,
       presetDirPath,
       makeId,
       logger: console,
@@ -73,7 +76,7 @@ describe('deposit service', () => {
     const payload = preview.request.payload as Record<string, unknown>;
 
     expect(preview.request.headers?.Authorization).toBe('ApiKey ****-token');
-    expect(payload.merchant_ref).toBe('TEST_SERVICE_PREVIEW_001_fixed-id');
+    expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
   test('returns create results with deposit failure hints', async () => {
@@ -86,6 +89,7 @@ describe('deposit service', () => {
 
     const service = createDepositService({
       env,
+      getEnvForTarget,
       presetDirPath,
       makeId,
       logger: console,

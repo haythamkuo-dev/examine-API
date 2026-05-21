@@ -138,6 +138,7 @@ describe('payout API routes', () => {
 
     expect(request.url).toBe('https://example.test/s2s/v1/payout/orders/co/bank-transfer');
     expect(headers.Authorization).toBe('ApiKey ****-token');
+    expect(payload.merchant_reference).toBe('TEST_ORDER_fixed-id');
     expect(beneficiary.identification).toBeUndefined();
     expect(beneficiary.contact_number).toBeUndefined();
     expect(beneficiary.address).toBeUndefined();
@@ -192,6 +193,7 @@ describe('payout API routes', () => {
       | Record<string, unknown>
       | undefined;
     expect(upstreamPayoutInfo).toBeDefined();
+    expect((upstreamBody as Record<string, unknown>).merchant_reference).toBe('TEST_ORDER_fixed-id');
     expect(upstreamPayoutInfo?.remitter).toBeUndefined();
   });
 

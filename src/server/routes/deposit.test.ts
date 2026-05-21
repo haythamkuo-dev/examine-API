@@ -141,7 +141,7 @@ describe('deposit API routes', () => {
 
     expect(request.url).toBe('https://example.test/s2s/v1/intents/deposit');
     expect(headers.Authorization).toBe('ApiKey ****-token');
-    expect(payload.merchant_ref).toBe('TEST_DEPOSIT_ORDER_125_fixed-id');
+    expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
   test('POST /api/deposit/create proxies upstream status with deposit payload', async () => {
@@ -174,7 +174,7 @@ describe('deposit API routes', () => {
     expect(body.status).toBe(201);
     expect(upstreamAuthorization).toBe('ApiKey payout-token');
     expect(upstreamBody).not.toBeNull();
-    expect(upstreamBody?.merchant_ref).toBe('TEST_DEPOSIT_ORDER_125_fixed-id');
+    expect(upstreamBody?.merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
   test('POST /api/deposit/create switches to the product env when requested', async () => {
