@@ -18,6 +18,7 @@
     "noImplicitOverride": true
   },
   "include": [
+    "src/*",
     "src/server/**/*",
     "src/cli/**/*",
     "src/core/**/*",

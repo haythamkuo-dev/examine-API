@@ -6,6 +6,7 @@ import {
   type CliEnv,
   type CliEnvRegistry,
 } from '../core/env';
+import { keepAlive } from '../utils';
 import { corsHeaders, json, notFound } from './http';
 import { handleDepositRoute } from './routes/deposit';
 import { handlePayoutRoute } from './routes/payout';
@@ -111,5 +112,21 @@ if (import.meta.main) {
     makeId: defaultMakeId,
   });
 
-  console.log(`Deposit API server listening on http://localhost:${server.port}`);
+  const shouldEnableKeepAlive = process.env.NODE_ENV === 'production';
+  const stopKeepAlive = shouldEnableKeepAlive ? keepAlive() : null;
+  if (shouldEnableKeepAlive) {
+    console.log('keepAlive enabled for production server.');
+  } else {
+    console.log('keepAlive skipped because NODE_ENV is not production.');
+  }
+
+  const shutdown = () => {
+    stopKeepAlive?.();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+
+  console.log(`S2S API server listening on http://localhost:${server.port}`);
 }

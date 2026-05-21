@@ -39,3 +39,64 @@ export const createUniqueReference = (
 
   return makeId(`${trimmed}_`);
 };
+
+const KEEP_ALIVE_SERVER_URL = 'https://examine-api.onrender.com';
+const KEEP_ALIVE_INTERVAL_MS = 10 * 60 * 1000;
+const TAIPEI_UTC_OFFSET_HOURS = 8;
+const TAIPEI_WORKING_HOUR_START = 9;
+const TAIPEI_WORKING_HOUR_END = 21;
+
+type KeepAliveDeps = {
+  fetchFn: typeof fetch;
+  setIntervalFn: typeof setInterval;
+  clearIntervalFn: typeof clearInterval;
+  now: () => Date;
+  logger: Pick<Console, 'log' | 'error'>;
+};
+
+const defaultKeepAliveDeps: KeepAliveDeps = {
+  fetchFn: fetch,
+  setIntervalFn: setInterval,
+  clearIntervalFn: clearInterval,
+  now: () => new Date(),
+  logger: console,
+};
+
+const isTaipeiWorkingHours = (now: Date): boolean => {
+  const taipeiHour = (now.getUTCHours() + TAIPEI_UTC_OFFSET_HOURS) % 24;
+  return taipeiHour >= TAIPEI_WORKING_HOUR_START && taipeiHour < TAIPEI_WORKING_HOUR_END;
+};
+
+/**
+ * Starts a periodic keep-alive ping for the Render-hosted server.
+ *
+ * @param deps Internal runtime dependencies used for scheduling, pinging, and logging.
+ * @returns A stop function that clears the interval and prevents future pings.
+ * @throws Never throws explicitly. Ping failures are handled and logged.
+ */
+export const keepAlive = (deps: Partial<KeepAliveDeps> = {}): (() => void) => {
+  const resolvedDeps: KeepAliveDeps = {
+    ...defaultKeepAliveDeps,
+    ...deps,
+  };
+
+  const timer = resolvedDeps.setIntervalFn(async () => {
+    const now = resolvedDeps.now();
+    const currentTime = now.toLocaleTimeString();
+    if (!isTaipeiWorkingHours(now)) {
+      resolvedDeps.logger.log(`[${currentTime}] 深夜時段 (21:00-09:00)，暫停 Ping 以節省額度。`);
+      return;
+    }
+
+    try {
+      resolvedDeps.logger.log(`[${currentTime}] 在工作時間，發送 Ping...`);
+      await resolvedDeps.fetchFn(KEEP_ALIVE_SERVER_URL);
+    } catch (error) {
+      resolvedDeps.logger.error('Ping 失敗:', error);
+    }
+  }, KEEP_ALIVE_INTERVAL_MS);
+
+  return () => {
+    resolvedDeps.clearIntervalFn(timer);
+  };
+};
