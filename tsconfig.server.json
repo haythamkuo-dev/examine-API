@@ -18,13 +18,7 @@
     "noImplicitOverride": true
   },
   "include": [
-    "src/*",
-    "src/server/**/*",
-    "src/cli/**/*",
-    "src/core/**/*",
-    "src/deposit/**/*",
-    "src/payout/**/*",
-    "src/subscription/**/*",
+    "src/**/*",
     "tests/**/*"
   ]
 }

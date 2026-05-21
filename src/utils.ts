@@ -8,7 +8,13 @@ const getNestedValue = (obj: any, path: string): string => {
 };
 
 /**
- * 泛用的 SHA-256 簽章產生器
+ * Builds a SHA-256 signature string from selected payload fields.
+ *
+ * @param payload Source object containing the values to sign.
+ * @param signFields Dot-path field names used to build the canonical string.
+ * @param secretKey Secret key appended as the final `key` field.
+ * @returns A lowercase hex SHA-256 digest of the canonical signature string.
+ * @throws Never throws explicitly. Any failure comes from invalid payload access or crypto runtime errors.
  */
 export const generateSign = (
   payload: any,
@@ -26,6 +32,15 @@ export const generateSign = (
   return crypto.createHash('sha256').update(canonicalString).digest('hex');
 };
 
+/**
+ * Creates a merchant reference using a generated ID prefix.
+ *
+ * @param value Optional user-provided prefix source.
+ * @param makeId ID factory used to produce the final reference string.
+ * @param fallbackPrefix Prefix used when `value` is empty or whitespace only.
+ * @returns A generated reference derived from `value` or the fallback prefix.
+ * @throws Never throws explicitly.
+ */
 export const createUniqueReference = (
   value: string | undefined,
   makeId: (prefix: string) => string,
@@ -40,16 +55,48 @@ export const createUniqueReference = (
   return makeId(`${trimmed}_`);
 };
 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const KEEP_ALIVE_SERVER_URL = 'https://examine-api.onrender.com';
 const KEEP_ALIVE_INTERVAL_MS = 10 * 60 * 1000;
 const TAIPEI_UTC_OFFSET_HOURS = 8;
 const TAIPEI_WORKING_HOUR_START = 9;
 const TAIPEI_WORKING_HOUR_END = 21;
+/**
+ * Timer handle returned by `setInterval` in the current runtime.
+ *
+ * Keep the handle derived from the runtime API instead of hard-coding
+ * `NodeJS.Timeout`, `number`, or Bun-specific aliases. That makes the code
+ * portable across Bun, Node, and DOM-oriented test environments.
+ */
+type IntervalHandle = ReturnType<typeof setInterval>;
+
+
+/**
+ * Interval callback type derived from the active runtime's `setInterval`.
+ *
+ * Use the callback type produced by the runtime API rather than a manually
+ * declared `TimerHandler`/`Timeout` alias so tests remain compatible across
+ * Bun and DOM typings.
+ */
+type IntervalCallback = Parameters<typeof setInterval>[0];
+
+
+/**
+ * Minimal fetch signature used by `keepAlive`.
+ *
+ * Prefer the callable fetch shape instead of `typeof fetch` in tests, because
+ * Bun's built-in `fetch` carries additional static properties such as
+ * `preconnect` that lightweight stubs do not implement.
+ * to refine the definition of `RequestInfo attributes`
+ */
+type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 type KeepAliveDeps = {
-  fetchFn: typeof fetch;
-  setIntervalFn: typeof setInterval;
-  clearIntervalFn: typeof clearInterval;
+  fetchFn: FetchFn;
+  setIntervalFn: (handler: IntervalCallback, timeout?: number) => IntervalHandle;
+  clearIntervalFn: (intervalId: IntervalHandle) => void;
   now: () => Date;
   logger: Pick<Console, 'log' | 'error'>;
 };

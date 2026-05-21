@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { keepAlive } from './utils';
 
+type IntervalId = ReturnType<typeof setInterval>;
+type IntervalCallback = Parameters<typeof setInterval>[0];
+type TestSetIntervalFn = (handler: IntervalCallback, timeout?: number) => IntervalId;
+
 describe('keepAlive', () => {
   test('pings during Taipei working hours', async () => {
     let scheduled: (() => Promise<void>) | undefined;
@@ -11,10 +15,10 @@ describe('keepAlive', () => {
         fetchCalls.push(String(input));
         return new Response(null, { status: 200 });
       },
-      setIntervalFn: ((callback: TimerHandler) => {
+      setIntervalFn: ((callback: IntervalCallback) => {
         scheduled = callback as () => Promise<void>;
-        return 1 as unknown as Timer;
-      }) as typeof setInterval,
+        return 1 as unknown as IntervalId;
+      }) as TestSetIntervalFn,
       clearIntervalFn: () => undefined,
       now: () => new Date('2026-05-21T01:30:00.000Z'),
       logger: { log: () => undefined, error: () => undefined },
@@ -36,10 +40,10 @@ describe('keepAlive', () => {
         fetchCallCount += 1;
         return new Response(null, { status: 200 });
       },
-      setIntervalFn: ((callback: TimerHandler) => {
+      setIntervalFn: ((callback: IntervalCallback) => {
         scheduled = callback as () => Promise<void>;
-        return 1 as unknown as Timer;
-      }) as typeof setInterval,
+        return 1 as unknown as IntervalId;
+      }) as TestSetIntervalFn,
       clearIntervalFn: () => undefined,
       now: () => new Date('2026-05-21T15:30:00.000Z'),
       logger: { log: () => undefined, error: () => undefined },
@@ -52,15 +56,15 @@ describe('keepAlive', () => {
   });
 
   test('stop clears the scheduled interval', () => {
-    let timerId: Timer | undefined;
-    let clearedTimerId: Timer | undefined;
+    let timerId: IntervalId | undefined;
+    let clearedTimerId: IntervalId | undefined;
 
     const stop = keepAlive({
       fetchFn: async () => new Response(null, { status: 200 }),
-      setIntervalFn: ((_: TimerHandler) => {
-        timerId = 42 as unknown as Timer;
+      setIntervalFn: ((_: IntervalCallback) => {
+        timerId = 42 as unknown as IntervalId;
         return timerId;
-      }) as typeof setInterval,
+      }) as TestSetIntervalFn,
       clearIntervalFn: (id) => {
         clearedTimerId = id;
       },
