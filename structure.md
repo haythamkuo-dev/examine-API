@@ -3,9 +3,6 @@
 ├── .env.example
 ├── .env.production
 ├── .env.test
-├── .github
-│   └── workflows
-│       └── deploy-pages.yml
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── README.md
@@ -89,6 +86,7 @@
 │   │   ├── validation.ts
 │   │   ├── web.test.ts
 │   │   └── web.ts
+│   ├── utils.test.ts
 │   └── utils.ts
 ├── structure.md
 ├── tests
@@ -104,6 +102,10 @@
 └── web
     ├── App.test.tsx
     ├── App.tsx
+    ├── hooks
+    │   ├── useDepositOperator.ts
+    │   ├── usePayoutOperator.ts
+    │   └── useSubscriptionOperator.ts
     ├── main.tsx
     ├── pages
     │   ├── DepositPage.test.tsx
@@ -112,6 +114,7 @@
     │   ├── PayoutPage.tsx
     │   ├── SubscriptionPage.test.tsx
     │   ├── SubscriptionPage.tsx
+    │   ├── operatorApi.ts
     │   ├── operatorShared.test.ts
     │   ├── operatorShared.ts
     │   ├── pageChrome.tsx
@@ -119,4 +122,4 @@
     │   └── requestBuilder.tsx
     └── styles.css
 
-23 directories, 97 files
+22 directories, 101 files
