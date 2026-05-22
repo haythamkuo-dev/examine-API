@@ -4,11 +4,13 @@ import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
 import {
   buildSubscriptionCreateResponse,
+  buildSubscriptionMerchantRefResponse,
   buildSubscriptionPreviewResponse,
   buildSubscriptionRequestFromForm,
   type SubscriptionCreateResponse,
   type SubscriptionDefaultsResponse,
   type SubscriptionFormValues,
+  type SubscriptionMerchantRefResponse,
 } from './web';
 import {
   loadSubscriptionPresets,
@@ -41,7 +43,7 @@ export const getRequestedSubscriptionChannel = (url: URL): SubscriptionChannel =
  * @returns The subscription service API used by the HTTP layer.
  */
 export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
-  return createPresetBackedService<
+  const service = createPresetBackedService<
     SubscriptionChannel,
     SubscriptionFormValues,
     Awaited<ReturnType<typeof loadSubscriptionPresets>>,
@@ -73,4 +75,17 @@ export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
     logger: deps.logger,
     makeId: deps.makeId,
   });
+
+  /**
+   * Generates a fresh subscription merchant reference using the shared ID factory.
+   *
+   * @returns Response payload containing the generated merchant reference.
+   */
+  const generateMerchantRef = (): SubscriptionMerchantRefResponse =>
+    buildSubscriptionMerchantRefResponse(deps.makeId('TEST_ORDER_'));
+
+  return {
+    ...service,
+    generateMerchantRef,
+  };
 };

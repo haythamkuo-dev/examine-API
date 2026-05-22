@@ -89,6 +89,11 @@ export type DepositCreateResponse = CommandResult & {
   hint?: string;
 };
 
+export type DepositMerchantRefResponse = {
+  ok: true;
+  merchantRef: string;
+};
+
 export type DepositDefaultsSavedResponse = {
   ok: true;
   availableChannels: DepositChannel[];
@@ -177,4 +182,17 @@ export const buildDepositPreviewResponse = (
 export const buildDepositCreateResponse = (result: CommandResult): DepositCreateResponse => ({
   ...result,
   hint: getRequestFailureHint(result),
+});
+
+/**
+ * Builds the API response returned when the backend generates a new deposit merchant reference.
+ *
+ * @param merchantRef Newly generated merchant reference.
+ * @returns Response payload consumed by the operator UI.
+ */
+export const buildDepositMerchantRefResponse = (
+  merchantRef: string,
+): DepositMerchantRefResponse => ({
+  ok: true,
+  merchantRef,
 });

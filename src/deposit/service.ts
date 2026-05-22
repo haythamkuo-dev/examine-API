@@ -4,11 +4,13 @@ import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
 import {
   buildDepositCreateResponse,
+  buildDepositMerchantRefResponse,
   buildDepositPreviewResponse,
   buildDepositRequestFromForm,
   type DepositCreateResponse,
   type DepositDefaultsResponse,
   type DepositFormValues,
+  type DepositMerchantRefResponse,
 } from './web';
 import { loadDepositPresets, toDepositDefaultsResponse, updateDepositPreset } from './presets';
 
@@ -37,7 +39,7 @@ export const getRequestedDepositChannel = (url: URL): DepositChannel => {
  * @returns The deposit service API used by the HTTP layer.
  */
 export const createDepositService = (deps: DepositServiceDeps) => {
-  return createPresetBackedService<
+  const service = createPresetBackedService<
     DepositChannel,
     DepositFormValues,
     Awaited<ReturnType<typeof loadDepositPresets>>,
@@ -69,4 +71,17 @@ export const createDepositService = (deps: DepositServiceDeps) => {
     logger: deps.logger,
     makeId: deps.makeId,
   });
+
+  /**
+   * Generates a fresh deposit merchant reference using the shared ID factory.
+   *
+   * @returns Response payload containing the generated merchant reference.
+   */
+  const generateMerchantRef = (): DepositMerchantRefResponse =>
+    buildDepositMerchantRefResponse(deps.makeId('TEST_ORDER_'));
+
+  return {
+    ...service,
+    generateMerchantRef,
+  };
 };

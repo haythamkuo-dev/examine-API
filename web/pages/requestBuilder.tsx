@@ -69,6 +69,11 @@ type RequestBuilderAction = {
   onClick: () => void;
 };
 
+export type RequestBuilderFieldOverride = {
+  action?: RequestBuilderAction;
+  readOnly?: boolean;
+};
+
 const FieldLabel = ({
   label,
   required,
@@ -98,14 +103,18 @@ export function SchemaFields(props: {
   values: Record<string, unknown>;
   pathPrefix: Array<string | number>;
   onChange: (path: Array<string | number>, value: unknown) => void;
+  fieldOverrides?: Record<string, RequestBuilderFieldOverride>;
+  disabled?: boolean;
   visibilityResolver?: FieldVisibilityResolver;
 }) {
-  const { schemaMap, values, pathPrefix, onChange, visibilityResolver } = props;
+  const { schemaMap, values, pathPrefix, onChange, fieldOverrides, disabled = false, visibilityResolver } = props;
 
   return Object.entries(schemaMap).map(([key, schema]) => {
     const value = values[key];
     const fieldPath = [...pathPrefix, key];
     const pathKey = fieldPath.join('.');
+    const inputId = `field-${pathKey.replace(/[^a-zA-Z0-9_-]+/g, '-')}`;
+    const fieldOverride = fieldOverrides?.[pathKey];
 
     if (visibilityResolver?.(schema, value)) {
       return null;
@@ -125,6 +134,8 @@ export function SchemaFields(props: {
             values={objectValues}
             pathPrefix={fieldPath}
             onChange={onChange}
+            fieldOverrides={fieldOverrides}
+            disabled={disabled}
             visibilityResolver={visibilityResolver}
           />
         </fieldset>
@@ -150,6 +161,8 @@ export function SchemaFields(props: {
                 values={(item || {}) as Record<string, unknown>}
                 pathPrefix={[...fieldPath, index]}
                 onChange={onChange}
+                fieldOverrides={fieldOverrides}
+                disabled={disabled}
                 visibilityResolver={visibilityResolver}
               />
             </fieldset>
@@ -183,10 +196,14 @@ export function SchemaFields(props: {
 
     if (schema.kind === 'select') {
       return (
-        <label className={fieldLabelClassName} key={pathKey}>
-          <FieldLabel label={schema.label} required={schema.required} helperText={schema.helperText} />
+        <div className={fieldLabelClassName} key={pathKey}>
+          <label htmlFor={inputId}>
+            <FieldLabel label={schema.label} required={schema.required} helperText={schema.helperText} />
+          </label>
           <select
+            id={inputId}
             className={inputClassName}
+            disabled={disabled}
             value={typeof value === 'string' ? value : ''}
             onChange={(event) => onChange(fieldPath, event.target.value)}
           >
@@ -197,34 +214,57 @@ export function SchemaFields(props: {
               </option>
             ))}
           </select>
-        </label>
+        </div>
       );
     }
 
     if (schema.kind === 'textarea') {
       return (
-        <label className={fieldLabelClassName} key={pathKey}>
-          <FieldLabel label={schema.label} required={schema.required} helperText={schema.helperText} />
+        <div className={fieldLabelClassName} key={pathKey}>
+          <label htmlFor={inputId}>
+            <FieldLabel label={schema.label} required={schema.required} helperText={schema.helperText} />
+          </label>
           <textarea
+            id={inputId}
             className={textareaClassName}
+            disabled={disabled}
             placeholder={schema.placeholder}
+            readOnly={fieldOverride?.readOnly}
             value={typeof value === 'string' ? value : ''}
             onChange={(event) => onChange(fieldPath, event.target.value)}
           />
-        </label>
+        </div>
       );
     }
 
     return (
-      <label className={fieldLabelClassName} key={pathKey}>
-        <FieldLabel label={schema.label} required={schema.required} helperText={schema.helperText} />
-        <input
-          className={inputClassName}
-          placeholder={schema.placeholder}
-          value={typeof value === 'string' ? value : ''}
-          onChange={(event) => onChange(fieldPath, event.target.value)}
-        />
-      </label>
+      <div className={fieldLabelClassName} key={pathKey}>
+        <label htmlFor={inputId}>
+          <FieldLabel label={schema.label} required={schema.required} helperText={schema.helperText} />
+        </label>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input
+            id={inputId}
+            className={`${inputClassName} ${fieldOverride?.action ? 'sm:flex-1' : ''}`}
+            disabled={disabled}
+            placeholder={schema.placeholder}
+            readOnly={fieldOverride?.readOnly}
+            aria-readonly={fieldOverride?.readOnly ? 'true' : undefined}
+            value={typeof value === 'string' ? value : ''}
+            onChange={(event) => onChange(fieldPath, event.target.value)}
+          />
+          {fieldOverride?.action ? (
+            <button
+              type="button"
+              className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border border-[var(--color-primary)]/35 bg-[var(--color-primary)] px-5 text-sm font-semibold text-[var(--button-secondary-text)] transition duration-200 hover:border-[var(--color-secondary)] hover:bg-[var(--color-secondary)] disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:bg-[var(--color-primary)]"
+              onClick={fieldOverride.action.onClick}
+              disabled={disabled}
+            >
+              {fieldOverride.action.label}
+            </button>
+          ) : null}
+        </div>
+      </div>
     );
   });
 }
@@ -242,6 +282,7 @@ export function RequestBuilderCard(props: {
   commonSchema: SharedFieldMap;
   commonValues: Record<string, unknown>;
   onCommonValueChange: (key: string, value: string) => void;
+  commonFieldOverrides?: Record<string, RequestBuilderFieldOverride>;
   channelSchema: SharedFieldMap;
   channelValues: Record<string, unknown>;
   onChannelValueChange: (path: Array<string | number>, value: unknown) => void;
@@ -258,6 +299,7 @@ export function RequestBuilderCard(props: {
     commonSchema,
     commonValues,
     onCommonValueChange,
+    commonFieldOverrides,
     channelSchema,
     channelValues,
     onChannelValueChange,
@@ -299,6 +341,8 @@ export function RequestBuilderCard(props: {
                 onCommonValueChange(key, value);
               }
             }}
+            fieldOverrides={commonFieldOverrides}
+            disabled={disabled}
           />
         </div>
 
@@ -309,6 +353,7 @@ export function RequestBuilderCard(props: {
             values={channelValues}
             pathPrefix={[]}
             onChange={onChannelValueChange}
+            disabled={disabled}
             visibilityResolver={visibilityResolver}
           />
         </div>

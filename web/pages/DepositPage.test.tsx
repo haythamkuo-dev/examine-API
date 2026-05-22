@@ -11,6 +11,7 @@ import type {
   DepositDefaultsSavedResponse,
   DepositFieldMap,
   DepositFormValues,
+  DepositMerchantRefResponse,
   DepositPreviewResponse,
 } from '../../src/deposit/web';
 import { DepositPage } from './DepositPage';
@@ -19,6 +20,7 @@ import { AppThemeProvider } from './pageChrome';
 const defaultsEndpoint = '/api/deposit/defaults';
 const previewEndpoint = '/api/deposit/preview';
 const createEndpoint = '/api/deposit/create';
+const merchantRefEndpoint = '/api/deposit/merchant-ref';
 
 const primaryChannel = DEPOSIT_CHANNELS[0];
 const secondaryChannel = DEPOSIT_CHANNELS[1];
@@ -171,6 +173,11 @@ const createPreviewResponse = (merchantRef: string): DepositPreviewResponse => (
   },
 });
 
+const createMerchantRefResponse = (merchantRef: string): DepositMerchantRefResponse => ({
+  ok: true,
+  merchantRef,
+});
+
 const createResponseBody: DepositCreateResponse = {
   requestName: 'deposit:create:test',
   ok: true,
@@ -280,6 +287,7 @@ describe('DepositPage', () => {
     expect(view.getByText('Request builder')).toBeInTheDocument();
     expect(view.getByLabelText('Channel')).toHaveValue(primaryChannel);
     expect(view.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
+    expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
   });
 
   test('wraps request fields in a scroll container with a max height', async () => {
@@ -348,6 +356,7 @@ describe('DepositPage', () => {
   test('reloads channel defaults when the selected channel changes', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      'POST /api/deposit/merchant-ref': async () => jsonResponse(createMerchantRefResponse('GENERATED-001')),
       [`GET /api/deposit/defaults?channel=${secondaryChannel}`]: async () =>
         jsonResponse(
           createDefaultsResponse(secondaryChannel, {
@@ -366,16 +375,146 @@ describe('DepositPage', () => {
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
 
     await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Generate' }));
+    });
+
+    await view.findByText('Merchant reference generated.');
+
+    await act(async () => {
       fireEvent.change(view.getByLabelText('Channel'), {
         target: { value: secondaryChannel },
       });
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('MERCHANT-SECONDARY');
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-001');
     });
 
     expect(view.getByLabelText('Product number *')).toHaveValue('PROD-SECONDARY');
+  });
+
+  test('generates a new merchant reference and keeps it while shared fields change', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      'POST /api/deposit/merchant-ref': async () => jsonResponse(createMerchantRefResponse('GENERATED-002')),
+    });
+
+    const view = renderDepositPage();
+
+    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Generate' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-002');
+    });
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Product number *'), {
+        target: { value: 'PROD-UPDATED' },
+      });
+    });
+
+    expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-002');
+    expect(view.getByLabelText('Product number *')).toHaveValue('PROD-UPDATED');
+  });
+
+  test('keeps the existing merchant reference when generation fails', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      'POST /api/deposit/merchant-ref': async () =>
+        textResponse('generator unavailable', { status: 500, statusText: 'Internal Server Error' }),
+    });
+
+    const view = renderDepositPage();
+
+    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Generate' }));
+    });
+
+    await view.findByText('API 500 from /api/deposit/merchant-ref: generator unavailable');
+    expect(view.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
+  });
+
+  test('keeps the generated merchant reference when reloading defaults', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      [`GET /api/deposit/defaults?channel=${primaryChannel}`]: async () =>
+        jsonResponse(
+          createDefaultsResponse(primaryChannel, {
+            form: createForm(primaryChannel, {
+              commonValues: {
+                merchantRef: 'MERCHANT-RELOADED',
+                productNo: 'PROD-RELOADED',
+              },
+            }),
+          }),
+        ),
+      'POST /api/deposit/merchant-ref': async () => jsonResponse(createMerchantRefResponse('GENERATED-003')),
+    });
+
+    const view = renderDepositPage();
+
+    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Generate' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-003');
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Reload defaults' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-003');
+    });
+
+    expect(view.getByLabelText('Product number *')).toHaveValue('PROD-RELOADED');
+  });
+
+  test('new draft resets the merchant reference to the backend default', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      [`GET /api/deposit/defaults?channel=${primaryChannel}`]: async () =>
+        jsonResponse(
+          createDefaultsResponse(primaryChannel, {
+            form: createForm(primaryChannel, {
+              commonValues: {
+                merchantRef: 'MERCHANT-NEW-DRAFT',
+              },
+            }),
+          }),
+        ),
+      'POST /api/deposit/merchant-ref': async () => jsonResponse(createMerchantRefResponse('GENERATED-004')),
+    });
+
+    const view = renderDepositPage();
+
+    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Generate' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-004');
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'New draft' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('MERCHANT-NEW-DRAFT');
+    });
   });
 
   test('submits create requests and shows the API result', async () => {
@@ -400,12 +539,21 @@ describe('DepositPage', () => {
   test('toggles the operator environment mode and persists the selected target', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      'POST /api/deposit/merchant-ref': async () => jsonResponse(createMerchantRefResponse('GENERATED-ENV')),
     });
 
     const firstView = renderDepositPage();
 
     await firstView.findByRole('heading', { name: 'Deposit Operator Console' });
     expect(firstView.getByText('環境: 本地')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(firstView.getByRole('button', { name: 'Generate' }));
+    });
+
+    await waitFor(() => {
+      expect(firstView.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-ENV');
+    });
 
     await act(async () => {
       fireEvent.click(firstView.getByRole('button', { name: '產品' }));
@@ -423,11 +571,13 @@ describe('DepositPage', () => {
 
     await secondView.findByRole('heading', { name: 'Deposit Operator Console' });
     expect(secondView.getByText('環境: 產品')).toBeInTheDocument();
+    expect(secondView.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
   });
 
   test('saves defaults and applies the returned bundle', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      'POST /api/deposit/merchant-ref': async () => jsonResponse(createMerchantRefResponse('GENERATED-SAVE')),
       [`PUT /api/deposit/defaults?channel=${primaryChannel}`]: async () =>
         jsonResponse(createSavedDefaultsResponse(primaryChannel, 'PROD-SAVED')),
     });
@@ -435,12 +585,27 @@ describe('DepositPage', () => {
     const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Generate' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SAVE');
+    });
+
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Save defaults' }));
     });
 
     await view.findByText(`Saved defaults for ${primaryChannel}.`);
     expect(view.getByLabelText('Product number *')).toHaveValue('PROD-SAVED');
+    expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SAVE');
+
+    const saveCall = fetchRecords.find(
+      (record) => record.method === 'PUT' && record.url === `${defaultsEndpoint}?channel=${primaryChannel}`,
+    );
+    expect(saveCall?.body?.commonValues.merchantRef).toBe(`MERCHANT-${primaryChannel}`);
   });
 
   test('shows an error state when loading defaults fails', async () => {

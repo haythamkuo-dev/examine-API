@@ -76,6 +76,11 @@ export type PayoutPreviewResponse = {
 
 export type PayoutCreateResponse = CommandResult;
 
+export type PayoutMerchantReferenceResponse = {
+  ok: true;
+  merchantReference: string;
+};
+
 export type PayoutDefaultsSavedResponse = {
   ok: true;
   availableChannels: PayoutChannel[];
@@ -240,3 +245,16 @@ export const buildPayoutPreviewResponse = (
  * @returns The API response body returned to the frontend.
  */
 export const buildPayoutCreateResponse = (result: CommandResult): PayoutCreateResponse => result;
+
+/**
+ * Builds the API response returned when the backend generates a new payout merchant reference.
+ *
+ * @param merchantReference Newly generated merchant reference.
+ * @returns Response payload consumed by the operator UI.
+ */
+export const buildPayoutMerchantReferenceResponse = (
+  merchantReference: string,
+): PayoutMerchantReferenceResponse => ({
+  ok: true,
+  merchantReference,
+});

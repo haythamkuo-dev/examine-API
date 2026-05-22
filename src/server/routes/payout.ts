@@ -39,6 +39,10 @@ export const handlePayoutRoute = async ({
     return json(await service.saveDefaults(channel, values));
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/payout/merchant-reference') {
+    return json(service.generateMerchantReference());
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/payout/preview') {
     let targetEnvironment;
     try {

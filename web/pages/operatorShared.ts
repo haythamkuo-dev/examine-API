@@ -26,10 +26,11 @@ export const loadingLabels = {
   defaults: 'Loading defaults',
   preview: 'Preparing preview',
   create: 'Sending request',
+  generate: 'Generating reference',
   save: 'Saving defaults',
 } as const;
 
-export type ApiAction = 'preview' | 'create' | 'save';
+export type ApiAction = 'preview' | 'create' | 'generate' | 'save';
 
 export type ApiLogContext = {
   environmentLabel: typeof localEnvironmentLabel | typeof productEnvironmentLabel;

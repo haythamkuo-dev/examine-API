@@ -80,6 +80,11 @@ export type SubscriptionPreviewResponse = {
 
 export type SubscriptionCreateResponse = CommandResult;
 
+export type SubscriptionMerchantRefResponse = {
+  ok: true;
+  merchantRef: string;
+};
+
 export type SubscriptionDefaultsSavedResponse = {
   ok: true;
   availableChannels: SubscriptionChannel[];
@@ -208,3 +213,16 @@ export const buildSubscriptionPreviewResponse = (
 export const buildSubscriptionCreateResponse = (
   result: CommandResult,
 ): SubscriptionCreateResponse => result;
+
+/**
+ * Builds the API response returned when the backend generates a new subscription merchant reference.
+ *
+ * @param merchantRef Newly generated merchant reference.
+ * @returns Response payload consumed by the operator UI.
+ */
+export const buildSubscriptionMerchantRefResponse = (
+  merchantRef: string,
+): SubscriptionMerchantRefResponse => ({
+  ok: true,
+  merchantRef,
+});

@@ -80,6 +80,19 @@ describe('subscription API routes', () => {
     expect(commonValues.merchantRef).toBe('TEST_ORDER_1250');
   });
 
+  test('POST /api/subscription/merchant-ref returns a generated merchant reference', async () => {
+    const response = await requestApi('/api/subscription/merchant-ref', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body.ok).toBe(true);
+    expect(body.merchantRef).toBe('TEST_ORDER_fixed-id');
+  });
+
   test('POST /api/subscription/preview returns 400 when required subscription field is blank', async () => {
     const requestBody = createPreviewBody();
     requestBody.channelValues.product_name = '   ';

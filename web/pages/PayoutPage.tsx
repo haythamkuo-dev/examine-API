@@ -5,6 +5,7 @@ import type {
   PayoutDefaultsSavedResponse,
   PayoutFieldMap,
   PayoutFormValues,
+  PayoutMerchantReferenceResponse,
   PayoutPreviewResponse,
 } from '../../src/payout/web';
 import {
@@ -27,6 +28,7 @@ import {
 import {
   RequestBuilderCard,
   type FieldVisibilityResolver,
+  type RequestBuilderFieldOverride,
   type SharedFieldSchema,
 } from './requestBuilder';
 
@@ -35,6 +37,11 @@ const pageTitle = 'Payout Operator Console';
 const previewEmptyState = 'Run a preview to inspect the exact request body, URL, and masked headers.';
 const resultEmptyState = 'Send a request to capture the raw response, status code, and diagnostics.';
 const optionalFieldMarker = '非必填';
+const defaultsEndpoint = '/api/payout/defaults';
+const previewEndpoint = '/api/payout/preview';
+const createEndpoint = '/api/payout/create';
+const merchantReferenceEndpoint = '/api/payout/merchant-reference';
+const merchantReferenceFieldKey = 'merchantReference';
 
 const extractCreateMessage = (statusText: string, body: unknown): string => {
   if (body && typeof body === 'object') {
@@ -189,21 +196,37 @@ export function PayoutPage() {
   const [channels, setChannels] = useState<string[]>([]);
   const [preview, setPreview] = useState<PayoutPreviewResponse | null>(null);
   const [result, setResult] = useState<ApiResultView | null>(null);
-  const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'save' | null>('defaults');
+  const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'generate' | 'save' | null>('defaults');
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const defaultsLogContext = buildApiLogContext('/api/payout/defaults', theme.mode);
-  const previewLogContext = buildApiLogContext('/api/payout/preview', theme.mode);
-  const createLogContext = buildApiLogContext('/api/payout/create', theme.mode);
+  const [persistedMerchantReference, setPersistedMerchantReference] = useState<string | null>(null);
+  const defaultsLogContext = buildApiLogContext(defaultsEndpoint, theme.mode);
+  const previewLogContext = buildApiLogContext(previewEndpoint, theme.mode);
+  const createLogContext = buildApiLogContext(createEndpoint, theme.mode);
+  const generateLogContext = buildApiLogContext(merchantReferenceEndpoint, theme.mode);
 
-  const applyBundle = (response: PayoutDefaultsResponse | PayoutDefaultsSavedResponse) => {
+  const applyBundle = (
+    response: PayoutDefaultsResponse | PayoutDefaultsSavedResponse,
+    options?: { preserveMerchantReference?: string | null },
+  ) => {
     setChannels(response.availableChannels);
     setCommonSchema(response.commonSchema);
     setChannelSchema(response.channelSchema);
-    setForm(response.form);
+    setPersistedMerchantReference(response.form.commonValues.merchantReference);
+    setForm({
+      ...response.form,
+      commonValues: {
+        ...response.form.commonValues,
+        merchantReference:
+          options?.preserveMerchantReference ?? response.form.commonValues.merchantReference,
+      },
+    });
   };
 
-  const loadDefaults = async (channel?: string) => {
+  const loadDefaults = async (
+    channel?: string,
+    options?: { preserveMerchantReference?: string | null },
+  ) => {
     setLoading('defaults');
     setError(null);
     setSaveMessage(null);
@@ -212,17 +235,16 @@ export function PayoutPage() {
 
     try {
       const query = channel ? `?channel=${encodeURIComponent(channel)}` : '';
-      const response = await fetchJson<PayoutDefaultsResponse>(`/api/payout/defaults${query}`, {
+      const response = await fetchJson<PayoutDefaultsResponse>(`${defaultsEndpoint}${query}`, {
         headers: buildOperatorHeaders(theme.mode),
       });
 
       startTransition(() => {
-        applyBundle(response);
+        applyBundle(response, options);
         setLoading(null);
       });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
-      setForm(null);
       setLoading(null);
     }
   };
@@ -230,6 +252,15 @@ export function PayoutPage() {
   useEffect(() => {
     void loadDefaults();
   }, []);
+
+  const createSavePayload = (values: PayoutFormValues): PayoutFormValues => ({
+    ...values,
+    commonValues: {
+      ...values.commonValues,
+      merchantReference:
+        persistedMerchantReference ?? values.commonValues.merchantReference,
+    },
+  });
 
   const updateCommonValue = (key: string, value: string) => {
     setForm((current) =>
@@ -264,7 +295,7 @@ export function PayoutPage() {
     setSaveMessage(null);
 
     try {
-      const response = await fetchJson<PayoutPreviewResponse>('/api/payout/preview', {
+      const response = await fetchJson<PayoutPreviewResponse>(previewEndpoint, {
         method: 'POST',
         headers: buildOperatorHeaders(theme.mode),
         body: JSON.stringify(form),
@@ -286,7 +317,7 @@ export function PayoutPage() {
     setSaveMessage(null);
 
     try {
-      const response = await fetch(resolveApiUrl('/api/payout/create'), {
+      const response = await fetch(resolveApiUrl(createEndpoint), {
         method: 'POST',
         headers: buildOperatorHeaders(theme.mode),
         body: JSON.stringify(form),
@@ -314,6 +345,62 @@ export function PayoutPage() {
     }
   };
 
+  const generateMerchantReference = async () => {
+    if (!form) return;
+
+    setLoading('generate');
+    setError(null);
+    setSaveMessage(null);
+
+    try {
+      const response = await fetchJson<PayoutMerchantReferenceResponse>(merchantReferenceEndpoint, {
+        method: 'POST',
+        headers: buildOperatorHeaders(theme.mode),
+      });
+
+      setForm((current) =>
+        current
+          ? {
+              ...current,
+              commonValues: {
+                ...current.commonValues,
+                merchantReference: response.merchantReference,
+              },
+            }
+          : current,
+      );
+      setResult({
+        ok: true,
+        action: 'generate',
+        status: 200,
+        message: 'Merchant reference generated.',
+        logContext: generateLogContext,
+        raw: {
+          ok: true,
+          action: 'generate',
+          status: 200,
+          data: response,
+        },
+      });
+    } catch (caught) {
+      setResult({
+        ok: false,
+        action: 'generate',
+        status: null,
+        message: caught instanceof Error ? caught.message : String(caught),
+        logContext: generateLogContext,
+        raw: {
+          ok: false,
+          action: 'generate',
+          status: null,
+          message: caught instanceof Error ? caught.message : String(caught),
+        },
+      });
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const saveDefaults = async () => {
     if (!form) return;
 
@@ -323,20 +410,30 @@ export function PayoutPage() {
 
     try {
       const response = await fetchJson<PayoutDefaultsSavedResponse>(
-        `/api/payout/defaults?channel=${encodeURIComponent(form.channel)}`,
+        `${defaultsEndpoint}?channel=${encodeURIComponent(form.channel)}`,
         {
           method: 'PUT',
           headers: buildOperatorHeaders(theme.mode),
-          body: JSON.stringify(form),
+          body: JSON.stringify(createSavePayload(form)),
         },
       );
-      applyBundle(response);
+      applyBundle(response, { preserveMerchantReference: form.commonValues.merchantReference });
       setSaveMessage(`Saved defaults for ${response.channel}.`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setLoading(null);
     }
+  };
+
+  const commonFieldOverrides: Record<string, RequestBuilderFieldOverride> = {
+    [merchantReferenceFieldKey]: {
+      readOnly: true,
+      action: {
+        label: 'Generate',
+        onClick: () => void generateMerchantReference(),
+      },
+    },
   };
 
   if (!form) {
@@ -377,17 +474,29 @@ export function PayoutPage() {
           <RequestBuilderCard
             channels={channels}
             selectedChannel={form.channel}
-            onChannelChange={(channel) => void loadDefaults(channel)}
+            onChannelChange={(channel) =>
+              void loadDefaults(channel, {
+                preserveMerchantReference: form.commonValues.merchantReference,
+              })
+            }
             commonSchema={commonSchema}
             commonValues={form.commonValues as Record<string, unknown>}
             onCommonValueChange={updateCommonValue}
+            commonFieldOverrides={commonFieldOverrides}
             channelSchema={channelSchema}
             channelValues={form.channelValues}
             onChannelValueChange={updateChannelValue}
             loadingLabel={loading ? loadingLabels[loading] : 'Form ready'}
             disabled={loading !== null}
             actions={[
-              { label: 'Reload defaults', onClick: () => void loadDefaults(form.channel) },
+              {
+                label: 'Reload defaults',
+                onClick: () =>
+                  void loadDefaults(form.channel, {
+                    preserveMerchantReference: form.commonValues.merchantReference,
+                  }),
+              },
+              { label: 'New draft', onClick: () => void loadDefaults(form.channel) },
               { label: 'Preview request', onClick: () => void submitPreview() },
               { label: 'Send request', tone: 'primary', onClick: () => void submitCreate() },
               { label: 'Save defaults', tone: 'ghost', onClick: () => void saveDefaults() },
@@ -405,7 +514,11 @@ export function PayoutPage() {
         <section className="grid min-w-0 content-start gap-6">
           <JsonPanel title="Request preview" body={preview} emptyState={previewEmptyState} logContext={previewLogContext} />
           <ResultPanel
-            statusLabel={result?.status !== null && result?.status !== undefined ? `CREATE Status ${result.status}` : null}
+            statusLabel={
+              result
+                ? `${result.action.toUpperCase()}${result.status !== null ? ` Status ${result.status}` : ''}`
+                : null
+            }
             message={result?.message ?? null}
             details={result?.details ?? null}
             ok={result?.ok}

@@ -8,14 +8,17 @@ import { PAYOUT_CHANNELS } from '../../src/core/env';
 import type {
   PayoutCreateResponse,
   PayoutDefaultsResponse,
+  PayoutDefaultsSavedResponse,
   PayoutFieldMap,
   PayoutFormValues,
+  PayoutMerchantReferenceResponse,
 } from '../../src/payout/web';
 import { normalizeCreateResult, PayoutPage, shouldHidePayoutField } from './PayoutPage';
 import { AppThemeProvider } from './pageChrome';
 
 const defaultsEndpoint = '/api/payout/defaults';
 const createEndpoint = '/api/payout/create';
+const merchantReferenceEndpoint = '/api/payout/merchant-reference';
 
 const primaryChannel = PAYOUT_CHANNELS[0];
 const secondaryChannel = PAYOUT_CHANNELS[1];
@@ -132,6 +135,29 @@ const createDefaultsResponse = (
   channelSchema,
   form: createForm(channel, overrides?.form),
   ...overrides,
+});
+
+const createSavedDefaultsResponse = (
+  channel: typeof primaryChannel,
+  productNo: string,
+): PayoutDefaultsSavedResponse => ({
+  ok: true,
+  availableChannels: [primaryChannel, secondaryChannel],
+  channel,
+  commonSchema,
+  channelSchema,
+  form: createForm(channel, {
+    channelValues: {
+      product_no: productNo,
+    },
+  }),
+});
+
+const createMerchantReferenceResponse = (
+  merchantReference: string,
+): PayoutMerchantReferenceResponse => ({
+  ok: true,
+  merchantReference,
 });
 
 const jsonResponse = (body: unknown, init?: ResponseInit): Response =>
@@ -268,6 +294,187 @@ describe('normalizeCreateResult', () => {
 });
 
 describe('PayoutPage', () => {
+  test('renders a read-only merchant reference field and updates it via generate', async () => {
+    setRouteHandler(merchantReferenceEndpoint, () =>
+      jsonResponse(createMerchantReferenceResponse('GENERATED-PAYOUT-001')),
+    );
+
+    const view = renderPayoutPage();
+
+    await waitFor(() => {
+      expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
+    });
+
+    expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Generate' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-001');
+      expect(view.getByText('Merchant reference generated.')).toBeInTheDocument();
+    });
+  });
+
+  test('preserves the generated merchant reference across channel switches and reloads', async () => {
+    setRouteHandler(merchantReferenceEndpoint, () =>
+      jsonResponse(createMerchantReferenceResponse('GENERATED-PAYOUT-002')),
+    );
+    setRouteHandler(defaultsEndpoint, ({ url }) => {
+      const parsedUrl = new URL(url, 'http://localhost');
+      const channel = parsedUrl.searchParams.get('channel');
+
+      if (channel === secondaryChannel) {
+        return jsonResponse(
+          createDefaultsResponse(secondaryChannel, {
+            form: createForm(secondaryChannel, {
+              commonValues: {
+                merchantReference: 'merchant-secondary-server',
+              },
+              channelValues: {
+                product_no: 'product-secondary-server',
+              },
+            }),
+          }),
+        );
+      }
+
+      return jsonResponse(
+        createDefaultsResponse(primaryChannel, {
+          form: createForm(primaryChannel, {
+            commonValues: {
+              merchantReference: 'merchant-primary-server',
+            },
+            channelValues: {
+              product_no: 'product-primary-server',
+            },
+          }),
+        }),
+      );
+    });
+
+    const view = renderPayoutPage();
+
+    await waitFor(() => {
+      expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Generate' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-002');
+    });
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Channel'), {
+        target: { value: secondaryChannel },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-002');
+      expect(view.getByLabelText('Product number *')).toHaveValue('product-secondary-server');
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Reload defaults' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-002');
+    });
+  });
+
+  test('new draft resets the generated merchant reference and save strips it from the payload', async () => {
+    setRouteHandler(merchantReferenceEndpoint, () =>
+      jsonResponse(createMerchantReferenceResponse('GENERATED-PAYOUT-003')),
+    );
+    setRouteHandler(defaultsEndpoint, ({ url, method, body }) => {
+      if (method === 'PUT') {
+        expect(body?.commonValues.merchantReference).toBe(`merchant-${primaryChannel}`);
+        return jsonResponse(createSavedDefaultsResponse(primaryChannel, 'product-saved'));
+      }
+
+      const parsedUrl = new URL(url, 'http://localhost');
+
+      if (parsedUrl.searchParams.get('channel') === primaryChannel) {
+        return jsonResponse(
+          createDefaultsResponse(primaryChannel, {
+            form: createForm(primaryChannel, {
+              commonValues: {
+                merchantReference: 'merchant-reset-server',
+              },
+            }),
+          }),
+        );
+      }
+
+      return jsonResponse(
+        createDefaultsResponse(primaryChannel),
+      );
+    });
+
+    const view = renderPayoutPage();
+
+    await waitFor(() => {
+      expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Generate' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-003');
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Save defaults' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByText(`Saved defaults for ${primaryChannel}.`)).toBeInTheDocument();
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-003');
+      expect(view.getByLabelText('Product number *')).toHaveValue('product-saved');
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'New draft' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-reset-server');
+    });
+  });
+
+  test('keeps the current merchant reference when backend generation fails', async () => {
+    setRouteHandler(merchantReferenceEndpoint, () =>
+      textResponse('generator unavailable', {
+        status: 500,
+        statusText: 'Internal Server Error',
+      }),
+    );
+
+    const view = renderPayoutPage();
+
+    await waitFor(() => {
+      expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Generate' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByText('API 500 from /api/payout/merchant-reference: generator unavailable')).toBeInTheDocument();
+    });
+
+    expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-co_bank');
+  });
+
   test('shows a success banner after create succeeds', async () => {
     setRouteHandler(createEndpoint, () =>
       jsonResponse({

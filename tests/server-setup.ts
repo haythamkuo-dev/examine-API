@@ -70,12 +70,14 @@ export const createTestCliEnv = (): CliEnv => getCliEnv(process.env);
  */
 export const startApiTestServer = async (options?: {
   envRegistry?: CliEnvRegistry;
+  makeId?: (prefix: string) => string;
 }): Promise<ApiTestServerContext> => {
   const tempRootDirPath = await mkdtemp(join(tmpdir(), 'api-server-test-'));
   const depositPresetDirPath = join(tempRootDirPath, 'deposit');
   const payoutPresetDirPath = join(tempRootDirPath, 'payout');
   const subscriptionPresetDirPath = join(tempRootDirPath, 'subscription');
   const envRegistry = options?.envRegistry || createTestCliEnvRegistry();
+  const currentMakeId = options?.makeId || makeId;
 
   const resetDepositFixtures = async (): Promise<void> => {
     await rm(depositPresetDirPath, { recursive: true, force: true });
@@ -103,7 +105,7 @@ export const startApiTestServer = async (options?: {
     payoutPresetDirPath,
     subscriptionPresetDirPath,
     logger: console,
-    makeId,
+    makeId: currentMakeId,
     port,
   });
 

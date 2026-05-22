@@ -29,6 +29,10 @@ export const handleDepositRoute = async ({
     return json(await service.saveDefaults(channel, values));
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/deposit/merchant-ref') {
+    return json(service.generateMerchantRef());
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/deposit/preview') {
     let targetEnvironment;
     try {

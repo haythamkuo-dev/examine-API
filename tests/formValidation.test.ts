@@ -5,8 +5,55 @@ import {
   type ValidationSchemaMap,
 } from '../src/core/formValidation';
 
-const schema: ValidationSchemaMap = {
-  merchantRef: {
+// const schema: ValidationSchemaMap = {
+//   merchantRef: {
+//     kind: 'text',
+//     required: true,
+//   },
+//   payoutInfo: {
+//     kind: 'object',
+//     fields: {
+//       beneficiary: {
+//         kind: 'object',
+//         fields: {
+//           name: {
+//             kind: 'text',
+//             required: true,
+//           },
+//         },
+//       },
+//     },
+//   },
+//   beneficiaries: {
+//     kind: 'array',
+//     required: true,
+//     itemSchema: {
+//       kind: 'object',
+//       fields: {
+//         id: {
+//           kind: 'text',
+//           required: true,
+//         },
+//       },
+//     },
+//   },
+//   issueInvoice: {
+//     kind: 'boolean',
+//     required: true,
+//   },
+//   metadata: {
+//     kind: 'object',
+//     fields: {
+//       note: {
+//         kind: 'textarea',
+//         required: true,
+//       },
+//     },
+//   },
+// };
+
+// todo: 使用gemini 重寫測試資料
+const schema={ merchantRef: {
     kind: 'text',
     required: true,
   },
@@ -49,8 +96,7 @@ const schema: ValidationSchemaMap = {
         required: true,
       },
     },
-  },
-};
+  },}satisfies ValidationSchemaMap;
 
 describe('form validation core', () => {
   test('returns an error for blank required scalar values', () => {

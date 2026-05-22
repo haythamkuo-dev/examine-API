@@ -102,6 +102,19 @@ describe('payout API routes', () => {
     expect(commonValues.merchantReference).toBe('TEST_PAYOUT_ORDER_131');
   });
 
+  test('POST /api/payout/merchant-reference returns a generated merchant reference', async () => {
+    const response = await requestApi('/api/payout/merchant-reference', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body.ok).toBe(true);
+    expect(body.merchantReference).toBe('TEST_ORDER_fixed-id');
+  });
+
   test('POST /api/payout/preview returns 400 when required payout field is blank', async () => {
     const requestBody = createPreviewBody();
     const payoutInfo = requestBody.channelValues.payout_info as Record<string, unknown>;

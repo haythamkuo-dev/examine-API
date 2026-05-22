@@ -104,6 +104,19 @@ describe('deposit API routes', () => {
     expect(commonValues.merchantRef).toBe('TEST_ORDER_000001');
   });
 
+  test('POST /api/deposit/merchant-ref returns a generated merchant reference', async () => {
+    const response = await requestApi('/api/deposit/merchant-ref', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body.ok).toBe(true);
+    expect(body.merchantRef).toBe('TEST_ORDER_fixed-id');
+  });
+
   test('POST /api/deposit/preview returns 400 when required deposit field is blank', async () => {
     const requestBody = createPreviewBody();
     const paymentOrder = requestBody.channelValues.payment_order as Record<string, unknown>;

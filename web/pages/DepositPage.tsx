@@ -5,6 +5,7 @@ import type {
   DepositDefaultsSavedResponse,
   DepositFieldMap,
   DepositFormValues,
+  DepositMerchantRefResponse,
   DepositPreviewResponse,
 } from '../../src/deposit/web';
 import {
@@ -25,12 +26,20 @@ import {
   type ApiResultView,
   updatePathValue,
 } from './operatorShared';
-import { RequestBuilderCard } from './requestBuilder';
+import {
+  RequestBuilderCard,
+  type RequestBuilderFieldOverride,
+} from './requestBuilder';
 
 const pageTitle = 'Deposit Operator Console';
 const moduleName = 'Deposit Module';
 const previewEmptyState = 'Run a preview to inspect the exact request body, URL, and masked headers.';
 const resultEmptyState = 'Send a request to capture the raw response, status code, and any diagnostic hint.';
+const defaultsEndpoint = '/api/deposit/defaults';
+const previewEndpoint = '/api/deposit/preview';
+const createEndpoint = '/api/deposit/create';
+const merchantRefEndpoint = '/api/deposit/merchant-ref';
+const merchantRefFieldKey = 'merchantRef';
 
 /**
  * Renders the deposit operator page for editing defaults, previewing payloads, and sending test requests.
@@ -45,20 +54,35 @@ export function DepositPage() {
   const [channels, setChannels] = useState<string[]>([]);
   const [preview, setPreview] = useState<DepositPreviewResponse | null>(null);
   const [apiResult, setApiResult] = useState<ApiResultView | null>(null);
-  const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'save' | null>('defaults');
+  const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'generate' | 'save' | null>('defaults');
   const [error, setError] = useState<string | null>(null);
-  const defaultsLogContext = buildApiLogContext('/api/deposit/defaults', theme.mode);
-  const previewLogContext = buildApiLogContext('/api/deposit/preview', theme.mode);
-  const createLogContext = buildApiLogContext('/api/deposit/create', theme.mode);
+  const [persistedMerchantRef, setPersistedMerchantRef] = useState<string | null>(null);
+  const defaultsLogContext = buildApiLogContext(defaultsEndpoint, theme.mode);
+  const previewLogContext = buildApiLogContext(previewEndpoint, theme.mode);
+  const createLogContext = buildApiLogContext(createEndpoint, theme.mode);
+  const generateLogContext = buildApiLogContext(merchantRefEndpoint, theme.mode);
 
-  const applyBundle = (response: DepositDefaultsResponse | DepositDefaultsSavedResponse) => {
+  const applyBundle = (
+    response: DepositDefaultsResponse | DepositDefaultsSavedResponse,
+    options?: { preserveMerchantRef?: string | null },
+  ) => {
     setChannels(response.availableChannels);
     setCommonSchema(response.commonSchema);
     setChannelSchema(response.channelSchema);
-    setForm(response.form);
+    setPersistedMerchantRef(response.form.commonValues.merchantRef);
+    setForm({
+      ...response.form,
+      commonValues: {
+        ...response.form.commonValues,
+        merchantRef: options?.preserveMerchantRef ?? response.form.commonValues.merchantRef,
+      },
+    });
   };
 
-  const loadDefaults = async (channel?: string) => {
+  const loadDefaults = async (
+    channel?: string,
+    options?: { preserveMerchantRef?: string | null },
+  ) => {
     setLoading('defaults');
     setError(null);
     setPreview(null);
@@ -71,12 +95,11 @@ export function DepositPage() {
       });
 
       startTransition(() => {
-        applyBundle(response);
+        applyBundle(response, options);
         setLoading(null);
       });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
-      setForm(null);
       setLoading(null);
     }
   };
@@ -84,6 +107,14 @@ export function DepositPage() {
   useEffect(() => {
     void loadDefaults();
   }, []);
+
+  const createSavePayload = (values: DepositFormValues): DepositFormValues => ({
+    ...values,
+    commonValues: {
+      ...values.commonValues,
+      merchantRef: persistedMerchantRef ?? values.commonValues.merchantRef,
+    },
+  });
 
   const updateCommonValue = (key: string, value: string) => {
     setForm((current) =>
@@ -116,7 +147,7 @@ export function DepositPage() {
     setLoading('preview');
 
     try {
-      const response = await fetchJson<DepositPreviewResponse>('/api/deposit/preview', {
+      const response = await fetchJson<DepositPreviewResponse>(previewEndpoint, {
         method: 'POST',
         headers: buildOperatorHeaders(theme.mode),
         body: JSON.stringify(form),
@@ -149,7 +180,7 @@ export function DepositPage() {
     setLoading('create');
 
     try {
-      const response = await fetchJson<DepositCreateResponse>('/api/deposit/create', {
+      const response = await fetchJson<DepositCreateResponse>(createEndpoint, {
         method: 'POST',
         headers: buildOperatorHeaders(theme.mode),
         body: JSON.stringify(form),
@@ -174,6 +205,48 @@ export function DepositPage() {
     }
   };
 
+  const generateMerchantRef = async () => {
+    if (!form) return;
+
+    setLoading('generate');
+
+    try {
+      const response = await fetchJson<DepositMerchantRefResponse>(merchantRefEndpoint, {
+        method: 'POST',
+        headers: buildOperatorHeaders(theme.mode),
+      });
+
+      setForm((current) =>
+        current
+          ? {
+              ...current,
+              commonValues: {
+                ...current.commonValues,
+                merchantRef: response.merchantRef,
+              },
+            }
+          : current,
+      );
+      setApiResult({
+        ok: true,
+        action: 'generate',
+        status: getNumericStatus(response),
+        message: 'Merchant reference generated.',
+        logContext: generateLogContext,
+        raw: {
+          ok: true,
+          action: 'generate',
+          status: getNumericStatus(response),
+          data: response,
+        },
+      });
+    } catch (caught) {
+      setApiResult(buildFailureResult('generate', caught, generateLogContext));
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const saveDefaults = async () => {
     if (!form) return;
 
@@ -181,14 +254,14 @@ export function DepositPage() {
 
     try {
       const response = await fetchJson<DepositDefaultsSavedResponse>(
-        `/api/deposit/defaults?channel=${encodeURIComponent(form.channel)}`,
+        `${defaultsEndpoint}?channel=${encodeURIComponent(form.channel)}`,
         {
           method: 'PUT',
           headers: buildOperatorHeaders(theme.mode),
-          body: JSON.stringify(form),
+          body: JSON.stringify(createSavePayload(form)),
         },
       );
-      applyBundle(response);
+      applyBundle(response, { preserveMerchantRef: form.commonValues.merchantRef });
       setApiResult({
         ok: true,
         action: 'save',
@@ -207,6 +280,16 @@ export function DepositPage() {
     } finally {
       setLoading(null);
     }
+  };
+
+  const commonFieldOverrides: Record<string, RequestBuilderFieldOverride> = {
+    [merchantRefFieldKey]: {
+      readOnly: true,
+      action: {
+        label: 'Generate',
+        onClick: () => void generateMerchantRef(),
+      },
+    },
   };
 
   if (!form) {
@@ -247,17 +330,25 @@ export function DepositPage() {
           <RequestBuilderCard
             channels={channels}
             selectedChannel={form.channel}
-            onChannelChange={(channel) => void loadDefaults(channel)}
+            onChannelChange={(channel) =>
+              void loadDefaults(channel, { preserveMerchantRef: form.commonValues.merchantRef })
+            }
             commonSchema={commonSchema}
             commonValues={form.commonValues as Record<string, unknown>}
             onCommonValueChange={updateCommonValue}
+            commonFieldOverrides={commonFieldOverrides}
             channelSchema={channelSchema}
             channelValues={form.channelValues}
             onChannelValueChange={updateChannelValue}
             loadingLabel={loading ? loadingLabels[loading] : 'Form ready'}
             disabled={loading !== null}
             actions={[
-              { label: 'Reload defaults', onClick: () => void loadDefaults(form.channel) },
+              {
+                label: 'Reload defaults',
+                onClick: () =>
+                  void loadDefaults(form.channel, { preserveMerchantRef: form.commonValues.merchantRef }),
+              },
+              { label: 'New draft', onClick: () => void loadDefaults(form.channel) },
               { label: 'Preview request', onClick: () => void submitPreview() },
               { label: 'Send request', tone: 'primary', onClick: () => void submitCreate() },
               { label: 'Save defaults', tone: 'ghost', onClick: () => void saveDefaults() },

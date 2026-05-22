@@ -4,6 +4,7 @@ import type {
   SubscriptionDefaultsSavedResponse,
   SubscriptionFieldMap,
   SubscriptionFormValues,
+  SubscriptionMerchantRefResponse,
   SubscriptionPreviewResponse,
 } from '../../src/subscription/web';
 import {
@@ -25,12 +26,20 @@ import {
   type ApiResultView,
   updatePathValue,
 } from './operatorShared';
-import { RequestBuilderCard } from './requestBuilder';
+import {
+  RequestBuilderCard,
+  type RequestBuilderFieldOverride,
+} from './requestBuilder';
 
 const moduleName = 'Subscription Module';
 const pageTitle = 'Subscription Operator Console';
 const previewEmptyState = 'Run a preview to inspect the exact subscription request body, URL, and masked headers.';
 const resultEmptyState = 'Send a subscription request to capture the raw response, status code, and diagnostics.';
+const defaultsEndpoint = '/api/subscription/defaults';
+const previewEndpoint = '/api/subscription/preview';
+const createEndpoint = '/api/subscription/create';
+const merchantRefEndpoint = '/api/subscription/merchant-ref';
+const merchantRefFieldKey = 'merchantRef';
 
 /**
  * Normalizes subscription create API responses into a panel-friendly result object.
@@ -100,20 +109,35 @@ export function SubscriptionPage() {
   const [channels, setChannels] = useState<string[]>([]);
   const [preview, setPreview] = useState<SubscriptionPreviewResponse | null>(null);
   const [apiResult, setApiResult] = useState<ApiResultView | null>(null);
-  const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'save' | null>('defaults');
+  const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'generate' | 'save' | null>('defaults');
   const [error, setError] = useState<string | null>(null);
-  const defaultsLogContext = buildApiLogContext('/api/subscription/defaults', theme.mode);
-  const previewLogContext = buildApiLogContext('/api/subscription/preview', theme.mode);
-  const createLogContext = buildApiLogContext('/api/subscription/create', theme.mode);
+  const [persistedMerchantRef, setPersistedMerchantRef] = useState<string | null>(null);
+  const defaultsLogContext = buildApiLogContext(defaultsEndpoint, theme.mode);
+  const previewLogContext = buildApiLogContext(previewEndpoint, theme.mode);
+  const createLogContext = buildApiLogContext(createEndpoint, theme.mode);
+  const generateLogContext = buildApiLogContext(merchantRefEndpoint, theme.mode);
 
-  const applyBundle = (response: SubscriptionDefaultsResponse | SubscriptionDefaultsSavedResponse) => {
+  const applyBundle = (
+    response: SubscriptionDefaultsResponse | SubscriptionDefaultsSavedResponse,
+    options?: { preserveMerchantRef?: string | null },
+  ) => {
     setChannels(response.availableChannels);
     setCommonSchema(response.commonSchema);
     setChannelSchema(response.channelSchema);
-    setForm(response.form);
+    setPersistedMerchantRef(response.form.commonValues.merchantRef);
+    setForm({
+      ...response.form,
+      commonValues: {
+        ...response.form.commonValues,
+        merchantRef: options?.preserveMerchantRef ?? response.form.commonValues.merchantRef,
+      },
+    });
   };
 
-  const loadDefaults = async (channel?: string) => {
+  const loadDefaults = async (
+    channel?: string,
+    options?: { preserveMerchantRef?: string | null },
+  ) => {
     setLoading('defaults');
     setError(null);
     setPreview(null);
@@ -122,19 +146,18 @@ export function SubscriptionPage() {
     try {
       const query = channel ? `?channel=${encodeURIComponent(channel)}` : '';
       const response = await fetchJson<SubscriptionDefaultsResponse>(
-        `/api/subscription/defaults${query}`,
+        `${defaultsEndpoint}${query}`,
         {
           headers: buildOperatorHeaders(theme.mode),
         },
       );
 
       startTransition(() => {
-        applyBundle(response);
+        applyBundle(response, options);
         setLoading(null);
       });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
-      setForm(null);
       setLoading(null);
     }
   };
@@ -142,6 +165,14 @@ export function SubscriptionPage() {
   useEffect(() => {
     void loadDefaults();
   }, []);
+
+  const createSavePayload = (values: SubscriptionFormValues): SubscriptionFormValues => ({
+    ...values,
+    commonValues: {
+      ...values.commonValues,
+      merchantRef: persistedMerchantRef ?? values.commonValues.merchantRef,
+    },
+  });
 
   const updateCommonValue = (key: string, value: string) => {
     setForm((current) =>
@@ -174,7 +205,7 @@ export function SubscriptionPage() {
     setLoading('preview');
 
     try {
-      const response = await fetchJson<SubscriptionPreviewResponse>('/api/subscription/preview', {
+      const response = await fetchJson<SubscriptionPreviewResponse>(previewEndpoint, {
         method: 'POST',
         headers: buildOperatorHeaders(theme.mode),
         body: JSON.stringify(form),
@@ -207,7 +238,7 @@ export function SubscriptionPage() {
     setLoading('create');
 
     try {
-      const response = await fetch(resolveApiUrl('/api/subscription/create'), {
+      const response = await fetch(resolveApiUrl(createEndpoint), {
         method: 'POST',
         headers: buildOperatorHeaders(theme.mode),
         body: JSON.stringify(form),
@@ -223,6 +254,47 @@ export function SubscriptionPage() {
     }
   };
 
+  const generateMerchantRef = async () => {
+    if (!form) return;
+
+    setLoading('generate');
+
+    try {
+      const response = await fetchJson<SubscriptionMerchantRefResponse>(merchantRefEndpoint, {
+        method: 'POST',
+        headers: buildOperatorHeaders(theme.mode),
+      });
+      setForm((current) =>
+        current
+          ? {
+              ...current,
+              commonValues: {
+                ...current.commonValues,
+                merchantRef: response.merchantRef,
+              },
+            }
+          : current,
+      );
+      setApiResult({
+        ok: true,
+        action: 'generate',
+        status: 200,
+        message: 'Merchant reference generated.',
+        logContext: generateLogContext,
+        raw: {
+          ok: true,
+          action: 'generate',
+          status: 200,
+          data: response,
+        },
+      });
+    } catch (caught) {
+      setApiResult(buildFailureResult('generate', caught, generateLogContext));
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const saveDefaults = async () => {
     if (!form) return;
 
@@ -230,14 +302,14 @@ export function SubscriptionPage() {
 
     try {
       const response = await fetchJson<SubscriptionDefaultsSavedResponse>(
-        `/api/subscription/defaults?channel=${encodeURIComponent(form.channel)}`,
+        `${defaultsEndpoint}?channel=${encodeURIComponent(form.channel)}`,
         {
           method: 'PUT',
           headers: buildOperatorHeaders(theme.mode),
-          body: JSON.stringify(form),
+          body: JSON.stringify(createSavePayload(form)),
         },
       );
-      applyBundle(response);
+      applyBundle(response, { preserveMerchantRef: form.commonValues.merchantRef });
       setApiResult({
         ok: true,
         action: 'save',
@@ -256,6 +328,16 @@ export function SubscriptionPage() {
     } finally {
       setLoading(null);
     }
+  };
+
+  const commonFieldOverrides: Record<string, RequestBuilderFieldOverride> = {
+    [merchantRefFieldKey]: {
+      readOnly: true,
+      action: {
+        label: 'Generate',
+        onClick: () => void generateMerchantRef(),
+      },
+    },
   };
 
   if (!form) {
@@ -296,17 +378,25 @@ export function SubscriptionPage() {
           <RequestBuilderCard
             channels={channels}
             selectedChannel={form.channel}
-            onChannelChange={(channel) => void loadDefaults(channel)}
+            onChannelChange={(channel) =>
+              void loadDefaults(channel, { preserveMerchantRef: form.commonValues.merchantRef })
+            }
             commonSchema={commonSchema}
             commonValues={form.commonValues as Record<string, unknown>}
             onCommonValueChange={updateCommonValue}
+            commonFieldOverrides={commonFieldOverrides}
             channelSchema={channelSchema}
             channelValues={form.channelValues}
             onChannelValueChange={updateChannelValue}
             loadingLabel={loading ? loadingLabels[loading] : 'Form ready'}
             disabled={loading !== null}
             actions={[
-              { label: 'Reload defaults', onClick: () => void loadDefaults(form.channel) },
+              {
+                label: 'Reload defaults',
+                onClick: () =>
+                  void loadDefaults(form.channel, { preserveMerchantRef: form.commonValues.merchantRef }),
+              },
+              { label: 'New draft', onClick: () => void loadDefaults(form.channel) },
               { label: 'Preview request', onClick: () => void submitPreview() },
               { label: 'Send request', tone: 'primary', onClick: () => void submitCreate() },
               { label: 'Save defaults', tone: 'ghost', onClick: () => void saveDefaults() },

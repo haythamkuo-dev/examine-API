@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import {
   RequestBuilderCard,
+  type RequestBuilderFieldOverride,
   SchemaFields,
   type FieldVisibilityResolver,
   type SharedFieldMap,
@@ -169,5 +170,50 @@ describe('RequestBuilderCard', () => {
     expect(preview).toHaveBeenCalled();
     expect(view.getByText('Footer message')).toBeTruthy();
     expect(view.container.querySelectorAll('button')).toHaveLength(2);
+  });
+
+  test('renders read-only shared fields with an inline action button', () => {
+    const generate = mock<() => void>();
+    const commonFieldOverrides: Record<string, RequestBuilderFieldOverride> = {
+      merchantRef: {
+        readOnly: true,
+        action: {
+          label: 'Generate',
+          onClick: generate,
+        },
+      },
+    };
+
+    const view = render(
+      <RequestBuilderCard
+        channels={['alpha']}
+        selectedChannel="alpha"
+        onChannelChange={() => undefined}
+        commonSchema={{
+          merchantRef: {
+            kind: 'text',
+            label: 'Merchant ref',
+            required: true,
+          },
+        }}
+        commonValues={{ merchantRef: 'merchant-a' }}
+        onCommonValueChange={() => undefined}
+        commonFieldOverrides={commonFieldOverrides}
+        channelSchema={{}}
+        channelValues={{}}
+        onChannelValueChange={() => undefined}
+        loadingLabel="Form ready"
+        disabled={false}
+        actions={[]}
+      />,
+    );
+
+    const input = view.getByLabelText('Merchant ref *');
+
+    expect(input).toHaveAttribute('readonly');
+
+    fireEvent.click(view.getByRole('button', { name: 'Generate' }));
+
+    expect(generate).toHaveBeenCalledTimes(1);
   });
 });

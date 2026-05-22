@@ -4,11 +4,13 @@ import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
 import {
   buildPayoutCreateResponse,
+  buildPayoutMerchantReferenceResponse,
   buildPayoutPreviewResponse,
   buildPayoutRequestFromForm,
   type PayoutCreateResponse,
   type PayoutDefaultsResponse,
   type PayoutFormValues,
+  type PayoutMerchantReferenceResponse,
 } from './web';
 import { loadPayoutPresets, toPayoutDefaultsResponse, updatePayoutPreset } from './presets';
 
@@ -37,7 +39,7 @@ export const getRequestedPayoutChannel = (url: URL): PayoutChannel => {
  * @returns The payout service API used by the HTTP layer.
  */
 export const createPayoutService = (deps: PayoutServiceDeps) => {
-  return createPresetBackedService<
+  const service = createPresetBackedService<
     PayoutChannel,
     PayoutFormValues,
     Awaited<ReturnType<typeof loadPayoutPresets>>,
@@ -67,4 +69,17 @@ export const createPayoutService = (deps: PayoutServiceDeps) => {
     logger: deps.logger,
     makeId: deps.makeId,
   });
+
+  /**
+   * Generates a fresh payout merchant reference using the shared ID factory.
+   *
+   * @returns Response payload containing the generated merchant reference.
+   */
+  const generateMerchantReference = (): PayoutMerchantReferenceResponse =>
+    buildPayoutMerchantReferenceResponse(deps.makeId('TEST_ORDER_'));
+
+  return {
+    ...service,
+    generateMerchantReference,
+  };
 };

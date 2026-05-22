@@ -42,6 +42,10 @@ export const handleSubscriptionRoute = async ({
     return json(await service.saveDefaults(channel, values));
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/subscription/merchant-ref') {
+    return json(service.generateMerchantRef());
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/subscription/preview') {
     let targetEnvironment;
     try {
