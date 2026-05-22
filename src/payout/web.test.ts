@@ -82,7 +82,21 @@ describe('payout web helpers', () => {
     const request = buildPayoutRequestFromForm(env, values, makeId);
     expect(request.url).toBe('https://example.test/s2s/v1/payout/orders/in/imps');
     expect(request.headers?.Authorization).toBe('ApiKey india-bangladesh-token');
-    expect((request.payload as Record<string, unknown>).merchant_reference).toBe('TEST_ORDER_fixed-id');
+    expect((request.payload as Record<string, unknown>).merchant_reference).toBe('TEST_IMPS_001');
+  });
+
+  test('preview generates a fresh merchant reference even when the form already has one', async () => {
+    const defaults = toPayoutDefaultsResponse('co_bank', await loadPayoutPresets({ dirPath: presetDirPath, makeId }));
+    const values: PayoutFormValues = {
+      ...defaults.form,
+      commonValues: {
+        merchantReference: 'TEST_PREVIEW_001',
+      },
+    };
+
+    const preview = buildPayoutPreviewResponse(env, values, makeId);
+
+    expect((preview.request.payload as Record<string, unknown>).merchant_reference).toBe('TEST_ORDER_fixed-id');
   });
 
   test('uses Bangladesh merchant token for bd_wallet payout requests', async () => {
@@ -121,6 +135,7 @@ describe('payout web helpers', () => {
     expect(beneficiary.contact_number).toBeUndefined();
     expect(beneficiary.address).toBeUndefined();
     expect(payoutInfo.remitter).toBeUndefined();
+    expect(payload.merchant_reference).toBe('TEST_BT_ORDER_125');
     expect(payload.sign).toBe(
       generateSign(payload, ['amount.amount', 'amount.currency_code', 'merchant_reference', 'product_no'], 'sign-key'),
     );

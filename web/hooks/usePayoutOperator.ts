@@ -63,6 +63,23 @@ const extractCreateDetails = (body: unknown, message: string): string | undefine
   return undefined;
 };
 
+const isBlankMerchantReference = (value: string): boolean => !value.trim();
+
+const extractPreviewMerchantReference = (
+  preview: PayoutPreviewResponse,
+): string | null => {
+  const payload = preview.request.payload;
+
+  if (!isPlainObject(payload)) {
+    return null;
+  }
+
+  const merchantReference = payload.merchant_reference;
+  return typeof merchantReference === 'string' && merchantReference.trim()
+    ? merchantReference
+    : null;
+};
+
 /**
  * Normalizes payout create API responses into a panel-friendly result object.
  *
@@ -270,6 +287,37 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     );
   };
 
+  const ensureMerchantReference = async (
+    values: PayoutFormValues,
+  ): Promise<PayoutFormValues> => {
+    if (!isBlankMerchantReference(values.commonValues.merchantReference)) {
+      return values;
+    }
+
+    const response = await generatePayoutMerchantReference(mode);
+    const nextValues: PayoutFormValues = {
+      ...values,
+      commonValues: {
+        ...values.commonValues,
+        merchantReference: response.merchantReference,
+      },
+    };
+
+    setForm((current) =>
+      current
+        ? {
+            ...current,
+            commonValues: {
+              ...current.commonValues,
+              merchantReference: response.merchantReference,
+            },
+          }
+        : current,
+    );
+
+    return nextValues;
+  };
+
   const submitPreview = async () => {
     if (!form) return;
 
@@ -279,6 +327,22 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
     try {
       const response = await previewPayoutRequest(mode, form);
+      const merchantReference = extractPreviewMerchantReference(response);
+
+      if (merchantReference) {
+        setForm((current) =>
+          current
+            ? {
+                ...current,
+                commonValues: {
+                  ...current.commonValues,
+                  merchantReference,
+                },
+              }
+            : current,
+        );
+      }
+
       setPreview(response);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -296,7 +360,8 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     setSaveMessage(null);
 
     try {
-      const response = await createPayoutRequest(mode, form);
+      const nextForm = await ensureMerchantReference(form);
+      const response = await createPayoutRequest(mode, nextForm);
       setResult({
         ...(await normalizeCreateResult(response)),
         logContext: createLogContext,

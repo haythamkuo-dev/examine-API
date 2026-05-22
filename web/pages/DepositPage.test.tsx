@@ -312,7 +312,7 @@ describe('DepositPage', () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
       'POST /api/deposit/preview': async () =>
-        jsonResponse(createPreviewResponse(`MERCHANT-${primaryChannel}`)),
+        jsonResponse(createPreviewResponse(`PREVIEW-${primaryChannel}`)),
     });
 
     const view = renderDepositPage();
@@ -350,7 +350,8 @@ describe('DepositPage', () => {
 
     expect(channelValues.approvalRequired).toBe(true);
     expect(channelValues.collects[0]?.enabled).toBe(false);
-    expect(view.getAllByText(new RegExp(`"merchant_ref": "MERCHANT-${primaryChannel}"`))).toHaveLength(2);
+    expect(view.getByLabelText('Merchant reference *')).toHaveValue(`PREVIEW-${primaryChannel}`);
+    expect(view.getAllByText(new RegExp(`"merchant_ref": "PREVIEW-${primaryChannel}"`))).toHaveLength(2);
   });
 
   test('reloads channel defaults when the selected channel changes', async () => {
@@ -534,6 +535,37 @@ describe('DepositPage', () => {
     expect(view.getByText(/"requestName": "deposit:create:test"/)).toBeInTheDocument();
     expect(view.getAllByText('模式 本地 · 目標 本地代理').length).toBeGreaterThan(0);
     expect(view.getByText('/api/deposit/create')).toBeInTheDocument();
+  });
+
+  test('preview replaces the current merchant reference and create reuses it', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      'POST /api/deposit/preview': async (request) =>
+        jsonResponse(createPreviewResponse(`PREVIEW-${request.body?.commonValues.merchantRef}`)),
+      'POST /api/deposit/create': async (request) => {
+        expect(request.body?.commonValues.merchantRef).toBe(`PREVIEW-MERCHANT-${primaryChannel}`);
+        return jsonResponse(createResponseBody);
+      },
+    });
+
+    const view = renderDepositPage();
+
+    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    expect(view.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue(`PREVIEW-MERCHANT-${primaryChannel}`);
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Send request' }));
+    });
+
+    await view.findByText('Request sent successfully.');
   });
 
   test('toggles the operator environment mode and persists the selected target', async () => {

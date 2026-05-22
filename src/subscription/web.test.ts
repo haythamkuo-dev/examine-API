@@ -92,7 +92,7 @@ describe('subscription web helpers', () => {
 
     expect(request.url).toBe('https://example.test/s2s/v1/subscriptions');
     expect(request.headers?.Authorization).toBe('ApiKey subscription-token');
-    expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
+    expect(payload.merchant_ref).toBe('TEST_SUB_001');
     expect(payload.return_url).toBe('https://merchant.example.com/subscription/return');
     expect(payload.sign).toBe(
       generateSign(
@@ -104,6 +104,24 @@ describe('subscription web helpers', () => {
         'sign-key',
       ),
     );
+  });
+
+  test('preview generates a fresh merchant reference even when the form already has one', async () => {
+    const defaults = toSubscriptionDefaultsResponse(
+      'default',
+      await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
+    );
+    const values: SubscriptionFormValues = {
+      ...defaults.form,
+      commonValues: {
+        ...defaults.form.commonValues,
+        merchantRef: 'TEST_SUB_PREVIEW_001',
+      },
+    };
+
+    const preview = buildSubscriptionPreviewResponse(env, values, makeId);
+
+    expect((preview.request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
   test('creates a unique merchant reference when form value is blank', async () => {

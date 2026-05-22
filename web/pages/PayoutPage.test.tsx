@@ -17,6 +17,7 @@ import { normalizeCreateResult, PayoutPage, shouldHidePayoutField } from './Payo
 import { AppThemeProvider } from './pageChrome';
 
 const defaultsEndpoint = '/api/payout/defaults';
+const previewEndpoint = '/api/payout/preview';
 const createEndpoint = '/api/payout/create';
 const merchantReferenceEndpoint = '/api/payout/merchant-reference';
 
@@ -501,6 +502,73 @@ describe('PayoutPage', () => {
       expect(view.getByText('Request sent successfully.')).toBeInTheDocument();
       expect(view.getByText('CREATE Status 200')).toBeInTheDocument();
       expect(view.getAllByText('模式 本地 · 目標 本地代理').length).toBeGreaterThan(0);
+    });
+  });
+
+  test('preview replaces the current merchant reference with the backend-generated value and create reuses it', async () => {
+    setRouteHandler(defaultsEndpoint, () =>
+      jsonResponse(
+        createDefaultsResponse(primaryChannel, {
+          form: createForm(primaryChannel, {
+            commonValues: {
+              merchantReference: 'merchant-preview-start',
+            },
+          }),
+        }),
+      ),
+    );
+    setRouteHandler(previewEndpoint, ({ body }) =>
+      jsonResponse({
+        request: {
+          name: 'payout:create:co_bank',
+          method: 'POST',
+          url: 'https://gateway.example.test/payout',
+          headers: { Authorization: 'ApiKey ****-token' },
+          payload: {
+            merchant_reference: `preview-generated-${body?.commonValues.merchantReference}`,
+          },
+        },
+      }),
+    );
+    setRouteHandler(createEndpoint, ({ body }) => {
+      expect(body?.commonValues.merchantReference).toBe('preview-generated-merchant-preview-start');
+
+      return jsonResponse({
+        requestName: 'payout:create:co_bank',
+        ok: true,
+        status: 200,
+        request: {
+          method: 'POST',
+          url: 'https://gateway.example.test/payout',
+          payload: { merchant_reference: body?.commonValues.merchantReference },
+        },
+        response: { ok: true },
+        durationMs: 6,
+      } satisfies PayoutCreateResponse);
+    });
+
+    const view = renderPayoutPage();
+
+    await waitFor(() => {
+      expect(view.getByRole('button', { name: 'Preview request' })).toBeEnabled();
+    });
+
+    expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-preview-start');
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('preview-generated-merchant-preview-start');
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Send request' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByText('Request sent successfully.')).toBeInTheDocument();
     });
   });
 

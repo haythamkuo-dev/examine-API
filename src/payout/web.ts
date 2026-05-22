@@ -134,16 +134,13 @@ const sanitizeMerchantReference = (
 const buildPayloadFromForm = (
   env: CliEnv,
   values: PayoutFormValues,
-  makeId: (prefix: string) => string,
+  merchantReference: string,
 ): PayoutPayload => {
   const payload = clone(
-    createPayoutPayload(env, values.channel, makeId),
+    createPayoutPayload(env, values.channel, () => merchantReference),
   );
 
-  payload[merchantReferenceKey] = sanitizeMerchantReference(
-    values.commonValues.merchantReference,
-    makeId,
-  );
+  payload[merchantReferenceKey] = merchantReference;
 
   const mergedPayload = {
     ...payload,
@@ -177,11 +174,15 @@ export const buildPayoutRequestFromForm = (
   values: PayoutFormValues,
   makeId: (prefix: string) => string,
 ): CommandRequest => {
-  const request = createPayoutRequest(env, values.channel, makeId);
+  const merchantReference = sanitizeMerchantReference(
+    values.commonValues.merchantReference,
+    makeId,
+  );
+  const request = createPayoutRequest(env, values.channel, () => merchantReference);
 
   return {
     ...request,
-    payload: buildPayloadFromForm(env, values, makeId),
+    payload: buildPayloadFromForm(env, values, merchantReference),
   };
 };
 
@@ -199,7 +200,14 @@ export const buildPayoutPreviewResponse = (
   values: PayoutFormValues,
   makeId: (prefix: string) => string,
 ): PayoutPreviewResponse => {
-  const request = buildPayoutRequestFromForm(env, values, makeId);
+  const previewValues: PayoutFormValues = {
+    ...values,
+    commonValues: {
+      ...values.commonValues,
+      merchantReference: makeId('TEST_ORDER_'),
+    },
+  };
+  const request = buildPayoutRequestFromForm(env, previewValues, makeId);
 
   return {
     request: {

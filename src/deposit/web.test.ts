@@ -67,7 +67,21 @@ describe('deposit web helpers', () => {
     const request = buildDepositRequestFromForm(env, values, makeId);
     expect(request.url).toBe('https://example.test/s2s/v1/intents/deposit');
     expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect((request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_fixed-id');
+    expect((request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_217');
+  });
+
+  test('preview generates a fresh merchant reference even when the form already has one', () => {
+    const values: DepositFormValues = {
+      ...toDepositDefaultsResponse('southafrica_cards', createSeedDepositPresets(env, makeId)).form,
+      commonValues: {
+        ...toDepositDefaultsResponse('southafrica_cards', createSeedDepositPresets(env, makeId)).form.commonValues,
+        merchantRef: 'TEST_PREVIEW_217',
+      },
+    };
+
+    const preview = buildDepositPreviewResponse(env, values, makeId);
+
+    expect((preview.request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
   test('uses channel-scoped merchant token for India deposit channels', () => {

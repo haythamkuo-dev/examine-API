@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { keepAlive, maskRequestHeaders } from './utils';
+import { createUniqueReference, keepAlive, maskRequestHeaders } from './utils';
 
 type IntervalId = ReturnType<typeof setInterval>;
 type IntervalCallback = Parameters<typeof setInterval>[0];
@@ -103,5 +103,19 @@ describe('maskRequestHeaders', () => {
     ).toEqual({
       authorization: 'ApiKey ****-token',
     });
+  });
+});
+
+describe('createUniqueReference', () => {
+  test('preserves a provided merchant reference after trimming whitespace', () => {
+    expect(
+      createUniqueReference('  TEST-REF-001  ', () => 'generated-value', 'TEST_ORDER_'),
+    ).toBe('TEST-REF-001');
+  });
+
+  test('generates a fallback merchant reference when the incoming value is blank', () => {
+    expect(
+      createUniqueReference('   ', (prefix) => `${prefix}fixed-id`, 'TEST_ORDER_'),
+    ).toBe('TEST_ORDER_fixed-id');
   });
 });

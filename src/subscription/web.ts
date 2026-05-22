@@ -108,16 +108,23 @@ const sanitizeMerchantReference = (
 const buildPayloadFromForm = (
   env: CliEnv,
   values: SubscriptionFormValues,
-  makeId: (prefix: string) => string,
+  merchantRef: string,
 ): SubscriptionPayload => {
+  const normalizedValues: SubscriptionFormValues = {
+    ...values,
+    commonValues: {
+      ...values.commonValues,
+      merchantRef,
+    },
+  };
   const payload = clone(
     createSubscriptionPayload(env, values.channel, {
-      commonValues: values.commonValues,
-      channelValues: values.channelValues,
-    }, makeId),
+      commonValues: normalizedValues.commonValues,
+      channelValues: normalizedValues.channelValues,
+    }, () => merchantRef),
   );
 
-  payload.merchant_ref = sanitizeMerchantReference(values.commonValues.merchantRef, makeId);
+  payload.merchant_ref = merchantRef;
   payload.return_url = values.commonValues.returnUrl;
 
   const { sign: _existingSign, ...payloadWithoutSign } = payload;
@@ -141,14 +148,22 @@ export const buildSubscriptionRequestFromForm = (
   values: SubscriptionFormValues,
   makeId: (prefix: string) => string,
 ): CommandRequest => {
+  const merchantRef = sanitizeMerchantReference(values.commonValues.merchantRef, makeId);
+  const normalizedValues: SubscriptionFormValues = {
+    ...values,
+    commonValues: {
+      ...values.commonValues,
+      merchantRef,
+    },
+  };
   const request = createSubscriptionRequest(env, values.channel, {
-    commonValues: values.commonValues,
-    channelValues: values.channelValues,
-  }, makeId);
+    commonValues: normalizedValues.commonValues,
+    channelValues: normalizedValues.channelValues,
+  }, () => merchantRef);
 
   return {
     ...request,
-    payload: buildPayloadFromForm(env, values, makeId),
+    payload: buildPayloadFromForm(env, normalizedValues, merchantRef),
   };
 };
 
@@ -165,7 +180,14 @@ export const buildSubscriptionPreviewResponse = (
   values: SubscriptionFormValues,
   makeId: (prefix: string) => string,
 ): SubscriptionPreviewResponse => {
-  const request = buildSubscriptionRequestFromForm(env, values, makeId);
+  const previewValues: SubscriptionFormValues = {
+    ...values,
+    commonValues: {
+      ...values.commonValues,
+      merchantRef: makeId('TEST_ORDER_'),
+    },
+  };
+  const request = buildSubscriptionRequestFromForm(env, previewValues, makeId);
 
   return {
     request: {

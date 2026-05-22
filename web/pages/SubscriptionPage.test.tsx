@@ -326,4 +326,68 @@ describe('SubscriptionPage', () => {
 
     expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-003');
   });
+
+  test('preview replaces the current merchant reference with the backend-generated value and create reuses it', async () => {
+    setRouteHandlers({
+      'GET /api/subscription/defaults': async () =>
+        jsonResponse(
+          createDefaultsResponse({
+            form: createForm({
+              commonValues: {
+                merchantRef: 'subscription-preview-start',
+              },
+            }),
+          }),
+        ),
+      'POST /api/subscription/preview': async (request) =>
+        jsonResponse({
+          request: {
+            name: 'subscription:create:default',
+            method: 'POST',
+            url: 'https://gateway.example.test/subscription',
+            headers: { Authorization: 'ApiKey ****-token' },
+            payload: {
+              merchant_ref: `preview-generated-${request.body?.commonValues.merchantRef}`,
+            },
+          },
+        }),
+      'POST /api/subscription/create': async (request) => {
+        expect(request.body?.commonValues.merchantRef).toBe('preview-generated-subscription-preview-start');
+
+        return jsonResponse({
+          requestName: 'subscription:create:default',
+          ok: true,
+          status: 200,
+          request: {
+            method: 'POST',
+            url: 'https://gateway.example.test/subscription',
+            payload: { merchant_ref: request.body?.commonValues.merchantRef },
+          },
+          response: { ok: true },
+          durationMs: 8,
+        });
+      },
+    });
+
+    const view = renderSubscriptionPage();
+
+    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    expect(view.getByLabelText('Merchant reference *')).toHaveValue('subscription-preview-start');
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('preview-generated-subscription-preview-start');
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Send request' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByText('Request sent successfully.')).toBeInTheDocument();
+    });
+  });
 });

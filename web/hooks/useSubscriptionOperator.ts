@@ -28,6 +28,20 @@ const previewEndpoint = '/api/subscription/preview';
 const createEndpoint = '/api/subscription/create';
 const merchantRefEndpoint = '/api/subscription/merchant-ref';
 const merchantRefFieldKey = 'merchantRef';
+const isBlankMerchantRef = (value: string): boolean => !value.trim();
+
+const extractPreviewMerchantRef = (
+  preview: SubscriptionPreviewResponse,
+): string | null => {
+  const payload = preview.request.payload;
+
+  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+    return null;
+  }
+
+  const merchantRef = (payload as Record<string, unknown>).merchant_ref;
+  return typeof merchantRef === 'string' && merchantRef.trim() ? merchantRef : null;
+};
 
 /**
  * Normalizes subscription create API responses into a panel-friendly result object.
@@ -180,6 +194,37 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     );
   };
 
+  const ensureMerchantRef = async (
+    values: SubscriptionFormValues,
+  ): Promise<SubscriptionFormValues> => {
+    if (!isBlankMerchantRef(values.commonValues.merchantRef)) {
+      return values;
+    }
+
+    const response = await generateSubscriptionMerchantRef(mode);
+    const nextValues: SubscriptionFormValues = {
+      ...values,
+      commonValues: {
+        ...values.commonValues,
+        merchantRef: response.merchantRef,
+      },
+    };
+
+    setForm((current) =>
+      current
+        ? {
+            ...current,
+            commonValues: {
+              ...current.commonValues,
+              merchantRef: response.merchantRef,
+            },
+          }
+        : current,
+    );
+
+    return nextValues;
+  };
+
   const submitPreview = async () => {
     if (!form) return;
 
@@ -187,6 +232,22 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
 
     try {
       const response = await previewSubscriptionRequest(mode, form);
+      const merchantRef = extractPreviewMerchantRef(response);
+
+      if (merchantRef) {
+        setForm((current) =>
+          current
+            ? {
+                ...current,
+                commonValues: {
+                  ...current.commonValues,
+                  merchantRef,
+                },
+              }
+            : current,
+        );
+      }
+
       setPreview(response);
       setApiResult({
         ok: true,
@@ -215,7 +276,8 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     setLoading('create');
 
     try {
-      const response = await createSubscriptionRequest(mode, form);
+      const nextForm = await ensureMerchantRef(form);
+      const response = await createSubscriptionRequest(mode, nextForm);
       setApiResult({
         ...(await normalizeCreateResult(response)),
         logContext: createLogContext,

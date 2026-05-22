@@ -147,7 +147,14 @@ export const buildDepositPreviewResponse = (
   values: DepositFormValues,
   makeId: (prefix: string) => string,
 ): DepositPreviewResponse => {
-  const request = buildDepositRequestFromForm(env, values, makeId);
+  const previewValues: DepositFormValues = {
+    ...values,
+    commonValues: {
+      ...values.commonValues,
+      merchantRef: makeId('TEST_ORDER_'),
+    },
+  };
+  const request = buildDepositRequestFromForm(env, previewValues, makeId);
 
   return {
     request: {
