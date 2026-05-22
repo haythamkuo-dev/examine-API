@@ -18,14 +18,19 @@ import {
 } from './pageChrome';
 import {
   buildApiLogContext,
-  buildOperatorHeaders,
   buildFailureResult,
-  fetchJson,
   getNumericStatus,
   loadingLabels,
   type ApiResultView,
   updatePathValue,
 } from './operatorShared';
+import {
+  createDepositRequest,
+  fetchDepositDefaults,
+  generateDepositMerchantRef,
+  previewDepositRequest,
+  saveDepositDefaults,
+} from './operatorApi';
 import {
   RequestBuilderCard,
   type RequestBuilderFieldOverride,
@@ -89,10 +94,7 @@ export function DepositPage() {
     setApiResult(null);
 
     try {
-      const query = channel ? `?channel=${encodeURIComponent(channel)}` : '';
-      const response = await fetchJson<DepositDefaultsResponse>(`/api/deposit/defaults${query}`, {
-        headers: buildOperatorHeaders(theme.mode),
-      });
+      const response = await fetchDepositDefaults(theme.mode, channel);
 
       startTransition(() => {
         applyBundle(response, options);
@@ -147,11 +149,7 @@ export function DepositPage() {
     setLoading('preview');
 
     try {
-      const response = await fetchJson<DepositPreviewResponse>(previewEndpoint, {
-        method: 'POST',
-        headers: buildOperatorHeaders(theme.mode),
-        body: JSON.stringify(form),
-      });
+      const response = await previewDepositRequest(theme.mode, form);
       setPreview(response);
       setApiResult({
         ok: true,
@@ -180,11 +178,7 @@ export function DepositPage() {
     setLoading('create');
 
     try {
-      const response = await fetchJson<DepositCreateResponse>(createEndpoint, {
-        method: 'POST',
-        headers: buildOperatorHeaders(theme.mode),
-        body: JSON.stringify(form),
-      });
+      const response = await createDepositRequest(theme.mode, form);
       setApiResult({
         ok: true,
         action: 'create',
@@ -211,10 +205,7 @@ export function DepositPage() {
     setLoading('generate');
 
     try {
-      const response = await fetchJson<DepositMerchantRefResponse>(merchantRefEndpoint, {
-        method: 'POST',
-        headers: buildOperatorHeaders(theme.mode),
-      });
+      const response = await generateDepositMerchantRef(theme.mode);
 
       setForm((current) =>
         current
@@ -253,13 +244,10 @@ export function DepositPage() {
     setLoading('save');
 
     try {
-      const response = await fetchJson<DepositDefaultsSavedResponse>(
-        `${defaultsEndpoint}?channel=${encodeURIComponent(form.channel)}`,
-        {
-          method: 'PUT',
-          headers: buildOperatorHeaders(theme.mode),
-          body: JSON.stringify(createSavePayload(form)),
-        },
+      const response = await saveDepositDefaults(
+        theme.mode,
+        form.channel,
+        createSavePayload(form),
       );
       applyBundle(response, { preserveMerchantRef: form.commonValues.merchantRef });
       setApiResult({

@@ -18,13 +18,17 @@ import {
 } from './pageChrome';
 import {
   buildApiLogContext,
-  buildOperatorHeaders,
-  fetchJson,
   loadingLabels,
-  resolveApiUrl,
   type ApiResultView,
   updatePathValue,
 } from './operatorShared';
+import {
+  createPayoutRequest,
+  fetchPayoutDefaults,
+  generatePayoutMerchantReference,
+  previewPayoutRequest,
+  savePayoutDefaults,
+} from './operatorApi';
 import {
   RequestBuilderCard,
   type FieldVisibilityResolver,
@@ -234,10 +238,7 @@ export function PayoutPage() {
     setResult(null);
 
     try {
-      const query = channel ? `?channel=${encodeURIComponent(channel)}` : '';
-      const response = await fetchJson<PayoutDefaultsResponse>(`${defaultsEndpoint}${query}`, {
-        headers: buildOperatorHeaders(theme.mode),
-      });
+      const response = await fetchPayoutDefaults(theme.mode, channel);
 
       startTransition(() => {
         applyBundle(response, options);
@@ -295,11 +296,7 @@ export function PayoutPage() {
     setSaveMessage(null);
 
     try {
-      const response = await fetchJson<PayoutPreviewResponse>(previewEndpoint, {
-        method: 'POST',
-        headers: buildOperatorHeaders(theme.mode),
-        body: JSON.stringify(form),
-      });
+      const response = await previewPayoutRequest(theme.mode, form);
       setPreview(response);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -317,11 +314,7 @@ export function PayoutPage() {
     setSaveMessage(null);
 
     try {
-      const response = await fetch(resolveApiUrl(createEndpoint), {
-        method: 'POST',
-        headers: buildOperatorHeaders(theme.mode),
-        body: JSON.stringify(form),
-      });
+      const response = await createPayoutRequest(theme.mode, form);
       setResult({
         ...(await normalizeCreateResult(response)),
         logContext: createLogContext,
@@ -353,10 +346,7 @@ export function PayoutPage() {
     setSaveMessage(null);
 
     try {
-      const response = await fetchJson<PayoutMerchantReferenceResponse>(merchantReferenceEndpoint, {
-        method: 'POST',
-        headers: buildOperatorHeaders(theme.mode),
-      });
+      const response = await generatePayoutMerchantReference(theme.mode);
 
       setForm((current) =>
         current
@@ -409,13 +399,10 @@ export function PayoutPage() {
     setSaveMessage(null);
 
     try {
-      const response = await fetchJson<PayoutDefaultsSavedResponse>(
-        `${defaultsEndpoint}?channel=${encodeURIComponent(form.channel)}`,
-        {
-          method: 'PUT',
-          headers: buildOperatorHeaders(theme.mode),
-          body: JSON.stringify(createSavePayload(form)),
-        },
+      const response = await savePayoutDefaults(
+        theme.mode,
+        form.channel,
+        createSavePayload(form),
       );
       applyBundle(response, { preserveMerchantReference: form.commonValues.merchantReference });
       setSaveMessage(`Saved defaults for ${response.channel}.`);

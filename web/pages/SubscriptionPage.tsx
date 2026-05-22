@@ -17,15 +17,19 @@ import {
 } from './pageChrome';
 import {
   buildApiLogContext,
-  buildOperatorHeaders,
   buildFailureResult,
-  fetchJson,
   getNumericStatus,
   loadingLabels,
-  resolveApiUrl,
   type ApiResultView,
   updatePathValue,
 } from './operatorShared';
+import {
+  createSubscriptionRequest,
+  fetchSubscriptionDefaults,
+  generateSubscriptionMerchantRef,
+  previewSubscriptionRequest,
+  saveSubscriptionDefaults,
+} from './operatorApi';
 import {
   RequestBuilderCard,
   type RequestBuilderFieldOverride,
@@ -144,13 +148,7 @@ export function SubscriptionPage() {
     setApiResult(null);
 
     try {
-      const query = channel ? `?channel=${encodeURIComponent(channel)}` : '';
-      const response = await fetchJson<SubscriptionDefaultsResponse>(
-        `${defaultsEndpoint}${query}`,
-        {
-          headers: buildOperatorHeaders(theme.mode),
-        },
-      );
+      const response = await fetchSubscriptionDefaults(theme.mode, channel);
 
       startTransition(() => {
         applyBundle(response, options);
@@ -205,11 +203,7 @@ export function SubscriptionPage() {
     setLoading('preview');
 
     try {
-      const response = await fetchJson<SubscriptionPreviewResponse>(previewEndpoint, {
-        method: 'POST',
-        headers: buildOperatorHeaders(theme.mode),
-        body: JSON.stringify(form),
-      });
+      const response = await previewSubscriptionRequest(theme.mode, form);
       setPreview(response);
       setApiResult({
         ok: true,
@@ -238,11 +232,7 @@ export function SubscriptionPage() {
     setLoading('create');
 
     try {
-      const response = await fetch(resolveApiUrl(createEndpoint), {
-        method: 'POST',
-        headers: buildOperatorHeaders(theme.mode),
-        body: JSON.stringify(form),
-      });
+      const response = await createSubscriptionRequest(theme.mode, form);
       setApiResult({
         ...(await normalizeCreateResult(response)),
         logContext: createLogContext,
@@ -260,10 +250,7 @@ export function SubscriptionPage() {
     setLoading('generate');
 
     try {
-      const response = await fetchJson<SubscriptionMerchantRefResponse>(merchantRefEndpoint, {
-        method: 'POST',
-        headers: buildOperatorHeaders(theme.mode),
-      });
+      const response = await generateSubscriptionMerchantRef(theme.mode);
       setForm((current) =>
         current
           ? {
@@ -301,13 +288,10 @@ export function SubscriptionPage() {
     setLoading('save');
 
     try {
-      const response = await fetchJson<SubscriptionDefaultsSavedResponse>(
-        `${defaultsEndpoint}?channel=${encodeURIComponent(form.channel)}`,
-        {
-          method: 'PUT',
-          headers: buildOperatorHeaders(theme.mode),
-          body: JSON.stringify(createSavePayload(form)),
-        },
+      const response = await saveSubscriptionDefaults(
+        theme.mode,
+        form.channel,
+        createSavePayload(form),
       );
       applyBundle(response, { preserveMerchantRef: form.commonValues.merchantRef });
       setApiResult({
