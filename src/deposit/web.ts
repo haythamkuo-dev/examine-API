@@ -4,6 +4,7 @@ import {
   type DepositCollectOverride,
 } from '../domains/deposit';
 import type { CommandRequest, CommandResult } from '../runner';
+import { maskRequestHeaders } from '../utils';
 import { getRequestFailureHint } from './failureHint';
 
 export type DepositFieldOption = {
@@ -140,26 +141,6 @@ export const createLegacyDepositFormValues = (
     },
   },
 });
-
-export const maskRequestHeaders = (
-  headers?: Record<string, string>,
-): Record<string, string> | undefined => {
-  if (!headers) {
-    return undefined;
-  }
-
-  return Object.fromEntries(
-    Object.entries(headers).map(([key, value]) => {
-      if (key.toLowerCase() === 'authorization') {
-        const [scheme, token] = value.split(' ');
-        const suffix = token ? token.slice(-6) : '';
-        return [key, `${scheme || 'ApiKey'} ****${suffix}`];
-      }
-
-      return [key, value];
-    }),
-  );
-};
 
 export const buildDepositPreviewResponse = (
   env: CliEnv,

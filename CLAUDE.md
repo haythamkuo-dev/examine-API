@@ -45,7 +45,6 @@
 
 
 #### When writing Tests (Global 通用規範)
-<!-- - **DO:** 全面使用 `bun test`，嚴禁引入 Jest 或 Vitest 等其他工具。測試檔案需命名為 `*.test.ts` 並放在對應模組的同一層或 `__tests__` 目錄中。 -->
 - **DO:** 全面使用 Bun 原生測試框架 (`bun:test`)，嚴禁引入 Jest 或 Vitest 等其他工具。測試檔案需命名為 `*.test.ts` 並放在對應模組的同一層或 `__tests__` 目錄中。
 - **DO:** 測試專屬的環境變數（如 Mock 金鑰、測試用端點）必須統一透過 `.env.test` 載入，並嚴格遵循從 `src/core/env.ts` 讀取的專案標準。
 - **DO NOT:** 嚴禁在測試程式碼中 `Hard-coding` 任何環境變數或配置字串。
@@ -59,7 +58,6 @@
 - **DO:** 本專案無資料庫，**嚴禁** 在測試期間真實寫入或覆蓋原始的 JSON 檔案。API 狀態變更與資料重置，必須在 `beforeEach` 中呼叫伺服器 context 提供的重置鉤子（如 `resetDepositFixtures()`）處理，以確保測試案例絕對獨立。
 
 #### When writing Frontend Tests (Bun + Happy DOM)
-<!-- - **DO:** 必須透過 `--preload ./tests/web-setup.ts` 來註冊 `@happy-dom/global-registrator`。嚴禁將此設定檔用於後端測試，以避免環境污染。 -->
 - **DO:** 必須透過 `test:web` 腳本（含 `--preload ./tests/web-setup.ts` 或是依官方建議設定 `bunfig.toml`）來統一註冊 `@happy-dom/global-registrator`。**嚴禁**將此設定用於後端測試以避免環境污染。
 - **DO:** 必須在前端測試檔案的頂部加上 `/// <reference lib="dom" />`，確保 TypeScript 能正確識別瀏覽器 API 的型別
 - **DO:** 使用 `@testing-library/react` 來渲染及驗證 React 元件。
@@ -84,9 +82,9 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **examine-API** (1500 symbols, 2188 relationships, 46 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **examine-API** (1518 symbols, 2240 relationships, 55 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
-> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+<!-- > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
 ## Always Do
 
@@ -121,6 +119,6 @@ This project is indexed by GitNexus as **examine-API** (1500 symbols, 2188 relat
 | Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` | -->
 
 <!-- gitnexus:end -->

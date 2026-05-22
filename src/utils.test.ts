@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { keepAlive } from './utils';
+import { keepAlive, maskRequestHeaders } from './utils';
 
 type IntervalId = ReturnType<typeof setInterval>;
 type IntervalCallback = Parameters<typeof setInterval>[0];
@@ -75,5 +75,33 @@ describe('keepAlive', () => {
     stop();
 
     expect(clearedTimerId).toBe(timerId);
+  });
+});
+
+describe('maskRequestHeaders', () => {
+  test('returns undefined when headers are missing', () => {
+    expect(maskRequestHeaders()).toBeUndefined();
+  });
+
+  test('masks authorization headers and preserves unrelated headers', () => {
+    expect(
+      maskRequestHeaders({
+        Authorization: 'Bearer abcdef123456',
+        'X-Trace-Id': 'trace-1',
+      }),
+    ).toEqual({
+      Authorization: 'Bearer ****123456',
+      'X-Trace-Id': 'trace-1',
+    });
+  });
+
+  test('masks lowercase authorization header keys too', () => {
+    expect(
+      maskRequestHeaders({
+        authorization: 'ApiKey secret-token',
+      }),
+    ).toEqual({
+      authorization: 'ApiKey ****-token',
+    });
   });
 });

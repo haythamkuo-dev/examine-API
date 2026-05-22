@@ -50,6 +50,33 @@ export const createUniqueReference = (
   return makeId(fallbackPrefix);
 };
 
+/**
+ * Masks sensitive request headers before returning them to the UI.
+ *
+ * @param headers Headers generated for the proxied request.
+ * @returns The same headers with authorization token redacted.
+ * @throws Never throws explicitly.
+ */
+export const maskRequestHeaders = (
+  headers?: Record<string, string>,
+): Record<string, string> | undefined => {
+  if (!headers) {
+    return undefined;
+  }
+
+  return Object.fromEntries(
+    Object.entries(headers).map(([key, value]) => {
+      if (key.toLowerCase() === 'authorization') {
+        const [scheme, token] = value.split(' ');
+        const suffix = token ? token.slice(-6) : '';
+        return [key, `${scheme || 'ApiKey'} ****${suffix}`];
+      }
+
+      return [key, value];
+    }),
+  );
+};
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

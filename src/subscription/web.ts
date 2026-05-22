@@ -1,5 +1,5 @@
 import type { CliEnv, SubscriptionChannel } from '../core/env';
-import { createUniqueReference, generateSign } from '../utils';
+import { createUniqueReference, generateSign, maskRequestHeaders } from '../utils';
 import {
   createSubscriptionPayload,
   createSubscriptionRequest,
@@ -126,32 +126,6 @@ const buildPayloadFromForm = (
     ...payloadWithoutSign,
     sign: generateSign(payloadWithoutSign, subscriptionSignFields, env.signKey),
   };
-};
-
-/**
- * Masks sensitive request headers before returning them to the UI.
- *
- * @param headers Headers generated for the proxied request.
- * @returns The same headers with authorization token redacted.
- */
-export const maskRequestHeaders = (
-  headers?: Record<string, string>,
-): Record<string, string> | undefined => {
-  if (!headers) {
-    return undefined;
-  }
-
-  return Object.fromEntries(
-    Object.entries(headers).map(([key, value]) => {
-      if (key.toLowerCase() === 'authorization') {
-        const [scheme, token] = value.split(' ');
-        const suffix = token ? token.slice(-6) : '';
-        return [key, `${scheme || 'ApiKey'} ****${suffix}`];
-      }
-
-      return [key, value];
-    }),
-  );
 };
 
 /**
