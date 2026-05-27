@@ -14,6 +14,7 @@ import {
   saveSubscriptionDefaults,
 } from '../pages/operatorApi';
 import {
+  extractMerchantReferenceValue,
   buildApiLogContext,
   buildFailureResult,
   getNumericStatus,
@@ -29,19 +30,6 @@ const createEndpoint = '/api/subscription/create';
 const merchantRefEndpoint = '/api/subscription/merchant-ref';
 const merchantRefFieldKey = 'merchantRef';
 const isBlankMerchantRef = (value: string): boolean => !value.trim();
-
-const extractPreviewMerchantRef = (
-  preview: SubscriptionPreviewResponse,
-): string | null => {
-  const payload = preview.request.payload;
-
-  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
-    return null;
-  }
-
-  const merchantRef = (payload as Record<string, unknown>).merchant_ref;
-  return typeof merchantRef === 'string' && merchantRef.trim() ? merchantRef : null;
-};
 
 /**
  * Normalizes subscription create API responses into a panel-friendly result object.
@@ -232,7 +220,10 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
 
     try {
       const response = await previewSubscriptionRequest(mode, form);
-      const merchantRef = extractPreviewMerchantRef(response);
+      const merchantRef = extractMerchantReferenceValue(
+        response.request.payload,
+        'merchant_ref',
+      );
 
       if (merchantRef) {
         setForm((current) =>

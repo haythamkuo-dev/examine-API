@@ -14,6 +14,7 @@ import {
   saveDepositDefaults,
 } from '../pages/operatorApi';
 import {
+  extractMerchantReferenceValue,
   buildApiLogContext,
   buildFailureResult,
   getNumericStatus,
@@ -28,19 +29,6 @@ const previewEndpoint = '/api/deposit/preview';
 const createEndpoint = '/api/deposit/create';
 const merchantRefEndpoint = '/api/deposit/merchant-ref';
 const merchantRefFieldKey = 'merchantRef';
-
-const extractPreviewMerchantRef = (
-  preview: DepositPreviewResponse,
-): string | null => {
-  const payload = preview.request.payload;
-
-  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
-    return null;
-  }
-
-  const merchantRef = (payload as Record<string, unknown>).merchant_ref;
-  return typeof merchantRef === 'string' && merchantRef.trim() ? merchantRef : null;
-};
 
 /**
  * Manages page-local state and request handlers for the deposit operator screen.
@@ -146,7 +134,10 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
 
     try {
       const response = await previewDepositRequest(mode, form);
-      const merchantRef = extractPreviewMerchantRef(response);
+      const merchantRef = extractMerchantReferenceValue(
+        response.request.payload,
+        'merchant_ref',
+      );
 
       if (merchantRef) {
         setForm((current) =>

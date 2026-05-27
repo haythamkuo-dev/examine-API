@@ -48,6 +48,8 @@ export type ApiResultView = {
   raw: unknown;
 };
 
+export type MerchantReferencePayloadKey = 'merchant_ref' | 'merchant_reference';
+
 /**
  * Returns the localized environment label for the active operator theme mode.
  *
@@ -222,6 +224,25 @@ export const getNumericStatus = (value: unknown): number | null => {
 
   const candidate = (value as { status?: unknown }).status;
   return typeof candidate === 'number' ? candidate : null;
+};
+
+/**
+ * Extracts a merchant reference field from an operator preview payload.
+ *
+ * @param payload Unknown preview payload object returned by the backend.
+ * @param fieldKey Payload key to read, such as `merchant_ref` or `merchant_reference`.
+ * @returns Trimmed merchant reference value when present; otherwise `null`.
+ */
+export const extractMerchantReferenceValue = (
+  payload: unknown,
+  fieldKey: MerchantReferencePayloadKey,
+): string | null => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return null;
+  }
+
+  const value = (payload as Record<string, unknown>)[fieldKey];
+  return typeof value === 'string' && value.trim() ? value : null;
 };
 
 /**

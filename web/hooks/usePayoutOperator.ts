@@ -15,6 +15,7 @@ import {
   savePayoutDefaults,
 } from '../pages/operatorApi';
 import {
+  extractMerchantReferenceValue,
   buildApiLogContext,
   type ApiResultView,
   type OperatorEnvironmentMode,
@@ -64,21 +65,6 @@ const extractCreateDetails = (body: unknown, message: string): string | undefine
 };
 
 const isBlankMerchantReference = (value: string): boolean => !value.trim();
-
-const extractPreviewMerchantReference = (
-  preview: PayoutPreviewResponse,
-): string | null => {
-  const payload = preview.request.payload;
-
-  if (!isPlainObject(payload)) {
-    return null;
-  }
-
-  const merchantReference = payload.merchant_reference;
-  return typeof merchantReference === 'string' && merchantReference.trim()
-    ? merchantReference
-    : null;
-};
 
 /**
  * Normalizes payout create API responses into a panel-friendly result object.
@@ -327,7 +313,10 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
     try {
       const response = await previewPayoutRequest(mode, form);
-      const merchantReference = extractPreviewMerchantReference(response);
+      const merchantReference = extractMerchantReferenceValue(
+        response.request.payload,
+        'merchant_reference',
+      );
 
       if (merchantReference) {
         setForm((current) =>

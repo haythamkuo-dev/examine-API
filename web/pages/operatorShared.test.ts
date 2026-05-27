@@ -4,6 +4,7 @@ import '../../tests/web-setup';
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 import {
   buildOperatorHeaders,
+  extractMerchantReferenceValue,
   fetchJson,
   getOperatorEnvironmentLabel,
 } from './operatorShared';
@@ -45,5 +46,29 @@ describe('operatorShared', () => {
 
   test('returns the localized label for the product environment', () => {
     expect(getOperatorEnvironmentLabel('product')).toBe('產品');
+  });
+
+  test('extracts merchant_ref from a preview payload object', () => {
+    expect(
+      extractMerchantReferenceValue(
+        { merchant_ref: 'TEST_ORDER_123' },
+        'merchant_ref',
+      ),
+    ).toBe('TEST_ORDER_123');
+  });
+
+  test('extracts merchant_reference from a preview payload object', () => {
+    expect(
+      extractMerchantReferenceValue(
+        { merchant_reference: 'TEST_ORDER_456' },
+        'merchant_reference',
+      ),
+    ).toBe('TEST_ORDER_456');
+  });
+
+  test('returns null for missing or invalid merchant reference payloads', () => {
+    expect(extractMerchantReferenceValue(null, 'merchant_ref')).toBeNull();
+    expect(extractMerchantReferenceValue([], 'merchant_reference')).toBeNull();
+    expect(extractMerchantReferenceValue({ merchant_ref: '   ' }, 'merchant_ref')).toBeNull();
   });
 });
