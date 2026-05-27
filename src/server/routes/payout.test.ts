@@ -13,7 +13,7 @@ type PayoutApiRequestBody = {
 
 const createRequestUrl = (baseUrl: string, path: string): string => `${baseUrl}${path}`;
 
-const createPreviewBody = (): PayoutApiRequestBody => ({
+const createValidBody = (): PayoutApiRequestBody => ({
   channel: 'co_bank',
   commonValues: { merchantReference: 'TEST_BT_ORDER_125' },
   channelValues: {
@@ -116,7 +116,7 @@ describe('payout API routes', () => {
   });
 
   test('POST /api/payout/preview returns 400 when required payout field is blank', async () => {
-    const requestBody = createPreviewBody();
+    const requestBody = createValidBody();
     const payoutInfo = requestBody.channelValues.payout_info as Record<string, unknown>;
     const beneficiary = payoutInfo.beneficiary as Record<string, unknown>;
     beneficiary.name = '   ';
@@ -137,7 +137,7 @@ describe('payout API routes', () => {
     const response = await requestApi('/api/payout/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(createPreviewBody()),
+      body: JSON.stringify(createValidBody()),
     });
 
     expect(response.status).toBe(200);
@@ -158,7 +158,7 @@ describe('payout API routes', () => {
     expect(payoutInfo.remitter).toBeUndefined();
   });
 
-  test('POST /api/payout/create proxies upstream status and prunes optional remitter fields', async () => {
+  test('POST /api/payout/create proxies upstream status, prunes optional remitter fields, and preserves the provided merchant ref', async () => {
     let upstreamBody: Record<string, unknown> | null = null;
     let upstreamAuthorization = '';
 
@@ -206,7 +206,7 @@ describe('payout API routes', () => {
       | Record<string, unknown>
       | undefined;
     expect(upstreamPayoutInfo).toBeDefined();
-    expect((upstreamBody as Record<string, unknown>).merchant_reference).toBe('TEST_ORDER_fixed-id');
+    expect((upstreamBody as Record<string, unknown>).merchant_reference).toBe('TEST_BD_001');
     expect(upstreamPayoutInfo?.remitter).toBeUndefined();
   });
 

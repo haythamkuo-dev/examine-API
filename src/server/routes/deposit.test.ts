@@ -23,7 +23,7 @@ type DepositApiRequestBody = {
 
 const createRequestUrl = (baseUrl: string, path: string): string => `${baseUrl}${path}`;
 
-const createPreviewBody = (): DepositApiRequestBody => ({
+const createValidBody = (): DepositApiRequestBody => ({
   channel: 'southafrica_cards',
   commonValues: {
     productNo: 'DEP-FUTUREPAY_COLLECT-ZASOUTHAFRICACARDS-USD',
@@ -118,7 +118,7 @@ describe('deposit API routes', () => {
   });
 
   test('POST /api/deposit/preview returns 400 when required deposit field is blank', async () => {
-    const requestBody = createPreviewBody();
+    const requestBody = createValidBody();
     const paymentOrder = requestBody.channelValues.payment_order as Record<string, unknown>;
     const collect = paymentOrder.collect as Record<string, unknown>;
     collect.product_name = '   ';
@@ -142,7 +142,7 @@ describe('deposit API routes', () => {
         'Content-Type': 'application/json',
         [targetEnvironmentHeaderName]: 'local',
       },
-      body: JSON.stringify(createPreviewBody()),
+      body: JSON.stringify(createValidBody()),
     });
 
     expect(response.status).toBe(200);
@@ -157,7 +157,7 @@ describe('deposit API routes', () => {
     expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
-  test('POST /api/deposit/create proxies upstream status with deposit payload', async () => {
+  test('POST /api/deposit/create proxies upstream status and preserves the provided merchant ref', async () => {
     let upstreamBody: Record<string, unknown> | null = null;
     let upstreamAuthorization = '';
 
@@ -177,7 +177,7 @@ describe('deposit API routes', () => {
         'Content-Type': 'application/json',
         [targetEnvironmentHeaderName]: 'local',
       },
-      body: JSON.stringify(createPreviewBody()),
+      body: JSON.stringify(createValidBody()),
     });
 
     expect(response.status).toBe(200);
@@ -187,7 +187,7 @@ describe('deposit API routes', () => {
     expect(body.status).toBe(201);
     expect(upstreamAuthorization).toBe('ApiKey payout-token');
     expect(upstreamBody).not.toBeNull();
-    expect(upstreamBody?.merchant_ref).toBe('TEST_ORDER_fixed-id');
+    expect(upstreamBody?.merchant_ref).toBe('TEST_DEPOSIT_ORDER_125');
   });
 
   test('POST /api/deposit/create switches to the product env when requested', async () => {
@@ -210,7 +210,7 @@ describe('deposit API routes', () => {
         'Content-Type': 'application/json',
         [targetEnvironmentHeaderName]: 'product',
       },
-      body: JSON.stringify(createPreviewBody()),
+      body: JSON.stringify(createValidBody()),
     });
 
     expect(response.status).toBe(200);
@@ -225,7 +225,7 @@ describe('deposit API routes', () => {
         'Content-Type': 'application/json',
         [targetEnvironmentHeaderName]: 'staging',
       },
-      body: JSON.stringify(createPreviewBody()),
+      body: JSON.stringify(createValidBody()),
     });
 
     expect(response.status).toBe(400);
@@ -235,7 +235,7 @@ describe('deposit API routes', () => {
   });
 
   test('PUT /api/deposit/defaults persists deposit defaults into the isolated fixture copy', async () => {
-    const requestBody = createPreviewBody();
+    const requestBody = createValidBody();
     requestBody.commonValues.productNo = 'DEP-CUSTOM-TEST-001';
     requestBody.commonValues.merchantRef = 'TEST_DEPOSIT_OVERRIDDEN';
     requestBody.channelValues = {

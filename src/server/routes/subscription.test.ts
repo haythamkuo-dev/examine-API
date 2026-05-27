@@ -14,7 +14,7 @@ type SubscriptionApiRequestBody = {
 
 const createRequestUrl = (baseUrl: string, path: string): string => `${baseUrl}${path}`;
 
-const createPreviewBody = (): SubscriptionApiRequestBody => ({
+const createValidBody = (): SubscriptionApiRequestBody => ({
   channel: 'default',
   commonValues: {
     merchantRef: 'TEST_SUB_ORDER_125',
@@ -94,7 +94,7 @@ describe('subscription API routes', () => {
   });
 
   test('POST /api/subscription/preview returns 400 when required subscription field is blank', async () => {
-    const requestBody = createPreviewBody();
+    const requestBody = createValidBody();
     requestBody.channelValues.product_name = '   ';
 
     const response = await requestApi('/api/subscription/preview', {
@@ -113,7 +113,7 @@ describe('subscription API routes', () => {
     const response = await requestApi('/api/subscription/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(createPreviewBody()),
+      body: JSON.stringify(createValidBody()),
     });
 
     expect(response.status).toBe(200);
@@ -128,7 +128,7 @@ describe('subscription API routes', () => {
     expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
-  test('POST /api/subscription/create proxies upstream status with subscription payload', async () => {
+  test('POST /api/subscription/create proxies upstream status and preserves the provided merchant ref', async () => {
     let upstreamBody: Record<string, unknown> | null = null;
     let upstreamAuthorization = '';
 
@@ -145,7 +145,7 @@ describe('subscription API routes', () => {
     const response = await requestApi('/api/subscription/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(createPreviewBody()),
+      body: JSON.stringify(createValidBody()),
     });
 
     expect(response.status).toBe(200);
@@ -155,7 +155,7 @@ describe('subscription API routes', () => {
     expect(body.status).toBe(201);
     expect(upstreamAuthorization).toBe('ApiKey payout-token');
     expect(upstreamBody).not.toBeNull();
-    expect(upstreamBody?.merchant_ref).toBe('TEST_ORDER_fixed-id');
+    expect(upstreamBody?.merchant_ref).toBe('TEST_SUB_ORDER_125');
   });
 
   test('PUT /api/subscription/defaults persists subscription defaults into the isolated fixture copy', async () => {
