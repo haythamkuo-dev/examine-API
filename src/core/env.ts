@@ -168,7 +168,11 @@ export const getProductCliEnv = (env: NodeJS.ProcessEnv = process.env): CliEnv =
     baseUrl: env.API_PROD_BASE_URL || '',
     defaultMerchantApiToken: env.PROD_MERCHANT_API_TOKEN || '',
     indiaBangladeshMerchantApiToken: env.PROD_MERCHANT_API_TOKEN_INDIA_BANGLADESH || '',
-    env,
+    env: {
+      ...env,
+      SUBSCRIPTION_PLAN:
+        env.SUBSCRIPTION_PLAN_PROD || env.SUBSCRIPTION_PLAN || '01KKTEEJCJ5W12EMC01469Z4ZJ',
+    },
   });
 
 /**

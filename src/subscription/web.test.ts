@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 import { cp, mkdtemp, readFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
-import { getCliEnv } from '../core/env';
+import { getCliEnv, getProductCliEnv } from '../core/env';
 import { generateSign } from '../utils';
 import {
   buildSubscriptionPreviewResponse,
@@ -23,6 +23,16 @@ const env = getCliEnv({
   SUBSCRIPTION_URL: '/s2s/v1/subscriptions',
   CALLBACK_URL_SUBSCRIPTION: 'https://merchant.example.com/subscription/callback',
   SUBSCRIPTION_PLAN: 'PLAN-DEFAULT-001',
+});
+
+const productEnv = getProductCliEnv({
+  API_PROD_BASE_URL: 'https://prod.example.test',
+  MERCHANT_SIGN: 'prod-sign-key',
+  PROD_MERCHANT_API_TOKEN: 'subscription-prod-token',
+  SUBSCRIPTION_URL: '/s2s/v1/subscriptions',
+  CALLBACK_URL_SUBSCRIPTION: 'https://merchant.example.com/subscription/callback',
+  SUBSCRIPTION_PLAN: 'PLAN-STAGE-001',
+  SUBSCRIPTION_PLAN_PROD: 'PLAN-PROD-001',
 });
 
 const makeId = (prefix: string) => `${prefix}fixed-id`;
@@ -104,6 +114,26 @@ describe('subscription web helpers', () => {
         'sign-key',
       ),
     );
+  });
+
+  test('builds subscription request with the product subscription plan in product env', async () => {
+    const defaults = toSubscriptionDefaultsResponse(
+      'default',
+      await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
+    );
+    const values: SubscriptionFormValues = {
+      ...defaults.form,
+      commonValues: {
+        merchantRef: 'TEST_SUB_PROD_001',
+        returnUrl: 'https://merchant.example.com/subscription/return',
+      },
+    };
+
+    const request = buildSubscriptionRequestFromForm(productEnv, values, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.url).toBe('https://prod.example.test/s2s/v1/subscriptions');
+    expect(payload.subs_plan_id).toBe('PLAN-PROD-001');
   });
 
   test('preview generates a fresh merchant reference even when the form already has one', async () => {

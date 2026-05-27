@@ -80,9 +80,11 @@ const createLegacySubscriptionOverrides = (
 });
 
 const buildSubscriptionPayload = (
+  env: CliEnv,
   overrides: SubscriptionRequestOverrides,
 ): SubscriptionPayload => ({
   ...(clone(overrides.channelValues) as Omit<SubscriptionPayload, 'merchant_ref' | 'return_url' | 'sign'>),
+  subs_plan_id: env.subscriptionPlan,
   merchant_ref: overrides.commonValues.merchantRef,
   return_url: overrides.commonValues.returnUrl,
 });
@@ -123,7 +125,7 @@ export function createSubscriptionPayload(
     throw new TypeError(`Unsupported subscription channel: ${channel}`);
   }
 
-  const payload = buildSubscriptionPayload(overrides);
+  const payload = buildSubscriptionPayload(env, overrides);
 
   return {
     ...payload,
