@@ -23,6 +23,8 @@ const env = getCliEnv({
   SUBSCRIPTION_URL: '/s2s/v1/subscriptions',
   CALLBACK_URL_SUBSCRIPTION: 'https://merchant.example.com/subscription/callback',
   SUBSCRIPTION_PLAN: 'PLAN-DEFAULT-001',
+  SUBSCRIPTION_PLAN_LINEPAY: 'PLAN-LINEPAY-001',
+  SUBSCRIPTION_PLAN_TNG: 'PLAN-TNG-001',
 });
 
 const productEnv = getProductCliEnv({
@@ -33,6 +35,8 @@ const productEnv = getProductCliEnv({
   CALLBACK_URL_SUBSCRIPTION: 'https://merchant.example.com/subscription/callback',
   SUBSCRIPTION_PLAN: 'PLAN-STAGE-001',
   SUBSCRIPTION_PLAN_PROD: 'PLAN-PROD-001',
+  SUBSCRIPTION_PLAN_PROD_LINEPAY: 'PLAN-PROD-LINEPAY-001',
+  SUBSCRIPTION_PLAN_PROD_TNG: 'PLAN-PROD-TNG-001',
 });
 
 const makeId = (prefix: string) => `${prefix}fixed-id`;
@@ -52,12 +56,14 @@ beforeEach(async () => {
 });
 
 describe('subscription web helpers', () => {
-  test('creates seed subscription presets for the default channel', async () => {
+  test('creates seed subscription presets for all configured channels without editable plan ids', async () => {
     const result = await createSeedSubscriptionPresets({ dirPath: presetDirPath, env, makeId });
 
     expect(result.common.values.merchantRef).toBe('TEST_ORDER_fixed-id');
     expect(result.channels.default.schema.interval_count.kind).toBe('number');
-    expect(result.channels.default.values.subs_plan_id).toBe('01KKTEEJCJ5W12EMC01469Z4ZJ');
+    expect(result.channels.rabbitLinePay.schema.interval_count.kind).toBe('number');
+    expect(result.channels.touchAndGo.schema.interval_count.kind).toBe('number');
+    expect(result.channels.default.values.subs_plan_id).toBeUndefined();
     expect(result.channels.default.values.payment_instrument).toEqual({
       os_type: 'WEB',
       terminal_type: 'WEB',
@@ -115,26 +121,38 @@ describe('subscription web helpers', () => {
         'sign-key',
       ),
     );
+    expect(payload.subs_plan_id).toBe('PLAN-DEFAULT-001');
   });
 
-  test('builds subscription request with the product subscription plan in product env', async () => {
-    const defaults = toSubscriptionDefaultsResponse(
-      'default',
-      await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
-    );
-    const values: SubscriptionFormValues = {
-      ...defaults.form,
-      commonValues: {
-        merchantRef: 'TEST_SUB_PROD_001',
-        returnUrl: 'https://merchant.example.com/subscription/return',
-      },
-    };
+  test('builds channel-specific subscription requests for local and product envs', async () => {
+    const channels = [
+      ['default', 'PLAN-DEFAULT-001', 'PLAN-PROD-001'],
+      ['rabbitLinePay', 'PLAN-LINEPAY-001', 'PLAN-PROD-LINEPAY-001'],
+      ['touchAndGo', 'PLAN-TNG-001', 'PLAN-PROD-TNG-001'],
+    ] as const;
 
-    const request = buildSubscriptionRequestFromForm(productEnv, values, makeId);
-    const payload = request.payload as Record<string, unknown>;
+    for (const [channel, localPlanId, productPlanId] of channels) {
+      const defaults = toSubscriptionDefaultsResponse(
+        channel,
+        await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
+      );
+      const values: SubscriptionFormValues = {
+        ...defaults.form,
+        channel,
+        commonValues: {
+          merchantRef: `TEST_SUB_${channel}`,
+          returnUrl: 'https://merchant.example.com/subscription/return',
+        },
+      };
 
-    expect(request.url).toBe('https://prod.example.test/s2s/v1/subscriptions');
-    expect(payload.subs_plan_id).toBe('PLAN-PROD-001');
+      const localRequest = buildSubscriptionRequestFromForm(env, values, makeId);
+      const productRequest = buildSubscriptionRequestFromForm(productEnv, values, makeId);
+
+      expect(localRequest.url).toBe('https://example.test/s2s/v1/subscriptions');
+      expect((localRequest.payload as Record<string, unknown>).subs_plan_id).toBe(localPlanId);
+      expect(productRequest.url).toBe('https://prod.example.test/s2s/v1/subscriptions');
+      expect((productRequest.payload as Record<string, unknown>).subs_plan_id).toBe(productPlanId);
+    }
   });
 
   test('preview generates a fresh merchant reference even when the form already has one', async () => {
@@ -195,5 +213,29 @@ describe('subscription web helpers', () => {
     expect(savedCommon).toContain('"merchant_ref": "TEST_SUB_OVERRIDDEN"');
     expect(savedCommon).toContain('"return_url": "https://merchant.example.com/subscription/updated"');
     expect(savedChannel).toContain('"product_name": "Updated subscription product"');
+    expect(savedChannel).not.toContain('subs_plan_id');
+  });
+
+  test('throws when a selected channel has no configured subscription plan', async () => {
+    const defaults = toSubscriptionDefaultsResponse(
+      'rabbitLinePay',
+      await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
+    );
+    const values: SubscriptionFormValues = {
+      ...defaults.form,
+      channel: 'rabbitLinePay',
+    };
+    const invalidEnv = getCliEnv({
+      API_BASE_URL: 'https://example.test',
+      MERCHANT_SIGN: 'sign-key',
+      NORMAL_MERCHANT_API_TOKEN: 'subscription-token',
+      SUBSCRIPTION_URL: '/s2s/v1/subscriptions',
+      CALLBACK_URL_SUBSCRIPTION: 'https://merchant.example.com/subscription/callback',
+      SUBSCRIPTION_PLAN: 'PLAN-DEFAULT-001',
+    });
+
+    expect(() => buildSubscriptionRequestFromForm(invalidEnv, values, makeId)).toThrow(
+      'Missing subscription plan configuration for "rabbitLinePay". Expected env var: SUBSCRIPTION_PLAN_LINEPAY',
+    );
   });
 });

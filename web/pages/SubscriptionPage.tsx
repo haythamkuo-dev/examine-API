@@ -28,6 +28,9 @@ export function SubscriptionPage() {
     commonSchema,
     channelSchema,
     channels,
+    resolvedPlanId,
+    canSubmit,
+    hasMissingPlanConfig,
     preview,
     apiResult,
     loading,
@@ -81,6 +84,19 @@ export function SubscriptionPage() {
             channels={channels}
             selectedChannel={form.channel}
             onChannelChange={onChannelChange}
+            channelDetail={(
+              <label className="grid gap-2">
+                <span className="text-[13px] font-medium tracking-[0.01em] text-[color:var(--color-text-muted)]">
+                  Plan ID
+                </span>
+                <input
+                  className="w-full rounded-2xl border border-[var(--operator-input-border)] bg-[var(--operator-input-bg)] px-4 py-3 text-[var(--color-text)] shadow-[var(--operator-input-shadow)] transition duration-200"
+                  value={resolvedPlanId}
+                  readOnly
+                  aria-readonly="true"
+                />
+              </label>
+            )}
             commonSchema={commonSchema}
             commonValues={form.commonValues as Record<string, unknown>}
             onCommonValueChange={updateCommonValue}
@@ -91,6 +107,17 @@ export function SubscriptionPage() {
             loadingLabel={loading ? loadingLabels[loading] : 'Form ready'}
             disabled={loading !== null}
             actions={actions}
+            footer={
+              error && hasMissingPlanConfig ? (
+                <div
+                  className="rounded-[18px] border border-[var(--status-danger-border)] bg-[var(--status-danger-bg)] px-4 py-3 text-sm text-[var(--status-danger-text)]"
+                  role="alert"
+                >
+                  {error}
+                  {!canSubmit ? ' Switch to a configured channel or fix the backend env before previewing or sending requests.' : ''}
+                </div>
+              ) : null
+            }
           />
         </form>
 

@@ -7,6 +7,11 @@ import {
 } from '../domains/subscription';
 import type { CommandRequest, CommandResult } from '../runner';
 
+/**
+ * Stable API error code returned when the selected subscription channel is missing its required plan env var.
+ */
+export const missingSubscriptionPlanCode = 'MISSING_SUBSCRIPTION_PLAN';
+
 type SubscriptionFieldSchemaBase = {
   label: string;
   required?: boolean;
@@ -69,6 +74,7 @@ export type SubscriptionFormValues = {
 export type SubscriptionDefaultsResponse = {
   availableChannels: SubscriptionChannel[];
   channel: SubscriptionChannel;
+  resolvedPlanId: string;
   commonSchema: SubscriptionFieldMap;
   channelSchema: SubscriptionFieldMap;
   form: SubscriptionFormValues;
@@ -95,6 +101,7 @@ export type SubscriptionDefaultsSavedResponse = {
   ok: true;
   availableChannels: SubscriptionChannel[];
   channel: SubscriptionChannel;
+  resolvedPlanId: string;
   commonSchema: SubscriptionFieldMap;
   channelSchema: SubscriptionFieldMap;
   form: SubscriptionFormValues;

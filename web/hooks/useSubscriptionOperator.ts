@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import type {
   SubscriptionDefaultsResponse,
   SubscriptionDefaultsSavedResponse,
@@ -6,6 +6,7 @@ import type {
   SubscriptionFormValues,
   SubscriptionPreviewResponse,
 } from '../../src/subscription/web';
+import { missingSubscriptionPlanCode } from '../../src/subscription/web';
 import {
   createSubscriptionRequest,
   fetchSubscriptionDefaults,
@@ -14,6 +15,7 @@ import {
   saveSubscriptionDefaults,
 } from '../pages/operatorApi';
 import {
+  ApiRequestError,
   extractMerchantReferenceValue,
   buildApiLogContext,
   buildFailureResult,
@@ -30,6 +32,30 @@ const createEndpoint = '/api/subscription/create';
 const merchantRefEndpoint = '/api/subscription/merchant-ref';
 const merchantRefFieldKey = 'merchantRef';
 const isBlankMerchantRef = (value: string): boolean => !value.trim();
+const missingPlanMessageFallback = 'Subscription plan configuration is missing for the selected channel.';
+
+type OperatorApiErrorBody = {
+  code?: string;
+  message?: string;
+};
+
+const parseOperatorApiErrorBody = (rawBody: string): OperatorApiErrorBody | null => {
+  const trimmedBody = rawBody.trim();
+  if (!trimmedBody) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmedBody) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return null;
+    }
+
+    return parsed as OperatorApiErrorBody;
+  } catch {
+    return null;
+  }
+};
 
 /**
  * Normalizes subscription create API responses into a panel-friendly result object.
@@ -96,11 +122,14 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
   const [commonSchema, setCommonSchema] = useState<SubscriptionFieldMap>({});
   const [channelSchema, setChannelSchema] = useState<SubscriptionFieldMap>({});
   const [channels, setChannels] = useState<string[]>([]);
+  const [resolvedPlanId, setResolvedPlanId] = useState('');
   const [preview, setPreview] = useState<SubscriptionPreviewResponse | null>(null);
   const [apiResult, setApiResult] = useState<ApiResultView | null>(null);
   const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'generate' | 'save' | null>('defaults');
   const [error, setError] = useState<string | null>(null);
   const [persistedMerchantRef, setPersistedMerchantRef] = useState<string | null>(null);
+  const [hasMissingPlanConfig, setHasMissingPlanConfig] = useState(false);
+  const latestDefaultsRequestIdRef = useRef(0);
   const defaultsLogContext = buildApiLogContext(defaultsEndpoint, mode);
   const previewLogContext = buildApiLogContext(previewEndpoint, mode);
   const createLogContext = buildApiLogContext(createEndpoint, mode);
@@ -113,6 +142,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     setChannels(response.availableChannels);
     setCommonSchema(response.commonSchema);
     setChannelSchema(response.channelSchema);
+    setResolvedPlanId(response.resolvedPlanId);
     setPersistedMerchantRef(response.form.commonValues.merchantRef);
     setForm({
       ...response.form,
@@ -127,27 +157,48 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     channel?: string,
     options?: { preserveMerchantRef?: string | null },
   ) => {
+    const requestId = latestDefaultsRequestIdRef.current + 1;
+    latestDefaultsRequestIdRef.current = requestId;
     setLoading('defaults');
     setError(null);
+    setHasMissingPlanConfig(false);
     setPreview(null);
     setApiResult(null);
 
     try {
       const response = await fetchSubscriptionDefaults(mode, channel);
+      if (latestDefaultsRequestIdRef.current !== requestId) {
+        return;
+      }
 
       startTransition(() => {
         applyBundle(response, options);
         setLoading(null);
       });
     } catch (caught) {
+      if (latestDefaultsRequestIdRef.current !== requestId) {
+        return;
+      }
+
       setError(caught instanceof Error ? caught.message : String(caught));
+      if (caught instanceof ApiRequestError) {
+        const errorBody = parseOperatorApiErrorBody(caught.rawBody);
+        if (errorBody?.code === missingSubscriptionPlanCode) {
+          setHasMissingPlanConfig(true);
+          setResolvedPlanId('');
+          setError(errorBody.message || missingPlanMessageFallback);
+          setLoading(null);
+          return;
+        }
+      }
+
       setLoading(null);
     }
   };
 
   useEffect(() => {
-    void loadDefaults();
-  }, []);
+    void loadDefaults(form?.channel, { preserveMerchantRef: form?.commonValues.merchantRef ?? null });
+  }, [mode]);
 
   const createSavePayload = (values: SubscriptionFormValues): SubscriptionFormValues => ({
     ...values,
@@ -360,11 +411,16 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     },
   };
 
+  const canSubmit = !hasMissingPlanConfig;
+
   return {
     form,
     commonSchema,
     channelSchema,
     channels,
+    resolvedPlanId,
+    canSubmit,
+    hasMissingPlanConfig,
     preview,
     apiResult,
     loading,
@@ -375,8 +431,18 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     commonFieldOverrides,
     updateCommonValue,
     updateChannelValue,
-    onChannelChange: (channel: string) =>
-      void loadDefaults(channel, { preserveMerchantRef: form?.commonValues.merchantRef ?? null }),
+    onChannelChange: (channel: string) => {
+      setResolvedPlanId('');
+      setForm((current) =>
+        current
+          ? {
+              ...current,
+              channel: channel as SubscriptionFormValues['channel'],
+            }
+          : current,
+      );
+      void loadDefaults(channel, { preserveMerchantRef: form?.commonValues.merchantRef ?? null });
+    },
     actions: form
       ? [
           {
@@ -385,9 +451,13 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
               void loadDefaults(form.channel, { preserveMerchantRef: form.commonValues.merchantRef }),
           },
           { label: 'New draft', onClick: () => void loadDefaults(form.channel) },
-          { label: 'Preview request', onClick: () => void submitPreview() },
-          { label: 'Send request', tone: 'primary' as const, onClick: () => void submitCreate() },
-          { label: 'Save defaults', tone: 'ghost' as const, onClick: () => void saveDefaults() },
+          ...(canSubmit
+            ? [
+                { label: 'Preview request', onClick: () => void submitPreview() },
+                { label: 'Send request', tone: 'primary' as const, onClick: () => void submitCreate() },
+                { label: 'Save defaults', tone: 'ghost' as const, onClick: () => void saveDefaults() },
+              ]
+            : []),
         ]
       : [],
   };

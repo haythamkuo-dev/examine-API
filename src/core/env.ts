@@ -18,7 +18,7 @@ export const DEPOSIT_CHANNELS = [
 ] as const;
 
 export const PAYOUT_CHANNELS = ['co_bank', 'co_wallet', 'imps', 'bd_wallet'] as const;
-export const SUBSCRIPTION_CHANNELS = ['default'] as const;
+export const SUBSCRIPTION_CHANNELS = ['default', 'rabbitLinePay', 'touchAndGo'] as const;
 
 export type DepositChannel = (typeof DEPOSIT_CHANNELS)[number];
 export type PayoutChannel = (typeof PAYOUT_CHANNELS)[number];
@@ -37,7 +37,7 @@ export type CliEnv = {
   subscriptionUrl: string;
   callbackUrlDeposit?: string;
   callbackUrlSubscription?: string;
-  subscriptionPlan: string;
+  subscriptionPlans: Record<SubscriptionChannel, string>;
   tokens: {
     deposit: string;
     subscription: string;
@@ -103,10 +103,64 @@ export const resolvePayoutMerchantTokenKey = (channel: PayoutChannel): MerchantT
 export const getMerchantToken = (env: CliEnv, tokenKey: MerchantTokenKey): string =>
   env.merchantTokens[tokenKey];
 
+export class SubscriptionPlanConfigError extends TypeError {
+  /**
+   * Builds an error describing a missing subscription plan mapping for a channel/environment pair.
+   *
+   * @param channel Subscription channel being resolved.
+   * @param baseEnvVar Base environment variable name for the target environment.
+   * @returns An error with an actionable configuration message.
+   */
+  constructor(channel: SubscriptionChannel, baseEnvVar: string) {
+    super(`Missing subscription plan configuration for "${channel}". Expected env var: ${baseEnvVar}`);
+    this.name = 'SubscriptionPlanConfigError';
+  }
+}
+
+const getSubscriptionPlanEnvVarName = (
+  channel: SubscriptionChannel,
+  target: TargetEnvironment,
+): string => {
+  const prefix = target === 'product' ? 'SUBSCRIPTION_PLAN_PROD' : 'SUBSCRIPTION_PLAN';
+
+  if (channel === 'default') {
+    return prefix;
+  }
+
+  if (channel === 'rabbitLinePay') {
+    return `${prefix}_LINEPAY`;
+  }
+
+  return `${prefix}_TNG`;
+};
+
+/**
+ * Resolves the configured subscription plan for a specific channel.
+ *
+ * @param env Runtime environment containing channel-scoped subscription plans.
+ * @param channel Subscription channel being requested.
+ * @param target Target operator environment for error reporting.
+ * @returns The configured subscription plan id.
+ * @throws {SubscriptionPlanConfigError} When the selected channel has no configured plan id.
+ */
+export const resolveSubscriptionPlan = (
+  env: CliEnv,
+  channel: SubscriptionChannel,
+  target: TargetEnvironment = defaultTargetEnvironment,
+): string => {
+  const planId = env.subscriptionPlans[channel]?.trim();
+  if (!planId) {
+    throw new SubscriptionPlanConfigError(channel, getSubscriptionPlanEnvVarName(channel, target));
+  }
+
+  return planId;
+};
+
 const buildCliEnv = (params: {
   baseUrl: string;
   defaultMerchantApiToken: string;
   indiaBangladeshMerchantApiToken: string;
+  target: TargetEnvironment;
   env: NodeJS.ProcessEnv;
 }): CliEnv => ({
   baseUrl: params.baseUrl,
@@ -115,7 +169,13 @@ const buildCliEnv = (params: {
   subscriptionUrl: params.env.SUBSCRIPTION_URL || '/s2s/v1/subscriptions',
   callbackUrlDeposit: params.env.CALLBACK_URL_DEPOSIT,
   callbackUrlSubscription: params.env.CALLBACK_URL_SUBSCRIPTION,
-  subscriptionPlan: params.env.SUBSCRIPTION_PLAN || '01KKTEEJCJ5W12EMC01469Z4ZJ',
+  subscriptionPlans: {
+    default: params.env[params.target === 'product' ? 'SUBSCRIPTION_PLAN_PROD' : 'SUBSCRIPTION_PLAN'] || '',
+    rabbitLinePay:
+      params.env[params.target === 'product' ? 'SUBSCRIPTION_PLAN_PROD_LINEPAY' : 'SUBSCRIPTION_PLAN_LINEPAY'] || '',
+    touchAndGo:
+      params.env[params.target === 'product' ? 'SUBSCRIPTION_PLAN_PROD_TNG' : 'SUBSCRIPTION_PLAN_TNG'] || '',
+  },
   tokens: {
     deposit: params.defaultMerchantApiToken,
     subscription: params.defaultMerchantApiToken,
@@ -153,6 +213,7 @@ export const getCliEnv = (env: NodeJS.ProcessEnv = process.env): CliEnv =>
     baseUrl: env.API_BASE_URL || 'https://stage.sidediff.com',
     defaultMerchantApiToken: env.NORMAL_MERCHANT_API_TOKEN || '',
     indiaBangladeshMerchantApiToken: env.INDIA_BANGLADESH_MERCHANT_API_TOKEN || '',
+    target: 'local',
     env,
   });
 
@@ -168,11 +229,8 @@ export const getProductCliEnv = (env: NodeJS.ProcessEnv = process.env): CliEnv =
     baseUrl: env.API_PROD_BASE_URL || '',
     defaultMerchantApiToken: env.PROD_MERCHANT_API_TOKEN || '',
     indiaBangladeshMerchantApiToken: env.PROD_MERCHANT_API_TOKEN_INDIA_BANGLADESH || '',
-    env: {
-      ...env,
-      SUBSCRIPTION_PLAN:
-        env.SUBSCRIPTION_PLAN_PROD || env.SUBSCRIPTION_PLAN || '01KKTEEJCJ5W12EMC01469Z4ZJ',
-    },
+    target: 'product',
+    env,
   });
 
 /**

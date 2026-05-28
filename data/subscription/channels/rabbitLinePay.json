@@ -1,7 +1,7 @@
 {
   "amount": {
     "amount": "111.00",
-    "currency_code": "USD"
+    "currency_code": "THB"
   },
   "interval_unit": "day",
   "interval_count": 1,
@@ -13,7 +13,7 @@
     "name": "王小明",
     "phone": "0912345678",
     "email": "test@example.com",
-    "country_code": "ZA"
+    "country_code": "TH"
   },
   "origin": "https://www.amazon.com/",
   "payment_instrument": {

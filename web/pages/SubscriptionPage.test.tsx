@@ -38,11 +38,6 @@ const commonSchema: SubscriptionFieldMap = {
 };
 
 const channelSchema: SubscriptionFieldMap = {
-  subs_plan_id: {
-    kind: 'text',
-    label: 'Plan ID',
-    required: true,
-  },
   product_name: {
     kind: 'text',
     label: 'Product name',
@@ -51,14 +46,13 @@ const channelSchema: SubscriptionFieldMap = {
 };
 
 const createForm = (overrides?: Partial<SubscriptionFormValues>): SubscriptionFormValues => ({
-  channel,
+  channel: overrides?.channel ?? channel,
   commonValues: {
     merchantRef: 'merchant-sub-default',
     returnUrl: 'https://merchant.example.com/subscription',
     ...(overrides?.commonValues ?? {}),
   },
   channelValues: {
-    subs_plan_id: 'plan-default',
     product_name: 'Subscription product',
     ...(overrides?.channelValues ?? {}),
   },
@@ -69,6 +63,7 @@ const createDefaultsResponse = (
 ): SubscriptionDefaultsResponse => ({
   availableChannels: [channel],
   channel,
+  resolvedPlanId: 'plan-default',
   commonSchema,
   channelSchema,
   form: createForm(overrides?.form),
@@ -81,6 +76,7 @@ const createSavedDefaultsResponse = (
   ok: true,
   availableChannels: [channel],
   channel,
+  resolvedPlanId: 'plan-default',
   commonSchema,
   channelSchema,
   form: createForm({
@@ -203,7 +199,10 @@ describe('SubscriptionPage', () => {
     const view = renderSubscriptionPage();
 
     await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    await view.findByLabelText('Merchant reference *');
     expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
+    expect(view.getByLabelText('Plan ID')).toHaveAttribute('readonly');
+    expect(view.getByLabelText('Plan ID')).toHaveValue('plan-default');
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
@@ -389,5 +388,155 @@ describe('SubscriptionPage', () => {
     await waitFor(() => {
       expect(view.getByText('Request sent successfully.')).toBeInTheDocument();
     });
+  });
+
+  test('updates the displayed plan id when the selected channel changes', async () => {
+    setRouteHandlers({
+      'GET /api/subscription/defaults': async () =>
+        jsonResponse(
+          createDefaultsResponse({
+            availableChannels: ['default', 'rabbitLinePay'],
+          }),
+        ),
+      'GET /api/subscription/defaults?channel=rabbitLinePay': async () =>
+        jsonResponse(
+          createDefaultsResponse({
+            availableChannels: ['default', 'rabbitLinePay'],
+            channel: 'rabbitLinePay',
+            resolvedPlanId: 'plan-rabbit-linepay',
+            form: createForm({
+              channel: 'rabbitLinePay',
+            }),
+          }),
+        ),
+    });
+
+    const view = renderSubscriptionPage();
+
+    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    expect(view.getByLabelText('Plan ID')).toHaveValue('plan-default');
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Channel'), {
+        target: { value: 'rabbitLinePay' },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Plan ID')).toHaveValue('plan-rabbit-linepay');
+    });
+  });
+
+  test('keeps the selected channel visible while channel defaults are still loading', async () => {
+    setRouteHandlers({
+      'GET /api/subscription/defaults': async () =>
+        jsonResponse(
+          createDefaultsResponse({
+            availableChannels: ['default', 'rabbitLinePay'],
+          }),
+        ),
+      'GET /api/subscription/defaults?channel=rabbitLinePay': async () => {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        return jsonResponse(
+          createDefaultsResponse({
+            availableChannels: ['default', 'rabbitLinePay'],
+            channel: 'rabbitLinePay',
+            resolvedPlanId: 'plan-rabbit-linepay',
+            form: createForm({
+              channel: 'rabbitLinePay',
+            }),
+          }),
+        );
+      },
+    });
+
+    const view = renderSubscriptionPage();
+
+    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Channel'), {
+        target: { value: 'rabbitLinePay' },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Channel')).toHaveValue('rabbitLinePay');
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Plan ID')).toHaveValue('plan-rabbit-linepay');
+      expect(view.getByLabelText('Channel')).toHaveValue('rabbitLinePay');
+    });
+  });
+
+  test('updates the displayed plan id when the environment changes', async () => {
+    setRouteHandlers({
+      'GET /api/subscription/defaults': async () => jsonResponse(createDefaultsResponse()),
+      [`GET /api/subscription/defaults?channel=${channel}`]: async () =>
+        jsonResponse(
+          createDefaultsResponse({
+            resolvedPlanId: 'plan-product-default',
+          }),
+        ),
+    });
+
+    const view = renderSubscriptionPage();
+
+    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    expect(view.getByLabelText('Plan ID')).toHaveValue('plan-default');
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: '產品' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Plan ID')).toHaveValue('plan-product-default');
+    });
+  });
+
+  test('shows the exact missing-plan error and blocks request actions for the selected channel', async () => {
+    const missingPlanMessage =
+      'Missing subscription plan configuration for "rabbitLinePay". Expected env var: SUBSCRIPTION_PLAN_LINEPAY';
+
+    setRouteHandlers({
+      'GET /api/subscription/defaults': async () =>
+        jsonResponse(
+          createDefaultsResponse({
+            availableChannels: ['default', 'rabbitLinePay'],
+          }),
+        ),
+      'GET /api/subscription/defaults?channel=rabbitLinePay': async () =>
+        jsonResponse(
+          {
+            ok: false,
+            code: 'MISSING_SUBSCRIPTION_PLAN',
+            message: missingPlanMessage,
+          },
+          { status: 400 },
+        ),
+    });
+
+    const view = renderSubscriptionPage();
+
+    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Channel'), {
+        target: { value: 'rabbitLinePay' },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Channel')).toHaveValue('rabbitLinePay');
+      expect(view.getByLabelText('Plan ID')).toHaveValue('');
+      expect(view.getByRole('alert')).toHaveTextContent(missingPlanMessage);
+    });
+
+    expect(view.queryByRole('button', { name: 'Preview request' })).toBeNull();
+    expect(view.queryByRole('button', { name: 'Send request' })).toBeNull();
+    expect(view.queryByRole('button', { name: 'Save defaults' })).toBeNull();
+    expect(view.getByRole('button', { name: 'Reload defaults' })).toBeInTheDocument();
+    expect(view.getByRole('button', { name: 'New draft' })).toBeInTheDocument();
   });
 });

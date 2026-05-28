@@ -150,6 +150,7 @@ describe('RequestBuilderCard', () => {
         channels={['alpha', 'beta']}
         selectedChannel="alpha"
         onChannelChange={onChannelChange}
+        channelDetail={<p>Plan ID detail</p>}
         commonSchema={{
           merchantRef: {
             kind: 'text',
@@ -190,6 +191,7 @@ describe('RequestBuilderCard', () => {
     expect(onChannelChange).toHaveBeenCalledWith('beta');
     expect(reload).toHaveBeenCalled();
     expect(preview).toHaveBeenCalled();
+    expect(view.getByText('Plan ID detail')).toBeTruthy();
     expect(view.getByText('Footer message')).toBeTruthy();
     expect(view.container.querySelectorAll('button')).toHaveLength(2);
   });

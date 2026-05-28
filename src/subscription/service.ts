@@ -43,6 +43,13 @@ export const getRequestedSubscriptionChannel = (url: URL): SubscriptionChannel =
  * @returns The subscription service API used by the HTTP layer.
  */
 export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
+  const loadPresets = () =>
+    loadSubscriptionPresets({
+      dirPath: deps.presetDirPath,
+      env: deps.getEnvForTarget('local'),
+      makeId: deps.makeId,
+    });
+
   const service = createPresetBackedService<
     SubscriptionChannel,
     SubscriptionFormValues,
@@ -52,13 +59,9 @@ export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
     SubscriptionCreateResponse,
     TargetEnvironment
   >({
-    loadPresets: () =>
-      loadSubscriptionPresets({
-        dirPath: deps.presetDirPath,
-        env: deps.getEnvForTarget('local'),
-        makeId: deps.makeId,
-      }),
-    toDefaultsResponse: toSubscriptionDefaultsResponse,
+    loadPresets,
+    toDefaultsResponse: (channel, presets) =>
+      toSubscriptionDefaultsResponse(channel, deps.getEnvForTarget('local'), 'local', presets),
     updatePreset: (channel, values) =>
       updateSubscriptionPreset({
         dirPath: deps.presetDirPath,
@@ -84,8 +87,52 @@ export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
   const generateMerchantRef = (): SubscriptionMerchantRefResponse =>
     buildSubscriptionMerchantRefResponse(deps.makeId('TEST_ORDER_'));
 
+  /**
+   * Loads target-aware defaults for the selected subscription channel.
+   *
+   * @param channel Subscription channel selected by the caller.
+   * @param target Target operator environment whose plan id should be surfaced.
+   * @returns Defaults payload containing the resolved plan id for the active channel and environment.
+   */
+  const getDefaultsForTarget = async (
+    channel: SubscriptionChannel,
+    target: TargetEnvironment,
+  ): Promise<SubscriptionDefaultsResponse> => {
+    const presets = await loadPresets();
+    return toSubscriptionDefaultsResponse(channel, deps.getEnvForTarget(target), target, presets);
+  };
+
+  /**
+   * Saves defaults for a channel and returns a target-aware defaults response.
+   *
+   * @param channel Subscription channel being updated.
+   * @param values Form values to persist.
+   * @param target Target operator environment whose plan id should be surfaced.
+   * @returns Saved defaults payload containing the resolved plan id for the active channel and environment.
+   */
+  const saveDefaultsForTarget = async (
+    channel: SubscriptionChannel,
+    values: SubscriptionFormValues,
+    target: TargetEnvironment,
+  ): Promise<SubscriptionDefaultsResponse & { ok: true }> => {
+    const presets = await updateSubscriptionPreset({
+      dirPath: deps.presetDirPath,
+      channel,
+      values,
+      env: deps.getEnvForTarget('local'),
+      makeId: deps.makeId,
+    });
+
+    return {
+      ok: true,
+      ...toSubscriptionDefaultsResponse(channel, deps.getEnvForTarget(target), target, presets),
+    };
+  };
+
   return {
     ...service,
     generateMerchantRef,
+    getDefaultsForTarget,
+    saveDefaultsForTarget,
   };
 };

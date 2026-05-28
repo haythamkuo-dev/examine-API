@@ -21,6 +21,8 @@ const env = getCliEnv({
   CALLBACK_URL_DEPOSIT: 'https://merchant.example.com/deposit',
   CALLBACK_URL_SUBSCRIPTION: 'https://merchant.example.com/subscription',
   SUBSCRIPTION_PLAN: 'PLAN-001',
+  SUBSCRIPTION_PLAN_LINEPAY: 'PLAN-LINEPAY-001',
+  SUBSCRIPTION_PLAN_TNG: 'PLAN-TNG-001',
 });
 
 const makeId = (prefix: string) => `${prefix}fixed-id`;

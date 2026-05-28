@@ -320,6 +320,7 @@ export function RequestBuilderCard(props: {
   channels: string[];
   selectedChannel: string;
   onChannelChange: (channel: string) => void;
+  channelDetail?: ReactNode;
   commonSchema: SharedFieldMap;
   commonValues: Record<string, unknown>;
   onCommonValueChange: (key: string, value: string) => void;
@@ -337,6 +338,7 @@ export function RequestBuilderCard(props: {
     channels,
     selectedChannel,
     onChannelChange,
+    channelDetail,
     commonSchema,
     commonValues,
     onCommonValueChange,
@@ -369,6 +371,7 @@ export function RequestBuilderCard(props: {
             ))}
           </select>
         </label>
+        {channelDetail ? <div className="mt-3">{channelDetail}</div> : null}
 
         <div className="mt-4 border-t border-[var(--operator-card-soft-border)] pt-5">
           <SectionHeading title="Shared fields" />

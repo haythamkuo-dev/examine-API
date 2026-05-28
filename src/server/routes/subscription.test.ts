@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { getCliEnvRegistry } from '../../core/env';
 import { startApiTestServer, type ApiTestServerContext } from '../../../tests/server-setup';
 
 type SubscriptionApiRequestBody = {
@@ -21,7 +22,6 @@ const createValidBody = (): SubscriptionApiRequestBody => ({
     returnUrl: 'https://merchant.example.com/subscription/callback',
   },
   channelValues: {
-    subs_plan_id: '01KKTEEJCJ5W12EMC01469Z4ZJ',
     amount: { amount: '111.00', currency_code: 'USD' },
     interval_unit: 'day',
     interval_count: 1,
@@ -50,7 +50,14 @@ describe('subscription API routes', () => {
     originalFetch(createRequestUrl(context.baseUrl, path), init);
 
   beforeAll(async () => {
-    context = await startApiTestServer();
+    context = await startApiTestServer({
+      envRegistry: getCliEnvRegistry({
+        ...process.env,
+        SUBSCRIPTION_PLAN: 'PLAN-STAGE-DEFAULT',
+        SUBSCRIPTION_PLAN_LINEPAY: 'PLAN-STAGE-LINEPAY',
+        SUBSCRIPTION_PLAN_TNG: 'PLAN-STAGE-TNG',
+      }),
+    });
   });
 
   afterAll(async () => {
@@ -76,8 +83,36 @@ describe('subscription API routes', () => {
     const commonValues = form.commonValues as Record<string, unknown>;
 
     expect(body.channel).toBe('default');
-    expect(body.availableChannels).toEqual(['default']);
+    expect(body.availableChannels).toEqual(['default', 'rabbitLinePay', 'touchAndGo']);
+    expect(body.resolvedPlanId).toBe('PLAN-STAGE-DEFAULT');
     expect(commonValues.merchantRef).toBe('TEST_ORDER_1250');
+  });
+
+  test('GET /api/subscription/defaults returns channel-specific defaults without editable plan ids', async () => {
+    const response = await requestApi('/api/subscription/defaults?channel=rabbitLinePay');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('rabbitLinePay');
+    expect(body.resolvedPlanId).toBe('PLAN-STAGE-LINEPAY');
+    expect(channelSchema.subs_plan_id).toBeUndefined();
+    expect(channelValues.subs_plan_id).toBeUndefined();
+  });
+
+  test('GET /api/subscription/defaults switches resolved plan id for the product environment', async () => {
+    const response = await requestApi('/api/subscription/defaults?channel=touchAndGo', {
+      headers: { 'X-Target-Environment': 'product' },
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body.resolvedPlanId).toBe('PLAN-PROD-TNG');
   });
 
   test('POST /api/subscription/merchant-ref returns a generated merchant reference', async () => {
@@ -126,6 +161,26 @@ describe('subscription API routes', () => {
     expect(request.url).toBe('https://example.test/s2s/v1/subscriptions');
     expect(headers.Authorization).toBe('ApiKey ****-token');
     expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
+    expect(payload.subs_plan_id).toBe('PLAN-STAGE-DEFAULT');
+  });
+
+  test('POST /api/subscription/preview injects the selected channel plan id', async () => {
+    const requestBody = createValidBody();
+    requestBody.channel = 'touchAndGo';
+
+    const response = await requestApi('/api/subscription/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const request = body.request as Record<string, unknown>;
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(payload.subs_plan_id).toBe('PLAN-STAGE-TNG');
   });
 
   test('POST /api/subscription/create proxies upstream status and preserves the provided merchant ref', async () => {
@@ -156,6 +211,66 @@ describe('subscription API routes', () => {
     expect(upstreamAuthorization).toBe('ApiKey payout-token');
     expect(upstreamBody).not.toBeNull();
     expect(upstreamBody?.merchant_ref).toBe('TEST_SUB_ORDER_125');
+    expect(upstreamBody?.subs_plan_id).toBe('PLAN-STAGE-DEFAULT');
+  });
+
+  test('POST /api/subscription/create returns 400 when the selected channel is missing a configured plan id', async () => {
+    const missingPlanContext = await startApiTestServer({
+      envRegistry: getCliEnvRegistry({
+        ...process.env,
+        SUBSCRIPTION_PLAN: 'PLAN-STAGE-DEFAULT',
+        SUBSCRIPTION_PLAN_LINEPAY: '',
+        SUBSCRIPTION_PLAN_TNG: 'PLAN-STAGE-TNG',
+      }),
+    });
+
+    try {
+      const response = await originalFetch(createRequestUrl(missingPlanContext.baseUrl, '/api/subscription/create'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...createValidBody(),
+          channel: 'rabbitLinePay',
+        }),
+      });
+
+      expect(response.status).toBe(400);
+
+      const body = (await response.json()) as Record<string, unknown>;
+      expect(body.code).toBe('MISSING_SUBSCRIPTION_PLAN');
+      expect(body.message).toBe(
+        'Missing subscription plan configuration for "rabbitLinePay". Expected env var: SUBSCRIPTION_PLAN_LINEPAY',
+      );
+    } finally {
+      await missingPlanContext.stop();
+    }
+  });
+
+  test('GET /api/subscription/defaults returns 400 when the selected channel is missing a configured plan id', async () => {
+    const missingPlanContext = await startApiTestServer({
+      envRegistry: getCliEnvRegistry({
+        ...process.env,
+        SUBSCRIPTION_PLAN: 'PLAN-STAGE-DEFAULT',
+        SUBSCRIPTION_PLAN_LINEPAY: '',
+        SUBSCRIPTION_PLAN_TNG: 'PLAN-STAGE-TNG',
+      }),
+    });
+
+    try {
+      const response = await originalFetch(
+        createRequestUrl(missingPlanContext.baseUrl, '/api/subscription/defaults?channel=rabbitLinePay'),
+      );
+
+      expect(response.status).toBe(400);
+
+      const body = (await response.json()) as Record<string, unknown>;
+      expect(body.code).toBe('MISSING_SUBSCRIPTION_PLAN');
+      expect(body.message).toBe(
+        'Missing subscription plan configuration for "rabbitLinePay". Expected env var: SUBSCRIPTION_PLAN_LINEPAY',
+      );
+    } finally {
+      await missingPlanContext.stop();
+    }
   });
 
   test('PUT /api/subscription/defaults persists subscription defaults into the isolated fixture copy', async () => {
@@ -166,7 +281,6 @@ describe('subscription API routes', () => {
         returnUrl: 'https://merchant.example.com/subscription/updated',
       },
       channelValues: {
-        subs_plan_id: '01KKTEEJCJ5W12EMC01469Z4ZJ',
         amount: { amount: '111.00', currency_code: 'USD' },
         interval_unit: 'day',
         interval_count: 1,
@@ -212,5 +326,6 @@ describe('subscription API routes', () => {
     expect(savedCommon).toContain('"merchant_ref": "TEST_SUB_OVERRIDDEN"');
     expect(savedCommon).toContain('"return_url": "https://merchant.example.com/subscription/updated"');
     expect(savedChannel).toContain('"product_name": "Updated subscription product"');
+    expect(savedChannel).not.toContain('subs_plan_id');
   });
 });

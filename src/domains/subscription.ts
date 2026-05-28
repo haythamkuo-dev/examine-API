@@ -1,4 +1,9 @@
-import { type CliEnv, type SubscriptionChannel, joinUrl } from '../core/env';
+import {
+  resolveSubscriptionPlan,
+  type CliEnv,
+  type SubscriptionChannel,
+  joinUrl,
+} from '../core/env';
 import type { SubscriptionChannelValues, SubscriptionCommonValues } from '../subscription/web';
 import { generateSign } from '../utils';
 import type { CommandRequest } from '../runner';
@@ -54,7 +59,7 @@ const createLegacySubscriptionOverrides = (
     returnUrl: env.callbackUrlSubscription || '',
   },
   channelValues: {
-    subs_plan_id: overrides.planId || env.subscriptionPlan,
+    subs_plan_id: overrides.planId || resolveSubscriptionPlan(env, 'default'),
     amount: {
       amount: '111.00',
       currency_code: 'USD',
@@ -81,10 +86,12 @@ const createLegacySubscriptionOverrides = (
 
 const buildSubscriptionPayload = (
   env: CliEnv,
+  channel: SubscriptionChannel,
   overrides: SubscriptionRequestOverrides,
+  planIdOverride?: string,
 ): SubscriptionPayload => ({
   ...(clone(overrides.channelValues) as Omit<SubscriptionPayload, 'merchant_ref' | 'return_url' | 'sign'>),
-  subs_plan_id: env.subscriptionPlan,
+  subs_plan_id: planIdOverride || resolveSubscriptionPlan(env, channel),
   merchant_ref: overrides.commonValues.merchantRef,
   return_url: overrides.commonValues.returnUrl,
 });
@@ -116,16 +123,16 @@ export function createSubscriptionPayload(
   arg2?: SubscriptionRequestOverrides | LegacySubscriptionOverrides,
   arg3?: (prefix: string) => string,
 ): SubscriptionPayload {
-  const [channel, overrides] =
+  const [channel, overrides, planIdOverride] =
     typeof arg1 === 'function'
-      ? (['default', createLegacySubscriptionOverrides(env, arg1, (arg2 as LegacySubscriptionOverrides) || {})] as const)
-      : ([arg1, arg2 as SubscriptionRequestOverrides] as const);
+      ? ([
+          'default',
+          createLegacySubscriptionOverrides(env, arg1, (arg2 as LegacySubscriptionOverrides) || {}),
+          (arg2 as LegacySubscriptionOverrides | undefined)?.planId,
+        ] as const)
+      : ([arg1, arg2 as SubscriptionRequestOverrides, undefined] as const);
 
-  if (channel !== 'default') {
-    throw new TypeError(`Unsupported subscription channel: ${channel}`);
-  }
-
-  const payload = buildSubscriptionPayload(env, overrides);
+  const payload = buildSubscriptionPayload(env, channel, overrides, planIdOverride);
 
   return {
     ...payload,

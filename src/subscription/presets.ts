@@ -1,6 +1,12 @@
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
-import { SUBSCRIPTION_CHANNELS, type CliEnv, type SubscriptionChannel } from '../core/env';
+import {
+  resolveSubscriptionPlan,
+  SUBSCRIPTION_CHANNELS,
+  type CliEnv,
+  type SubscriptionChannel,
+} from '../core/env';
+import type { TargetEnvironment } from '../core/targetEnvironment';
 import type {
   SubscriptionChannelValues,
   SubscriptionCommonValues,
@@ -12,6 +18,7 @@ import type {
 
 const merchantReferenceKey = 'merchant_ref';
 const returnUrlKey = 'return_url';
+const readonlyChannelValueKeys = ['subs_plan_id'] as const;
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -106,7 +113,18 @@ const inferSchemaFromValue = (key: string, value: unknown): SubscriptionFieldSch
 
 const inferSchemaMap = (values: Record<string, unknown>): SubscriptionFieldMap =>
   Object.fromEntries(
-    Object.entries(values).map(([key, value]) => [key, inferSchemaFromValue(key, value)]),
+    Object.entries(values)
+      .filter(([key]) => !readonlyChannelValueKeys.includes(key as (typeof readonlyChannelValueKeys)[number]))
+      .map(([key, value]) => [key, inferSchemaFromValue(key, value)]),
+  );
+
+const stripReadonlyChannelValues = (
+  values: Record<string, unknown>,
+): SubscriptionChannelValues =>
+  Object.fromEntries(
+    Object.entries(values).filter(
+      ([key]) => !readonlyChannelValueKeys.includes(key as (typeof readonlyChannelValueKeys)[number]),
+    ),
   );
 
 const getSeedCommonConfig = (
@@ -161,7 +179,7 @@ const getSeedChannelConfig = async (
 
   return {
     schema: inferSchemaMap(payload),
-    values: clone(payload),
+    values: clone(stripReadonlyChannelValues(payload)),
   };
 };
 
@@ -251,10 +269,13 @@ const buildFormValues = (
  */
 export const toSubscriptionDefaultsResponse = (
   channel: SubscriptionChannel,
+  env: CliEnv,
+  target: TargetEnvironment,
   store: SubscriptionPresetStore,
 ): SubscriptionDefaultsResponse => ({
   availableChannels: [...SUBSCRIPTION_CHANNELS],
   channel,
+  resolvedPlanId: resolveSubscriptionPlan(env, channel, target),
   commonSchema: clone(store.common.schema),
   channelSchema: clone(store.channels[channel].schema),
   form: buildFormValues(channel, store),
