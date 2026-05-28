@@ -57,6 +57,10 @@ const schema={ merchantRef: {
     kind: 'text',
     required: true,
   },
+  intervalCount: {
+    kind: 'number',
+    required: true,
+  },
   payoutInfo: {
     kind: 'object',
     fields: {
@@ -157,6 +161,19 @@ describe('form validation core', () => {
     );
 
     expect(error).toBe('issueInvoice is required');
+  });
+
+  test('requires numeric fields to be actual numbers', () => {
+    const error = validateSchemaMap(
+      {
+        intervalCount: schema.intervalCount,
+      },
+      {
+        intervalCount: '6',
+      },
+    );
+
+    expect(error).toBe('intervalCount must be a number');
   });
 
   test('does not error on optional arrays when absent', () => {

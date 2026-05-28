@@ -18,6 +18,11 @@ export type SubscriptionTextFieldSchema = SubscriptionFieldSchemaBase & {
   placeholder?: string;
 };
 
+export type SubscriptionNumberFieldSchema = SubscriptionFieldSchemaBase & {
+  kind: 'number';
+  placeholder?: string;
+};
+
 export type SubscriptionSelectFieldSchema = SubscriptionFieldSchemaBase & {
   kind: 'select';
   options: Array<{ label: string; value: string }>;
@@ -40,6 +45,7 @@ export type SubscriptionArrayFieldSchema = SubscriptionFieldSchemaBase & {
 
 export type SubscriptionFieldSchema =
   | SubscriptionTextFieldSchema
+  | SubscriptionNumberFieldSchema
   | SubscriptionSelectFieldSchema
   | SubscriptionBooleanFieldSchema
   | SubscriptionObjectFieldSchema

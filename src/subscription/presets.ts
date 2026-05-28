@@ -21,6 +21,12 @@ const textField = (label: string, required = false): SubscriptionFieldSchema => 
   required,
 });
 
+const numberField = (label: string, required = false): SubscriptionFieldSchema => ({
+  kind: 'number',
+  label,
+  required,
+});
+
 const objectField = (label: string, fields: SubscriptionFieldMap): SubscriptionFieldSchema => ({
   kind: 'object',
   label,
@@ -89,6 +95,10 @@ const inferSchemaFromValue = (key: string, value: unknown): SubscriptionFieldSch
 
   if (value && typeof value === 'object') {
     return objectField(label, inferSchemaMap(value as Record<string, unknown>));
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return numberField(label, true);
   }
 
   return textField(label, true);

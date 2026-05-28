@@ -12,6 +12,11 @@ import {
 } from './requestBuilder';
 
 const schemaMap: SharedFieldMap = {
+  interval_count: {
+    kind: 'number',
+    label: 'Interval count',
+    required: true,
+  },
   enabled: {
     kind: 'boolean',
     label: 'Enabled',
@@ -114,6 +119,23 @@ describe('SchemaFields', () => {
 
     expect(view.queryByText('Operator note')).toBeNull();
     expect(view.getByText('Method *')).toBeTruthy();
+  });
+
+  test('renders numeric schema fields as number inputs', () => {
+    const view = render(
+      <SchemaFields
+        schemaMap={{
+          interval_count: schemaMap.interval_count,
+        }}
+        values={{
+          interval_count: 1,
+        }}
+        pathPrefix={[]}
+        onChange={() => undefined}
+      />,
+    );
+
+    expect(view.getByRole('spinbutton', { name: 'Interval count *' })).toHaveAttribute('type', 'number');
   });
 });
 

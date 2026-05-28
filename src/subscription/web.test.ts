@@ -56,6 +56,7 @@ describe('subscription web helpers', () => {
     const result = await createSeedSubscriptionPresets({ dirPath: presetDirPath, env, makeId });
 
     expect(result.common.values.merchantRef).toBe('TEST_ORDER_fixed-id');
+    expect(result.channels.default.schema.interval_count.kind).toBe('number');
     expect(result.channels.default.values.subs_plan_id).toBe('01KKTEEJCJ5W12EMC01469Z4ZJ');
     expect(result.channels.default.values.payment_instrument).toEqual({
       os_type: 'WEB',

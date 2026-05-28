@@ -29,6 +29,11 @@ type SharedTextFieldSchema = SharedFieldSchemaBase & {
   placeholder?: string;
 };
 
+type SharedNumberFieldSchema = SharedFieldSchemaBase & {
+  kind: 'number';
+  placeholder?: string;
+};
+
 type SharedSelectFieldSchema = SharedFieldSchemaBase & {
   kind: 'select';
   options: SharedFieldOption[];
@@ -51,6 +56,7 @@ type SharedArrayFieldSchema = SharedFieldSchemaBase & {
 
 export type SharedFieldSchema =
   | SharedTextFieldSchema
+  | SharedNumberFieldSchema
   | SharedSelectFieldSchema
   | SharedBooleanFieldSchema
   | SharedObjectFieldSchema
@@ -91,6 +97,19 @@ const FieldLabel = ({
     {helperText ? <span className={helperTextClassName}>{helperText}</span> : null}
   </>
 );
+
+const toInputValue = (value: unknown): string =>
+  typeof value === 'string' ? value : typeof value === 'number' ? String(value) : '';
+
+const parseNumericInputValue = (value: string): number | '' => {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) {
+    return '';
+  }
+
+  const parsedValue = Number(trimmedValue);
+  return Number.isFinite(parsedValue) ? parsedValue : '';
+};
 
 /**
  * Renders a schema-driven nested form using recursive object and array traversal.
@@ -237,6 +256,28 @@ export function SchemaFields(props: {
       );
     }
 
+    if (schema.kind === 'number') {
+      return (
+        <div className={fieldLabelClassName} key={pathKey}>
+          <label htmlFor={inputId}>
+            <FieldLabel label={schema.label} required={schema.required} helperText={schema.helperText} />
+          </label>
+          <input
+            id={inputId}
+            type="number"
+            inputMode="decimal"
+            className={`${inputClassName} ${fieldOverride?.action ? 'sm:flex-1' : ''}`}
+            disabled={disabled}
+            placeholder={schema.placeholder}
+            readOnly={fieldOverride?.readOnly}
+            aria-readonly={fieldOverride?.readOnly ? 'true' : undefined}
+            value={toInputValue(value)}
+            onChange={(event) => onChange(fieldPath, parseNumericInputValue(event.target.value))}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className={fieldLabelClassName} key={pathKey}>
         <label htmlFor={inputId}>
@@ -250,7 +291,7 @@ export function SchemaFields(props: {
             placeholder={schema.placeholder}
             readOnly={fieldOverride?.readOnly}
             aria-readonly={fieldOverride?.readOnly ? 'true' : undefined}
-            value={typeof value === 'string' ? value : ''}
+            value={toInputValue(value)}
             onChange={(event) => onChange(fieldPath, event.target.value)}
           />
           {fieldOverride?.action ? (

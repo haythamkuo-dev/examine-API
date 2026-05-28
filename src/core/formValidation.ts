@@ -6,6 +6,10 @@ type ValidationScalarSchema = ValidationSchemaBase & {
   kind: 'text' | 'textarea' | 'select';
 };
 
+type ValidationNumberSchema = ValidationSchemaBase & {
+  kind: 'number';
+};
+
 type ValidationBooleanSchema = ValidationSchemaBase & {
   kind: 'boolean';
 };
@@ -24,6 +28,7 @@ export type ValidationArraySchema = ValidationSchemaBase & {
 
 export type ValidationSchema =
   | ValidationScalarSchema
+  | ValidationNumberSchema
   | ValidationBooleanSchema
   | ValidationObjectSchema
   | ValidationArraySchema;
@@ -69,6 +74,18 @@ const validateField = (
   if (schema.kind === 'boolean') {
     if (schema.required && typeof value !== 'boolean') {
       return `${path} is required`;
+    }
+
+    return undefined;
+  }
+
+  if (schema.kind === 'number') {
+    if (value === undefined || value === null || isBlank(value)) {
+      return schema.required ? `${path} is required` : undefined;
+    }
+
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return `${path} must be a number`;
     }
 
     return undefined;
