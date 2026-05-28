@@ -501,7 +501,7 @@ describe('PayoutPage', () => {
     await waitFor(() => {
       expect(view.getByText('Request sent successfully.')).toBeInTheDocument();
       expect(view.getByText('CREATE Status 200')).toBeInTheDocument();
-      expect(view.getAllByText('模式 本地 · 目標 本地代理').length).toBeGreaterThan(0);
+      expect(view.getAllByText('模式 沙盒 · 目標 沙盒代理').length).toBeGreaterThan(0);
     });
   });
 
@@ -594,7 +594,7 @@ describe('PayoutPage', () => {
       expect(view.getByText('Bad Gateway')).toBeInTheDocument();
       expect(view.getByText('gateway failed')).toBeInTheDocument();
       expect(view.getByText('CREATE Status 502')).toBeInTheDocument();
-      expect(view.getAllByText('模式 本地 · 目標 本地代理').length).toBeGreaterThan(0);
+      expect(view.getAllByText('模式 沙盒 · 目標 沙盒代理').length).toBeGreaterThan(0);
     });
   });
 });

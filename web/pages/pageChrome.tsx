@@ -26,7 +26,7 @@ const operatorEnvironmentStorageKey = 'examine-api.operator-environment';
 
 const darkThemeLabel = '夜間';
 const lightThemeLabel = '日間';
-const localEnvironmentToggleLabel = '本地';
+const localEnvironmentToggleLabel = '沙盒';
 const productEnvironmentToggleLabel = '產品';
 
 export type ColorThemeMode = 'dark' | 'light';

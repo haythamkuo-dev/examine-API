@@ -533,7 +533,7 @@ describe('DepositPage', () => {
 
     await view.findByText('Request sent successfully.');
     expect(view.getByText(/"requestName": "deposit:create:test"/)).toBeInTheDocument();
-    expect(view.getAllByText('模式 本地 · 目標 本地代理').length).toBeGreaterThan(0);
+    expect(view.getAllByText('模式 沙盒 · 目標 沙盒代理').length).toBeGreaterThan(0);
     expect(view.getByText('/api/deposit/create')).toBeInTheDocument();
   });
 
@@ -577,7 +577,7 @@ describe('DepositPage', () => {
     const firstView = renderDepositPage();
 
     await firstView.findByRole('heading', { name: 'Deposit Operator Console' });
-    expect(firstView.getByText('環境: 本地')).toBeInTheDocument();
+    expect(firstView.getByText('環境: 沙盒')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(firstView.getByRole('button', { name: 'Generate' }));

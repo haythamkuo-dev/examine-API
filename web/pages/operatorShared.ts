@@ -7,9 +7,9 @@ import {
 const jsonContentTypeHeader = 'Content-Type';
 const jsonContentTypeValue = 'application/json';
 const unknownContentTypeLabel = 'unknown';
-const localEnvironmentLabel = '本地';
+const localEnvironmentLabel = '沙盒';
 const productEnvironmentLabel = '產品';
-const localTargetLabel = '本地代理';
+const localTargetLabel = '沙盒代理';
 const remoteTargetLabel = '線上 API';
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() || '';
 const isLocalBrowserHost =
@@ -54,7 +54,7 @@ export type MerchantReferencePayloadKey = 'merchant_ref' | 'merchant_reference';
  * Returns the localized environment label for the active operator theme mode.
  *
  * @param mode Operator environment selected in the frontend UI.
- * @returns `本地` for local mode or `產品` for product mode.
+ * @returns `沙盒` for local mode or `產品` for product mode.
  */
 export const getOperatorEnvironmentLabel = (
   mode: OperatorEnvironmentMode,
