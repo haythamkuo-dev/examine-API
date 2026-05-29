@@ -116,9 +116,8 @@ type IntervalCallback = Parameters<typeof setInterval>[0];
  * Prefer the callable fetch shape instead of `typeof fetch` in tests, because
  * Bun's built-in `fetch` carries additional static properties such as
  * `preconnect` that lightweight stubs do not implement.
- * to refine the definition of `RequestInfo attributes`
  */
-type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+type FetchFn = (input: Request | URL | string, init?: RequestInit) => Promise<Response>;
 
 type KeepAliveDeps = {
   fetchFn: FetchFn;

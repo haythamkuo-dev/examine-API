@@ -58,11 +58,14 @@ beforeEach(async () => {
 describe('subscription web helpers', () => {
   test('creates seed subscription presets for all configured channels without editable plan ids', async () => {
     const result = await createSeedSubscriptionPresets({ dirPath: presetDirPath, env, makeId });
+    const defaultIntervalCount = result.channels.default.schema.interval_count;
+    const rabbitLinePayIntervalCount = result.channels.rabbitLinePay.schema.interval_count;
+    const touchAndGoIntervalCount = result.channels.touchAndGo.schema.interval_count;
 
     expect(result.common.values.merchantRef).toBe('TEST_ORDER_fixed-id');
-    expect(result.channels.default.schema.interval_count.kind).toBe('number');
-    expect(result.channels.rabbitLinePay.schema.interval_count.kind).toBe('number');
-    expect(result.channels.touchAndGo.schema.interval_count.kind).toBe('number');
+    expect(defaultIntervalCount?.kind).toBe('number');
+    expect(rabbitLinePayIntervalCount?.kind).toBe('number');
+    expect(touchAndGoIntervalCount?.kind).toBe('number');
     expect(result.channels.default.values.subs_plan_id).toBeUndefined();
     expect(result.channels.default.values.payment_instrument).toEqual({
       os_type: 'WEB',
