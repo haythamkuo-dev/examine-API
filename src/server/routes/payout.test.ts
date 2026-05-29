@@ -11,6 +11,13 @@ type PayoutApiRequestBody = {
   channelValues: Record<string, unknown>;
 };
 
+type PayoutUpstreamBody = {
+  merchant_reference: string;
+  payout_info?: {
+    remitter?: unknown;
+  };
+};
+
 const createRequestUrl = (baseUrl: string, path: string): string => `${baseUrl}${path}`;
 
 const createValidBody = (): PayoutApiRequestBody => ({
@@ -159,11 +166,11 @@ describe('payout API routes', () => {
   });
 
   test('POST /api/payout/create proxies upstream status, prunes optional remitter fields, and preserves the provided merchant ref', async () => {
-    let upstreamBody: Record<string, unknown> | null = null;
+    let upstreamBody: PayoutUpstreamBody | null = null;
     let upstreamAuthorization = '';
 
     globalThis.fetch = mock(async (_input, init) => {
-      upstreamBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+      upstreamBody = JSON.parse(String(init?.body ?? '{}')) as PayoutUpstreamBody;
       upstreamAuthorization = String((init?.headers as Record<string, string> | undefined)?.Authorization || '');
 
       return new Response(JSON.stringify({ ok: true, transaction_id: 'po_123' }), {
@@ -202,12 +209,9 @@ describe('payout API routes', () => {
     expect(body.status).toBe(201);
     expect(upstreamAuthorization).toBe('ApiKey india-bangladesh-token');
     expect(upstreamBody).not.toBeNull();
-    const upstreamPayoutInfo = ((upstreamBody as unknown) as Record<string, unknown>)['payout_info'] as
-      | Record<string, unknown>
-      | undefined;
-    expect(upstreamPayoutInfo).toBeDefined();
-    expect((upstreamBody as Record<string, unknown>).merchant_reference).toBe('TEST_BD_001');
-    expect(upstreamPayoutInfo?.remitter).toBeUndefined();
+    const capturedUpstreamBody = upstreamBody as unknown as PayoutUpstreamBody;
+    expect(capturedUpstreamBody.merchant_reference).toBe('TEST_BD_001');
+    expect(capturedUpstreamBody.payout_info?.remitter).toBeUndefined();
   });
 
   test('PUT /api/payout/defaults persists payout defaults into the isolated fixture copy', async () => {
