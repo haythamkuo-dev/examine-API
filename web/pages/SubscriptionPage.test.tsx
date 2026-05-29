@@ -2,7 +2,7 @@
 
 import '../../tests/web-setup';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
 import type {
   SubscriptionDefaultsResponse,
@@ -108,12 +108,15 @@ const textResponse = (body: string, init?: ResponseInit): Response =>
 const fetchRecords: FetchRequestRecord[] = [];
 let routeHandlers = new Map<string, MockRouteHandler>();
 
-const renderSubscriptionPage = () =>
-  render(
+const renderSubscriptionPage = () => {
+  const view = render(
     <AppThemeProvider>
       <SubscriptionPage />
     </AppThemeProvider>,
   );
+
+  return { ...view, ...within(view.container) };
+};
 
 const readPostedForm = (body: BodyInit | null | undefined): SubscriptionFormValues | null => {
   if (typeof body !== 'string' || !body.trim()) {

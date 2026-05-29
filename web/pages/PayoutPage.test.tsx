@@ -2,7 +2,7 @@
 
 import '../../tests/web-setup';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
 import { PAYOUT_CHANNELS } from '../../src/core/env';
 import type {
@@ -176,12 +176,15 @@ const textResponse = (body: string, init?: ResponseInit): Response =>
 const fetchRecords: FetchRequestRecord[] = [];
 let routeHandlers = new Map<string, MockRouteHandler>();
 
-const renderPayoutPage = () =>
-  render(
+const renderPayoutPage = () => {
+  const view = render(
     <AppThemeProvider>
       <PayoutPage />
     </AppThemeProvider>,
   );
+
+  return { ...view, ...within(view.container) };
+};
 
 const setRouteHandler = (url: string, handler: MockRouteHandler) => {
   routeHandlers.set(url, handler);

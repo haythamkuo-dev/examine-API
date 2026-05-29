@@ -2,7 +2,7 @@
 
 import '../../tests/web-setup';
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, within } from '@testing-library/react';
 import {
   RequestBuilderCard,
   type RequestBuilderFieldOverride,
@@ -68,11 +68,16 @@ beforeEach(() => {
   cleanup();
 });
 
+const renderScoped = (ui: Parameters<typeof render>[0]) => {
+  const view = render(ui);
+  return { ...view, ...within(view.container) };
+};
+
 describe('SchemaFields', () => {
   test('renders nested object and array fields and emits boolean path changes', () => {
     const onChange = mock<(path: Array<string | number>, value: unknown) => void>();
 
-    const view = render(
+    const view = renderScoped(
       <SchemaFields
         schemaMap={schemaMap}
         values={{
@@ -101,7 +106,7 @@ describe('SchemaFields', () => {
     const visibilityResolver: FieldVisibilityResolver = (schema, value) =>
       schema.label === 'Operator note' && typeof value === 'string' && value.includes('hide');
 
-    const view = render(
+    const view = renderScoped(
       <SchemaFields
         schemaMap={schemaMap}
         values={{
@@ -122,7 +127,7 @@ describe('SchemaFields', () => {
   });
 
   test('renders numeric schema fields as number inputs', () => {
-    const view = render(
+    const view = renderScoped(
       <SchemaFields
         schemaMap={{
           interval_count: schemaMap.interval_count,
@@ -145,7 +150,7 @@ describe('RequestBuilderCard', () => {
     const reload = mock<() => void>();
     const preview = mock<() => void>();
 
-    const view = render(
+    const view = renderScoped(
       <RequestBuilderCard
         channels={['alpha', 'beta']}
         selectedChannel="alpha"
@@ -208,7 +213,7 @@ describe('RequestBuilderCard', () => {
       },
     };
 
-    const view = render(
+    const view = renderScoped(
       <RequestBuilderCard
         channels={['alpha']}
         selectedChannel="alpha"

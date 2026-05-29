@@ -73,6 +73,8 @@ describe('subscription web helpers', () => {
   test('builds masked subscription preview response', async () => {
     const defaults = toSubscriptionDefaultsResponse(
       'default',
+      env,
+      'local',
       await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
     );
     const values: SubscriptionFormValues = {
@@ -94,6 +96,8 @@ describe('subscription web helpers', () => {
   test('builds subscription request from form values', async () => {
     const defaults = toSubscriptionDefaultsResponse(
       'default',
+      env,
+      'local',
       await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
     );
     const values: SubscriptionFormValues = {
@@ -134,6 +138,8 @@ describe('subscription web helpers', () => {
     for (const [channel, localPlanId, productPlanId] of channels) {
       const defaults = toSubscriptionDefaultsResponse(
         channel,
+        env,
+        'local',
         await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
       );
       const values: SubscriptionFormValues = {
@@ -158,6 +164,8 @@ describe('subscription web helpers', () => {
   test('preview generates a fresh merchant reference even when the form already has one', async () => {
     const defaults = toSubscriptionDefaultsResponse(
       'default',
+      env,
+      'local',
       await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
     );
     const values: SubscriptionFormValues = {
@@ -176,6 +184,8 @@ describe('subscription web helpers', () => {
   test('creates a unique merchant reference when form value is blank', async () => {
     const defaults = toSubscriptionDefaultsResponse(
       'default',
+      env,
+      'local',
       await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
     );
     const values: SubscriptionFormValues = {
@@ -193,6 +203,8 @@ describe('subscription web helpers', () => {
   test('updates and writes subscription preset file by channel', async () => {
     const values = toSubscriptionDefaultsResponse(
       'default',
+      env,
+      'local',
       await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
     ).form;
     values.commonValues.merchantRef = 'TEST_SUB_OVERRIDDEN';
@@ -219,6 +231,8 @@ describe('subscription web helpers', () => {
   test('throws when a selected channel has no configured subscription plan', async () => {
     const defaults = toSubscriptionDefaultsResponse(
       'rabbitLinePay',
+      env,
+      'local',
       await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
     );
     const values: SubscriptionFormValues = {
