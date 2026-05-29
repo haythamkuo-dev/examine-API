@@ -46,7 +46,6 @@ describe('deposit service', () => {
 
   test('loads deposit defaults from the fixture bundle', async () => {
     const service = createDepositService({
-      env,
       getEnvForTarget,
       presetDirPath,
       makeId,
@@ -63,7 +62,6 @@ describe('deposit service', () => {
 
   test('builds a masked preview response from deposit form values', async () => {
     const service = createDepositService({
-      env,
       getEnvForTarget,
       presetDirPath,
       makeId,
@@ -72,7 +70,7 @@ describe('deposit service', () => {
     const defaults = await service.getDefaults('southafrica_cards');
 
     defaults.form.commonValues.merchantRef = 'TEST_SERVICE_PREVIEW_001';
-    const preview = service.preview(defaults.form);
+    const preview = service.preview(defaults.form, 'local');
     const payload = preview.request.payload as Record<string, unknown>;
 
     expect(preview.request.headers?.Authorization).toBe('ApiKey ****-token');
@@ -88,7 +86,6 @@ describe('deposit service', () => {
     ) as unknown as typeof fetch;
 
     const service = createDepositService({
-      env,
       getEnvForTarget,
       presetDirPath,
       makeId,
@@ -96,7 +93,7 @@ describe('deposit service', () => {
     });
     const defaults = await service.getDefaults('southafrica_cards');
 
-    const result = await service.execute(defaults.form);
+    const result = await service.execute(defaults.form, 'local');
 
     expect(result.ok).toBe(false);
     expect(result.status).toBe(400);
