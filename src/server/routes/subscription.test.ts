@@ -13,6 +13,11 @@ type SubscriptionApiRequestBody = {
   channelValues: Record<string, unknown>;
 };
 
+type SubscriptionUpstreamBody = {
+  merchant_ref: string;
+  subs_plan_id: string;
+};
+
 const createRequestUrl = (baseUrl: string, path: string): string => `${baseUrl}${path}`;
 
 const createValidBody = (): SubscriptionApiRequestBody => ({
@@ -184,11 +189,11 @@ describe('subscription API routes', () => {
   });
 
   test('POST /api/subscription/create proxies upstream status and preserves the provided merchant ref', async () => {
-    let upstreamBody: Record<string, unknown> | null = null;
+    let upstreamBody: SubscriptionUpstreamBody | null = null;
     let upstreamAuthorization = '';
 
     globalThis.fetch = mock(async (_input, init) => {
-      upstreamBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+      upstreamBody = JSON.parse(String(init?.body ?? '{}')) as SubscriptionUpstreamBody;
       upstreamAuthorization = String((init?.headers as Record<string, string> | undefined)?.Authorization || '');
 
       return new Response(JSON.stringify({ ok: true, subscription_id: 'sub_123' }), {
@@ -210,8 +215,9 @@ describe('subscription API routes', () => {
     expect(body.status).toBe(201);
     expect(upstreamAuthorization).toBe('ApiKey payout-token');
     expect(upstreamBody).not.toBeNull();
-    expect(upstreamBody?.merchant_ref).toBe('TEST_SUB_ORDER_125');
-    expect(upstreamBody?.subs_plan_id).toBe('PLAN-STAGE-DEFAULT');
+    const capturedUpstreamBody = upstreamBody as unknown as SubscriptionUpstreamBody;
+    expect(capturedUpstreamBody.merchant_ref).toBe('TEST_SUB_ORDER_125');
+    expect(capturedUpstreamBody.subs_plan_id).toBe('PLAN-STAGE-DEFAULT');
   });
 
   test('POST /api/subscription/create returns 400 when the selected channel is missing a configured plan id', async () => {

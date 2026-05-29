@@ -21,6 +21,10 @@ type DepositApiRequestBody = {
   channelValues: Record<string, unknown>;
 };
 
+type DepositUpstreamBody = {
+  merchant_ref: string;
+};
+
 const createRequestUrl = (baseUrl: string, path: string): string => `${baseUrl}${path}`;
 
 const createValidBody = (): DepositApiRequestBody => ({
@@ -158,11 +162,11 @@ describe('deposit API routes', () => {
   });
 
   test('POST /api/deposit/create proxies upstream status and preserves the provided merchant ref', async () => {
-    let upstreamBody: Record<string, unknown> | null = null;
+    let upstreamBody: DepositUpstreamBody | null = null;
     let upstreamAuthorization = '';
 
     globalThis.fetch = mock(async (_input, init) => {
-      upstreamBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+      upstreamBody = JSON.parse(String(init?.body ?? '{}')) as DepositUpstreamBody;
       upstreamAuthorization = String((init?.headers as Record<string, string> | undefined)?.Authorization || '');
 
       return new Response(JSON.stringify({ ok: true, intent_id: 'dep_123' }), {
@@ -187,7 +191,8 @@ describe('deposit API routes', () => {
     expect(body.status).toBe(201);
     expect(upstreamAuthorization).toBe('ApiKey payout-token');
     expect(upstreamBody).not.toBeNull();
-    expect(upstreamBody?.merchant_ref).toBe('TEST_DEPOSIT_ORDER_125');
+    const capturedUpstreamBody = upstreamBody as unknown as DepositUpstreamBody;
+    expect(capturedUpstreamBody.merchant_ref).toBe('TEST_DEPOSIT_ORDER_125');
   });
 
   test('POST /api/deposit/create switches to the product env when requested', async () => {
