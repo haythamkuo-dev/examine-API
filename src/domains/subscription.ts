@@ -50,6 +50,20 @@ const subscriptionSignFields = ['merchant_no', 'merchant_ref', 'order_id', 'stat
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
+const resolveDraftSubscriptionPlanId = (
+  env: CliEnv,
+  channel: SubscriptionChannel,
+  overrides: SubscriptionRequestOverrides,
+  planIdOverride?: string,
+): string => {
+  const draftPlanId = overrides.channelValues.subs_plan_id;
+  if (typeof draftPlanId === 'string' && draftPlanId.trim()) {
+    return draftPlanId.trim();
+  }
+
+  return planIdOverride || resolveSubscriptionPlan(env, channel);
+};
+
 const createLegacySubscriptionOverrides = (
   env: CliEnv,
   makeId: (prefix: string) => string,
@@ -92,7 +106,7 @@ const buildSubscriptionPayload = (
   planIdOverride?: string,
 ): SubscriptionPayload => ({
   ...(clone(overrides.channelValues) as Omit<SubscriptionPayload, 'merchant_ref' | 'return_url' | 'sign'>),
-  subs_plan_id: planIdOverride || resolveSubscriptionPlan(env, channel),
+  subs_plan_id: resolveDraftSubscriptionPlanId(env, channel, overrides, planIdOverride),
   merchant_ref: overrides.commonValues.merchantRef,
   return_url: overrides.commonValues.returnUrl,
 });

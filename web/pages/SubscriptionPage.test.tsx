@@ -196,7 +196,7 @@ describe('normalizeCreateResult', () => {
 });
 
 describe('SubscriptionPage', () => {
-  test('renders a read-only merchant reference field and updates it via generate', async () => {
+  test('renders an editable plan id field and updates merchant reference via generate', async () => {
     setRouteHandlers({
       'GET /api/subscription/defaults': async () => jsonResponse(createDefaultsResponse()),
       'POST /api/subscription/merchant-ref': async () =>
@@ -208,9 +208,18 @@ describe('SubscriptionPage', () => {
     await view.findByRole('heading', { name: 'Subscription Operator Console' });
     await view.findByLabelText('Merchant reference *');
     expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
-    expect(view.getByLabelText('Plan ID')).toHaveAttribute('readonly');
     expect(view.getByLabelText('Plan ID')).toHaveValue('plan-default');
     expect(view.getByLabelText('API key')).toHaveValue('subscription-default-key');
+
+    await act(async () => {
+      fireEvent.input(view.getByLabelText('Plan ID'), {
+        target: { value: 'plan-draft-override' },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Plan ID')).toHaveValue('plan-draft-override');
+    });
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
@@ -297,6 +306,7 @@ describe('SubscriptionPage', () => {
       },
       [`PUT /api/subscription/defaults?channel=${channel}`]: async (request) => {
         expect(request.body?.commonValues.merchantRef).toBe('merchant-sub-default');
+        expect(request.body?.channelValues.subs_plan_id).toBeUndefined();
         return jsonResponse(createSavedDefaultsResponse('Saved subscription product'));
       },
     });
@@ -311,6 +321,16 @@ describe('SubscriptionPage', () => {
 
     await waitFor(() => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-003');
+    });
+
+    await act(async () => {
+      fireEvent.input(view.getByLabelText('Plan ID'), {
+        target: { value: 'plan-save-draft-only' },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Plan ID')).toHaveValue('plan-save-draft-only');
     });
 
     await act(async () => {
@@ -390,8 +410,15 @@ describe('SubscriptionPage', () => {
       });
     });
 
+    await act(async () => {
+      fireEvent.input(view.getByLabelText('Plan ID'), {
+        target: { value: 'plan-preview-override' },
+      });
+    });
+
     await waitFor(() => {
       expect(view.getByLabelText('API key')).toHaveValue('typed-subscription-key');
+      expect(view.getByLabelText('Plan ID')).toHaveValue('plan-preview-override');
     });
 
     await act(async () => {
@@ -413,7 +440,9 @@ describe('SubscriptionPage', () => {
     const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === '/api/subscription/preview');
     const createCall = fetchRecords.find((record) => record.method === 'POST' && record.url === '/api/subscription/create');
     expect(previewCall?.body?.apiKey).toBe('typed-subscription-key');
+    expect(previewCall?.body?.channelValues.subs_plan_id).toBe('plan-preview-override');
     expect(createCall?.body?.apiKey).toBe('typed-subscription-key');
+    expect(createCall?.body?.channelValues.subs_plan_id).toBe('plan-preview-override');
   });
 
   test('updates the displayed plan id when the selected channel changes', async () => {

@@ -251,6 +251,7 @@ export const normalizeSubscriptionPresets = (
 
 const buildFormValues = (
   channel: SubscriptionChannel,
+  resolvedPlanId: string,
   store: SubscriptionPresetStore,
 ): SubscriptionFormValues => ({
   channel,
@@ -258,7 +259,10 @@ const buildFormValues = (
     merchantRef: store.common.values.merchantRef || '',
     returnUrl: store.common.values.returnUrl || '',
   },
-  channelValues: clone(store.channels[channel].values),
+  channelValues: {
+    ...clone(store.channels[channel].values),
+    subs_plan_id: resolvedPlanId,
+  },
 });
 
 /**
@@ -273,15 +277,19 @@ export const toSubscriptionDefaultsResponse = (
   env: CliEnv,
   target: TargetEnvironment,
   store: SubscriptionPresetStore,
-): SubscriptionDefaultsResponse => ({
-  apiKey: resolveSubscriptionApiKey(env),
-  availableChannels: [...SUBSCRIPTION_CHANNELS],
-  channel,
-  resolvedPlanId: resolveSubscriptionPlan(env, channel, target),
-  commonSchema: clone(store.common.schema),
-  channelSchema: clone(store.channels[channel].schema),
-  form: buildFormValues(channel, store),
-});
+): SubscriptionDefaultsResponse => {
+  const resolvedPlanId = resolveSubscriptionPlan(env, channel, target);
+
+  return {
+    apiKey: resolveSubscriptionApiKey(env),
+    availableChannels: [...SUBSCRIPTION_CHANNELS],
+    channel,
+    resolvedPlanId,
+    commonSchema: clone(store.common.schema),
+    channelSchema: clone(store.channels[channel].schema),
+    form: buildFormValues(channel, resolvedPlanId, store),
+  };
+};
 
 /**
  * Loads subscription presets from disk and normalizes them against the channel source data.
@@ -347,7 +355,7 @@ export const updateSubscriptionPreset = async ({
     },
     channels: {
       [channel]: {
-        values: clone(values.channelValues),
+        values: clone(stripReadonlyChannelValues(values.channelValues)),
       },
     },
   };

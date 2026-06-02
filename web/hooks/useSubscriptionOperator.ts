@@ -33,6 +33,7 @@ const previewEndpoint = '/api/subscription/preview';
 const createEndpoint = '/api/subscription/create';
 const merchantRefEndpoint = '/api/subscription/merchant-ref';
 const merchantRefFieldKey = 'merchantRef';
+const subscriptionDraftPlanIdKey = 'subs_plan_id';
 const isBlankMerchantRef = (value: string): boolean => !value.trim();
 const missingPlanMessageFallback = 'Subscription plan configuration is missing for the selected channel.';
 
@@ -212,6 +213,9 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
       ...values.commonValues,
       merchantRef: persistedMerchantRef ?? values.commonValues.merchantRef,
     },
+    channelValues: Object.fromEntries(
+      Object.entries(values.channelValues).filter(([key]) => key !== subscriptionDraftPlanIdKey),
+    ),
   });
 
   const updateCommonValue = (key: string, value: string) => {

@@ -46,6 +46,8 @@ export function SubscriptionPage() {
     onChannelChange,
     actions,
   } = useSubscriptionOperator(theme.mode);
+  const draftPlanId =
+    typeof form?.channelValues.subs_plan_id === 'string' ? form.channelValues.subs_plan_id : resolvedPlanId;
 
   if (!form) {
     return (
@@ -94,9 +96,11 @@ export function SubscriptionPage() {
                   </span>
                   <input
                     className="w-full rounded-2xl border border-[var(--operator-input-border)] bg-[var(--operator-input-bg)] px-4 py-3 text-[var(--color-text)] shadow-[var(--operator-input-shadow)] transition duration-200"
-                    value={resolvedPlanId}
-                    readOnly
-                    aria-readonly="true"
+                    value={draftPlanId}
+                    onChange={(event) => updateChannelValue(['subs_plan_id'], event.target.value)}
+                    onInput={(event) =>
+                      updateChannelValue(['subs_plan_id'], (event.target as HTMLInputElement).value)
+                    }
                   />
                 </label>
                 <label className="grid gap-2">

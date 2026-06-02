@@ -131,6 +131,26 @@ describe('subscription web helpers', () => {
     expect(payload.subs_plan_id).toBe('PLAN-DEFAULT-001');
   });
 
+  test('uses a draft plan id override from the editable subscription form', async () => {
+    const defaults = toSubscriptionDefaultsResponse(
+      'default',
+      env,
+      'local',
+      await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
+    );
+    const values: SubscriptionRequestValues = {
+      ...defaults.form,
+      channelValues: {
+        ...defaults.form.channelValues,
+        subs_plan_id: 'PLAN-DRAFT-OVERRIDE-001',
+      },
+    };
+
+    const request = buildSubscriptionRequestFromForm(env, values, makeId);
+
+    expect((request.payload as Record<string, unknown>).subs_plan_id).toBe('PLAN-DRAFT-OVERRIDE-001');
+  });
+
   test('builds channel-specific subscription requests for local and product envs', async () => {
     const channels = [
       ['default', 'PLAN-DEFAULT-001', 'PLAN-PROD-001'],
@@ -139,14 +159,28 @@ describe('subscription web helpers', () => {
     ] as const;
 
     for (const [channel, localPlanId, productPlanId] of channels) {
-      const defaults = toSubscriptionDefaultsResponse(
+      const localDefaults = toSubscriptionDefaultsResponse(
         channel,
         env,
         'local',
         await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
       );
-      const values: SubscriptionRequestValues = {
-        ...defaults.form,
+      const productDefaults = toSubscriptionDefaultsResponse(
+        channel,
+        productEnv,
+        'product',
+        await loadSubscriptionPresets({ dirPath: presetDirPath, env: productEnv, makeId }),
+      );
+      const localValues: SubscriptionRequestValues = {
+        ...localDefaults.form,
+        channel,
+        commonValues: {
+          merchantRef: `TEST_SUB_${channel}`,
+          returnUrl: 'https://merchant.example.com/subscription/return',
+        },
+      };
+      const productValues: SubscriptionRequestValues = {
+        ...productDefaults.form,
         channel,
         commonValues: {
           merchantRef: `TEST_SUB_${channel}`,
@@ -154,14 +188,26 @@ describe('subscription web helpers', () => {
         },
       };
 
-      const localRequest = buildSubscriptionRequestFromForm(env, values, makeId);
-      const productRequest = buildSubscriptionRequestFromForm(productEnv, values, makeId);
+      const localRequest = buildSubscriptionRequestFromForm(env, localValues, makeId);
+      const productRequest = buildSubscriptionRequestFromForm(productEnv, productValues, makeId);
 
       expect(localRequest.url).toBe('https://example.test/s2s/v1/subscriptions');
       expect((localRequest.payload as Record<string, unknown>).subs_plan_id).toBe(localPlanId);
       expect(productRequest.url).toBe('https://prod.example.test/s2s/v1/subscriptions');
       expect((productRequest.payload as Record<string, unknown>).subs_plan_id).toBe(productPlanId);
     }
+  });
+
+  test('injects the resolved plan id into subscription defaults responses without persisting it in seed presets', async () => {
+    const defaults = toSubscriptionDefaultsResponse(
+      'rabbitLinePay',
+      env,
+      'local',
+      await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
+    );
+
+    expect(defaults.resolvedPlanId).toBe('PLAN-LINEPAY-001');
+    expect(defaults.form.channelValues.subs_plan_id).toBe('PLAN-LINEPAY-001');
   });
 
   test('preview generates a fresh merchant reference even when the form already has one', async () => {
@@ -228,6 +274,7 @@ describe('subscription web helpers', () => {
     ).form;
     values.commonValues.merchantRef = 'TEST_SUB_OVERRIDDEN';
     values.commonValues.returnUrl = 'https://merchant.example.com/subscription/updated';
+    values.channelValues.subs_plan_id = 'PLAN-DRAFT-SHOULD-NOT-SAVE';
     values.channelValues.product_name = 'Updated subscription product';
 
     const presets = await updateSubscriptionPreset({
@@ -245,6 +292,7 @@ describe('subscription web helpers', () => {
     expect(savedCommon).toContain('"return_url": "https://merchant.example.com/subscription/updated"');
     expect(savedChannel).toContain('"product_name": "Updated subscription product"');
     expect(savedChannel).not.toContain('subs_plan_id');
+    expect(presets.channels.default.values.subs_plan_id).toBeUndefined();
   });
 
   test('throws when a selected channel has no configured subscription plan', async () => {
@@ -257,6 +305,10 @@ describe('subscription web helpers', () => {
     const values: SubscriptionRequestValues = {
       ...defaults.form,
       channel: 'rabbitLinePay',
+      channelValues: {
+        ...defaults.form.channelValues,
+        subs_plan_id: '',
+      },
     };
     const invalidEnv = getCliEnv({
       API_BASE_URL: 'https://example.test',

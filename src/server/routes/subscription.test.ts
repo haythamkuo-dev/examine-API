@@ -95,7 +95,7 @@ describe('subscription API routes', () => {
     expect(commonValues.merchantRef).toBe('TEST_ORDER_1250');
   });
 
-  test('GET /api/subscription/defaults returns channel-specific defaults without editable plan ids', async () => {
+  test('GET /api/subscription/defaults returns channel-specific defaults with a draft plan id field', async () => {
     const response = await requestApi('/api/subscription/defaults?channel=rabbitLinePay');
 
     expect(response.status).toBe(200);
@@ -108,7 +108,7 @@ describe('subscription API routes', () => {
     expect(body.channel).toBe('rabbitLinePay');
     expect(body.resolvedPlanId).toBe('PLAN-STAGE-LINEPAY');
     expect(channelSchema.subs_plan_id).toBeUndefined();
-    expect(channelValues.subs_plan_id).toBeUndefined();
+    expect(channelValues.subs_plan_id).toBe('PLAN-STAGE-LINEPAY');
   });
 
   test('GET /api/subscription/defaults switches resolved plan id for the product environment', async () => {
@@ -191,6 +191,25 @@ describe('subscription API routes', () => {
     expect(payload.subs_plan_id).toBe('PLAN-STAGE-TNG');
   });
 
+  test('POST /api/subscription/preview uses a draft plan id override when provided', async () => {
+    const requestBody = createValidBody();
+    requestBody.channelValues.subs_plan_id = 'PLAN-DRAFT-ROUTE-001';
+
+    const response = await requestApi('/api/subscription/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const request = body.request as Record<string, unknown>;
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(payload.subs_plan_id).toBe('PLAN-DRAFT-ROUTE-001');
+  });
+
   test('POST /api/subscription/create proxies upstream status and preserves the provided merchant ref', async () => {
     let upstreamBody: SubscriptionUpstreamBody | null = null;
     let upstreamAuthorization = '';
@@ -246,6 +265,35 @@ describe('subscription API routes', () => {
 
     expect(response.status).toBe(200);
     expect(upstreamAuthorization).toBe('ApiKey manual-subscription-token');
+  });
+
+  test('POST /api/subscription/create forwards a draft plan id override upstream', async () => {
+    let upstreamBody: SubscriptionUpstreamBody | null = null;
+
+    globalThis.fetch = mock(async (_input, init) => {
+      upstreamBody = JSON.parse(String(init?.body ?? '{}')) as SubscriptionUpstreamBody;
+
+      return new Response(JSON.stringify({ ok: true, subscription_id: 'sub_draft_plan_123' }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+
+    const response = await requestApi('/api/subscription/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...createValidBody(),
+        channelValues: {
+          ...createValidBody().channelValues,
+          subs_plan_id: 'PLAN-DRAFT-UPSTREAM-001',
+        },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(upstreamBody).not.toBeNull();
+    expect((upstreamBody as SubscriptionUpstreamBody).subs_plan_id).toBe('PLAN-DRAFT-UPSTREAM-001');
   });
 
   test('POST /api/subscription/create returns 400 when the selected channel is missing a configured plan id', async () => {
