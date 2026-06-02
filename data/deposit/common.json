@@ -27,7 +27,7 @@
     }
   },
   "values": {
-    "merchantRef": "Click buton to acquire a merchant ref",
+    "merchantRef": "Click button to acquire a merchant ref",
     "returnUrl": "https://example.com/deposit-return"
   }
 }

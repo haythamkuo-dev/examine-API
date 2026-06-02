@@ -264,7 +264,9 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
         form.channel,
         createSavePayload(form),
       );
-      applyBundle(response, { preserveMerchantRef: form.commonValues.merchantRef });
+      apiKeyRef.current = response.apiKey;
+      setApiKey(response.apiKey);
+      setPersistedMerchantRef(response.form.commonValues.merchantRef);
       showApiKeyResetToast();
       setApiResult({
         ok: true,

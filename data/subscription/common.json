@@ -1,4 +1,4 @@
 {
-  "merchant_ref": "TEST_ORDER_1250",
+  "merchant_ref": "Click button to acquire a merchant ref",
   "return_url": "https://merchant.example.com/subscription/callback"
 }

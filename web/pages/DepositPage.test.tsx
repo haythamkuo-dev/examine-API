@@ -590,7 +590,7 @@ describe('DepositPage', () => {
 
     await waitFor(() => {
       expect(view.getByText(`Saved defaults for ${primaryChannel}.`)).toBeInTheDocument();
-      expect(view.getByLabelText('Product number *')).toHaveValue('PROD-SAVED');
+      expect(view.getByLabelText('Product number *')).toHaveValue(`PROD-${primaryChannel}`);
       expect(view.getByLabelText('API key')).toHaveValue(`saved-api-key-${primaryChannel}`);
       expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();
     });
@@ -684,7 +684,7 @@ describe('DepositPage', () => {
     expect(secondView.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
   });
 
-  test('saves defaults and applies the returned bundle', async () => {
+  test('saves defaults without replacing the current form bundle', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
       'POST /api/deposit/merchant-ref': async () => jsonResponse(createMerchantRefResponse('GENERATED-SAVE')),
@@ -709,8 +709,9 @@ describe('DepositPage', () => {
     });
 
     await view.findByText(`Saved defaults for ${primaryChannel}.`);
-    expect(view.getByLabelText('Product number *')).toHaveValue('PROD-SAVED');
+    expect(view.getByLabelText('Product number *')).toHaveValue(`PROD-${primaryChannel}`);
     expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SAVE');
+    expect(view.getByLabelText('API key')).toHaveValue(`saved-api-key-${primaryChannel}`);
 
     const saveCall = fetchRecords.find(
       (record) => record.method === 'PUT' && record.url === `${defaultsEndpoint}?channel=${primaryChannel}`,

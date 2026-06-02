@@ -458,7 +458,9 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
         form.channel,
         createSavePayload(form),
       );
-      applyBundle(response, { preserveMerchantReference: form.commonValues.merchantReference });
+      apiKeyRef.current = response.apiKey;
+      setApiKey(response.apiKey);
+      setPersistedMerchantReference(response.form.commonValues.merchantReference);
       showApiKeyResetToast();
       setSaveMessage(`Saved defaults for ${response.channel}.`);
     } catch (caught) {

@@ -319,7 +319,7 @@ describe('SubscriptionPage', () => {
 
     await waitFor(() => {
       expect(view.getByText(`Saved defaults for ${channel}.`)).toBeInTheDocument();
-      expect(view.getByLabelText('Product name *')).toHaveValue('Saved subscription product');
+      expect(view.getByLabelText('Product name *')).toHaveValue('Subscription product');
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-003');
       expect(view.getByLabelText('API key')).toHaveValue('subscription-saved-key');
       expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();

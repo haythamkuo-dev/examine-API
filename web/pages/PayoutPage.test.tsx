@@ -447,7 +447,7 @@ describe('PayoutPage', () => {
     await waitFor(() => {
       expect(view.getByText(`Saved defaults for ${primaryChannel}.`)).toBeInTheDocument();
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-003');
-      expect(view.getByLabelText('Product number *')).toHaveValue('product-saved');
+      expect(view.getByLabelText('Product number *')).toHaveValue(`product-${primaryChannel}`);
     });
 
     await act(async () => {
@@ -669,6 +669,7 @@ describe('PayoutPage', () => {
 
     await waitFor(() => {
       expect(view.getByText(`Saved defaults for ${primaryChannel}.`)).toBeInTheDocument();
+      expect(view.getByLabelText('Product number *')).toHaveValue(`product-${primaryChannel}`);
       expect(view.getByLabelText('API key')).toHaveValue(`saved-api-key-${primaryChannel}`);
       expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();
     });

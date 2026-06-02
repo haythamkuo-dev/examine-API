@@ -392,7 +392,10 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
         form.channel,
         createSavePayload(form),
       );
-      applyBundle(response, { preserveMerchantRef: form.commonValues.merchantRef });
+      apiKeyRef.current = response.apiKey;
+      setApiKey(response.apiKey);
+      setResolvedPlanId(response.resolvedPlanId);
+      setPersistedMerchantRef(response.form.commonValues.merchantRef);
       showApiKeyResetToast();
       setApiResult({
         ok: true,
