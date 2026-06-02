@@ -52,9 +52,6 @@ const createValidBody = (): DepositApiRequestBody => ({
 
 describe('deposit API routes', () => {
   let context: ApiTestServerContext;
-  const originalFetch = globalThis.fetch;
-  const requestApi = (path: string, init?: RequestInit): Promise<Response> =>
-    originalFetch(createRequestUrl(context.baseUrl, path), init);
 
   beforeAll(async () => {
     const envRegistry = createTestCliEnvRegistry();
@@ -83,20 +80,18 @@ describe('deposit API routes', () => {
   });
 
   afterAll(async () => {
-    globalThis.fetch = originalFetch;
     if (context) {
       await context.stop();
     }
   });
 
   beforeEach(async () => {
-    globalThis.fetch = originalFetch;
     mock.restore();
     await context.resetDepositFixtures();
   });
 
   test('GET /api/deposit/defaults returns deposit defaults bundle', async () => {
-    const response = await requestApi('/api/deposit/defaults?channel=southafrica_cards');
+    const response = await context.requestApi('/api/deposit/defaults?channel=southafrica_cards');
 
     expect(response.status).toBe(200);
 
@@ -107,11 +102,11 @@ describe('deposit API routes', () => {
     expect(body.channel).toBe('southafrica_cards');
     expect(body.availableChannels).toEqual([...DEPOSIT_CHANNELS]);
     expect(body.apiKey).toBe('payout-token');
-    expect(commonValues.merchantRef).toBe('TEST_ORDER_000001');
+    expect(commonValues.merchantRef).toBe('Click button to acquire a merchant ref');
   });
 
   test('POST /api/deposit/merchant-ref returns a generated merchant reference', async () => {
-    const response = await requestApi('/api/deposit/merchant-ref', {
+    const response = await context.requestApi('/api/deposit/merchant-ref', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -129,7 +124,7 @@ describe('deposit API routes', () => {
     const collect = paymentOrder.collect as Record<string, unknown>;
     collect.product_name = '   ';
 
-    const response = await requestApi('/api/deposit/preview', {
+    const response = await context.requestApi('/api/deposit/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
@@ -142,7 +137,7 @@ describe('deposit API routes', () => {
   });
 
   test('POST /api/deposit/preview returns masked preview payload for valid deposit form', async () => {
-    const response = await requestApi('/api/deposit/preview', {
+    const response = await context.requestApi('/api/deposit/preview', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -164,7 +159,7 @@ describe('deposit API routes', () => {
   });
 
   test('GET /api/deposit/defaults switches the default api key for the product environment', async () => {
-    const response = await requestApi('/api/deposit/defaults?channel=southafrica_cards', {
+    const response = await context.requestApi('/api/deposit/defaults?channel=southafrica_cards', {
       headers: {
         [targetEnvironmentHeaderName]: 'product',
       },
@@ -190,7 +185,7 @@ describe('deposit API routes', () => {
       });
     }) as unknown as typeof fetch;
 
-    const response = await requestApi('/api/deposit/create', {
+    const response = await context.requestApi('/api/deposit/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -224,7 +219,7 @@ describe('deposit API routes', () => {
       });
     }) as unknown as typeof fetch;
 
-    const response = await requestApi('/api/deposit/create', {
+    const response = await context.requestApi('/api/deposit/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -250,7 +245,7 @@ describe('deposit API routes', () => {
       });
     }) as unknown as typeof fetch;
 
-    const response = await requestApi('/api/deposit/create', {
+    const response = await context.requestApi('/api/deposit/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -267,7 +262,7 @@ describe('deposit API routes', () => {
   });
 
   test('POST /api/deposit/create rejects unsupported target environments', async () => {
-    const response = await requestApi('/api/deposit/create', {
+    const response = await context.requestApi('/api/deposit/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -299,7 +294,7 @@ describe('deposit API routes', () => {
       },
     };
 
-    const updateResponse = await requestApi('/api/deposit/defaults?channel=southafrica_cards', {
+    const updateResponse = await context.requestApi('/api/deposit/defaults?channel=southafrica_cards', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
@@ -307,7 +302,7 @@ describe('deposit API routes', () => {
 
     expect(updateResponse.status).toBe(200);
 
-    const updatedDefaultsResponse = await requestApi('/api/deposit/defaults?channel=southafrica_cards');
+    const updatedDefaultsResponse = await context.requestApi('/api/deposit/defaults?channel=southafrica_cards');
     const updatedDefaults = (await updatedDefaultsResponse.json()) as Record<string, unknown>;
     const form = updatedDefaults.form as Record<string, unknown>;
     const commonValues = form.commonValues as Record<string, unknown>;

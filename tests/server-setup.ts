@@ -1,9 +1,16 @@
 import { cp, mkdtemp, rm } from 'fs/promises';
-import net from 'net';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
-import { getCliEnv, getCliEnvRegistry, type CliEnv, type CliEnvRegistry } from '../src/core/env';
-import { createApiServer } from '../src/server/index';
+import {
+  getCliEnv,
+  getCliEnvForTarget,
+  getCliEnvRegistry,
+  type CliEnv,
+  type CliEnvRegistry,
+} from '../src/core/env';
+import { handleDepositRoute } from '../src/server/routes/deposit';
+import { handlePayoutRoute } from '../src/server/routes/payout';
+import { handleSubscriptionRoute } from '../src/server/routes/subscription';
 
 const dataRootDirPath = resolve(process.cwd(), 'data');
 const depositSourceDirPath = join(dataRootDirPath, 'deposit');
@@ -11,35 +18,13 @@ const payoutSourceDirPath = join(dataRootDirPath, 'payout');
 const subscriptionSourceDirPath = join(dataRootDirPath, 'subscription');
 const makeId = (prefix: string): string => `${prefix}fixed-id`;
 
-const getAvailablePort = async (): Promise<number> =>
-  await new Promise<number>((resolvePort, reject) => {
-    const server = net.createServer();
-
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const address = server.address();
-      if (!address || typeof address === 'string') {
-        server.close(() => reject(new TypeError('Unable to resolve an ephemeral test port')));
-        return;
-      }
-
-      server.close((error) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        resolvePort(address.port);
-      });
-    });
-  });
-
 export type ApiTestServerContext = {
   baseUrl: string;
   envRegistry: CliEnvRegistry;
   depositPresetDirPath: string;
   payoutPresetDirPath: string;
   subscriptionPresetDirPath: string;
+  requestApi: (path: string, init?: RequestInit) => Promise<Response>;
   resetDepositFixtures: () => Promise<void>;
   resetPayoutFixtures: () => Promise<void>;
   resetSubscriptionFixtures: () => Promise<void>;
@@ -97,29 +82,67 @@ export const startApiTestServer = async (options?: {
   await resetDepositFixtures();
   await resetPayoutFixtures();
   await resetSubscriptionFixtures();
-  const port = await getAvailablePort();
 
-  const server = createApiServer({
-    envRegistry,
-    depositPresetDirPath,
-    payoutPresetDirPath,
-    subscriptionPresetDirPath,
-    logger: console,
-    makeId: currentMakeId,
-    port,
-  });
+  const requestApi = async (path: string, init?: RequestInit): Promise<Response> => {
+    const request = new Request(new URL(path, 'http://127.0.0.1').toString(), init);
+    const url = new URL(request.url);
+
+    const depositResponse = await handleDepositRoute({
+      request,
+      url,
+      deps: {
+        getEnvForTarget: (target) => getCliEnvForTarget(envRegistry, target),
+        presetDirPath: depositPresetDirPath,
+        makeId: currentMakeId,
+        logger: console,
+      },
+    });
+    if (depositResponse) {
+      return depositResponse;
+    }
+
+    const payoutResponse = await handlePayoutRoute({
+      request,
+      url,
+      deps: {
+        getEnvForTarget: (target) => getCliEnvForTarget(envRegistry, target),
+        presetDirPath: payoutPresetDirPath,
+        makeId: currentMakeId,
+        logger: console,
+      },
+    });
+    if (payoutResponse) {
+      return payoutResponse;
+    }
+
+    const subscriptionResponse = await handleSubscriptionRoute({
+      request,
+      url,
+      deps: {
+        getEnvForTarget: (target) => getCliEnvForTarget(envRegistry, target),
+        presetDirPath: subscriptionPresetDirPath,
+        makeId: currentMakeId,
+        logger: console,
+      },
+    });
+    if (subscriptionResponse) {
+      return subscriptionResponse;
+    }
+
+    return new Response(null, { status: 404 });
+  };
 
   return {
-    baseUrl: `http://127.0.0.1:${server.port}`,
+    baseUrl: 'http://127.0.0.1',
     envRegistry,
     depositPresetDirPath,
     payoutPresetDirPath,
     subscriptionPresetDirPath,
+    requestApi,
     resetDepositFixtures,
     resetPayoutFixtures,
     resetSubscriptionFixtures,
     stop: async (): Promise<void> => {
-      server.stop(true);
       await rm(tempRootDirPath, { recursive: true, force: true });
     },
   };

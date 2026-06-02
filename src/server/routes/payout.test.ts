@@ -75,29 +75,24 @@ const createValidBody = (): PayoutApiRequestBody => ({
 
 describe('payout API routes', () => {
   let context: ApiTestServerContext;
-  const originalFetch = globalThis.fetch;
-  const requestApi = (path: string, init?: RequestInit): Promise<Response> =>
-    originalFetch(createRequestUrl(context.baseUrl, path), init);
 
   beforeAll(async () => {
     context = await startApiTestServer();
   });
 
   afterAll(async () => {
-    globalThis.fetch = originalFetch;
     if (context) {
       await context.stop();
     }
   });
 
   beforeEach(async () => {
-    globalThis.fetch = originalFetch;
     mock.restore();
     await context.resetPayoutFixtures();
   });
 
   test('GET /api/payout/defaults returns payout defaults bundle', async () => {
-    const response = await requestApi('/api/payout/defaults?channel=co_bank');
+    const response = await context.requestApi('/api/payout/defaults?channel=co_bank');
 
     expect(response.status).toBe(200);
 
@@ -108,11 +103,11 @@ describe('payout API routes', () => {
     expect(body.channel).toBe('co_bank');
     expect(body.availableChannels).toEqual(['co_bank', 'co_wallet', 'imps', 'bd_wallet']);
     expect(body.apiKey).toBe('payout-token');
-    expect(commonValues.merchantReference).toBe('TEST_PAYOUT_ORDER_131');
+    expect(commonValues.merchantReference).toBe('Click button to acquire a merchant ref');
   });
 
   test('POST /api/payout/merchant-reference returns a generated merchant reference', async () => {
-    const response = await requestApi('/api/payout/merchant-reference', {
+    const response = await context.requestApi('/api/payout/merchant-reference', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -130,7 +125,7 @@ describe('payout API routes', () => {
     const beneficiary = payoutInfo.beneficiary as Record<string, unknown>;
     beneficiary.name = '   ';
 
-    const response = await requestApi('/api/payout/preview', {
+    const response = await context.requestApi('/api/payout/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
@@ -143,7 +138,7 @@ describe('payout API routes', () => {
   });
 
   test('POST /api/payout/preview returns masked preview payload for valid payout form', async () => {
-    const response = await requestApi('/api/payout/preview', {
+    const response = await context.requestApi('/api/payout/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(createValidBody()),
@@ -179,7 +174,7 @@ describe('payout API routes', () => {
       });
     }) as unknown as typeof fetch;
 
-    const response = await requestApi('/api/payout/create', {
+    const response = await context.requestApi('/api/payout/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -206,7 +201,7 @@ describe('payout API routes', () => {
       });
     }) as unknown as typeof fetch;
 
-    const response = await requestApi('/api/payout/create', {
+    const response = await context.requestApi('/api/payout/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -268,7 +263,7 @@ describe('payout API routes', () => {
       },
     };
 
-    const updateResponse = await requestApi('/api/payout/defaults?channel=co_wallet', {
+    const updateResponse = await context.requestApi('/api/payout/defaults?channel=co_wallet', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
@@ -276,7 +271,7 @@ describe('payout API routes', () => {
 
     expect(updateResponse.status).toBe(200);
 
-    const updatedDefaultsResponse = await requestApi('/api/payout/defaults?channel=co_wallet');
+    const updatedDefaultsResponse = await context.requestApi('/api/payout/defaults?channel=co_wallet');
     const updatedDefaults = (await updatedDefaultsResponse.json()) as Record<string, unknown>;
     const form = updatedDefaults.form as Record<string, unknown>;
     const commonValues = form.commonValues as Record<string, unknown>;

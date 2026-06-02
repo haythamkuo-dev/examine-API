@@ -51,9 +51,6 @@ const createValidBody = (): SubscriptionApiRequestBody => ({
 
 describe('subscription API routes', () => {
   let context: ApiTestServerContext;
-  const originalFetch = globalThis.fetch;
-  const requestApi = (path: string, init?: RequestInit): Promise<Response> =>
-    originalFetch(createRequestUrl(context.baseUrl, path), init);
 
   beforeAll(async () => {
     context = await startApiTestServer({
@@ -67,20 +64,18 @@ describe('subscription API routes', () => {
   });
 
   afterAll(async () => {
-    globalThis.fetch = originalFetch;
     if (context) {
       await context.stop();
     }
   });
 
   beforeEach(async () => {
-    globalThis.fetch = originalFetch;
     mock.restore();
     await context.resetSubscriptionFixtures();
   });
 
   test('GET /api/subscription/defaults returns subscription defaults bundle', async () => {
-    const response = await requestApi('/api/subscription/defaults?channel=default');
+    const response = await context.requestApi('/api/subscription/defaults?channel=default');
 
     expect(response.status).toBe(200);
 
@@ -92,11 +87,11 @@ describe('subscription API routes', () => {
     expect(body.availableChannels).toEqual(['default', 'rabbitLinePay', 'touchAndGo']);
     expect(body.apiKey).toBe('payout-token');
     expect(body.resolvedPlanId).toBe('PLAN-STAGE-DEFAULT');
-    expect(commonValues.merchantRef).toBe('TEST_ORDER_1250');
+    expect(commonValues.merchantRef).toBe('Click button to acquire a merchant ref');
   });
 
   test('GET /api/subscription/defaults returns channel-specific defaults with a draft plan id field', async () => {
-    const response = await requestApi('/api/subscription/defaults?channel=rabbitLinePay');
+    const response = await context.requestApi('/api/subscription/defaults?channel=rabbitLinePay');
 
     expect(response.status).toBe(200);
 
@@ -112,7 +107,7 @@ describe('subscription API routes', () => {
   });
 
   test('GET /api/subscription/defaults switches resolved plan id for the product environment', async () => {
-    const response = await requestApi('/api/subscription/defaults?channel=touchAndGo', {
+    const response = await context.requestApi('/api/subscription/defaults?channel=touchAndGo', {
       headers: { 'X-Target-Environment': 'product' },
     });
 
@@ -124,7 +119,7 @@ describe('subscription API routes', () => {
   });
 
   test('POST /api/subscription/merchant-ref returns a generated merchant reference', async () => {
-    const response = await requestApi('/api/subscription/merchant-ref', {
+    const response = await context.requestApi('/api/subscription/merchant-ref', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -140,7 +135,7 @@ describe('subscription API routes', () => {
     const requestBody = createValidBody();
     requestBody.channelValues.product_name = '   ';
 
-    const response = await requestApi('/api/subscription/preview', {
+    const response = await context.requestApi('/api/subscription/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
@@ -153,7 +148,7 @@ describe('subscription API routes', () => {
   });
 
   test('POST /api/subscription/preview returns masked preview payload for valid subscription form', async () => {
-    const response = await requestApi('/api/subscription/preview', {
+    const response = await context.requestApi('/api/subscription/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(createValidBody()),
@@ -176,7 +171,7 @@ describe('subscription API routes', () => {
     const requestBody = createValidBody();
     requestBody.channel = 'touchAndGo';
 
-    const response = await requestApi('/api/subscription/preview', {
+    const response = await context.requestApi('/api/subscription/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
@@ -195,7 +190,7 @@ describe('subscription API routes', () => {
     const requestBody = createValidBody();
     requestBody.channelValues.subs_plan_id = 'PLAN-DRAFT-ROUTE-001';
 
-    const response = await requestApi('/api/subscription/preview', {
+    const response = await context.requestApi('/api/subscription/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
@@ -224,7 +219,7 @@ describe('subscription API routes', () => {
       });
     }) as unknown as typeof fetch;
 
-    const response = await requestApi('/api/subscription/create', {
+    const response = await context.requestApi('/api/subscription/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(createValidBody()),
@@ -254,7 +249,7 @@ describe('subscription API routes', () => {
       });
     }) as unknown as typeof fetch;
 
-    const response = await requestApi('/api/subscription/create', {
+    const response = await context.requestApi('/api/subscription/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -279,7 +274,7 @@ describe('subscription API routes', () => {
       });
     }) as unknown as typeof fetch;
 
-    const response = await requestApi('/api/subscription/create', {
+    const response = await context.requestApi('/api/subscription/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -307,7 +302,7 @@ describe('subscription API routes', () => {
     });
 
     try {
-      const response = await originalFetch(createRequestUrl(missingPlanContext.baseUrl, '/api/subscription/create'), {
+      const response = await missingPlanContext.requestApi('/api/subscription/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -339,9 +334,7 @@ describe('subscription API routes', () => {
     });
 
     try {
-      const response = await originalFetch(
-        createRequestUrl(missingPlanContext.baseUrl, '/api/subscription/defaults?channel=rabbitLinePay'),
-      );
+      const response = await missingPlanContext.requestApi('/api/subscription/defaults?channel=rabbitLinePay');
 
       expect(response.status).toBe(400);
 
@@ -385,7 +378,7 @@ describe('subscription API routes', () => {
       },
     };
 
-    const updateResponse = await requestApi('/api/subscription/defaults?channel=default', {
+    const updateResponse = await context.requestApi('/api/subscription/defaults?channel=default', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
@@ -393,7 +386,7 @@ describe('subscription API routes', () => {
 
     expect(updateResponse.status).toBe(200);
 
-    const updatedDefaultsResponse = await requestApi('/api/subscription/defaults?channel=default');
+    const updatedDefaultsResponse = await context.requestApi('/api/subscription/defaults?channel=default');
     const updatedDefaults = (await updatedDefaultsResponse.json()) as Record<string, unknown>;
     const form = updatedDefaults.form as Record<string, unknown>;
     const commonValues = form.commonValues as Record<string, unknown>;
