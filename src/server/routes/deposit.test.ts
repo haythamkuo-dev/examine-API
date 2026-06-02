@@ -10,6 +10,7 @@ import {
 } from '../../../tests/server-setup';
 
 type DepositApiRequestBody = {
+  apiKey?: string;
   channel: string;
   commonValues: {
     productNo: string;
@@ -105,6 +106,7 @@ describe('deposit API routes', () => {
 
     expect(body.channel).toBe('southafrica_cards');
     expect(body.availableChannels).toEqual([...DEPOSIT_CHANNELS]);
+    expect(body.apiKey).toBe('payout-token');
     expect(commonValues.merchantRef).toBe('TEST_ORDER_000001');
   });
 
@@ -159,6 +161,19 @@ describe('deposit API routes', () => {
     expect(request.url).toBe('https://example.test/s2s/v1/intents/deposit');
     expect(headers.Authorization).toBe('ApiKey ****-token');
     expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
+  });
+
+  test('GET /api/deposit/defaults switches the default api key for the product environment', async () => {
+    const response = await requestApi('/api/deposit/defaults?channel=southafrica_cards', {
+      headers: {
+        [targetEnvironmentHeaderName]: 'product',
+      },
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body.apiKey).toBe('product-deposit-token');
   });
 
   test('POST /api/deposit/create proxies upstream status and preserves the provided merchant ref', async () => {
@@ -223,6 +238,34 @@ describe('deposit API routes', () => {
     expect(upstreamAuthorization).toBe('ApiKey product-deposit-token');
   });
 
+  test('POST /api/deposit/create uses a manually provided api key override', async () => {
+    let upstreamAuthorization = '';
+
+    globalThis.fetch = mock(async (_input, init) => {
+      upstreamAuthorization = String((init?.headers as Record<string, string> | undefined)?.Authorization || '');
+
+      return new Response(JSON.stringify({ ok: true, intent_id: 'dep_manual_123' }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+
+    const response = await requestApi('/api/deposit/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        [targetEnvironmentHeaderName]: 'local',
+      },
+      body: JSON.stringify({
+        ...createValidBody(),
+        apiKey: 'manual-deposit-token',
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(upstreamAuthorization).toBe('ApiKey manual-deposit-token');
+  });
+
   test('POST /api/deposit/create rejects unsupported target environments', async () => {
     const response = await requestApi('/api/deposit/create', {
       method: 'POST',
@@ -241,6 +284,7 @@ describe('deposit API routes', () => {
 
   test('PUT /api/deposit/defaults persists deposit defaults into the isolated fixture copy', async () => {
     const requestBody = createValidBody();
+    requestBody.apiKey = 'manual-deposit-token';
     requestBody.commonValues.productNo = 'DEP-CUSTOM-TEST-001';
     requestBody.commonValues.merchantRef = 'TEST_DEPOSIT_OVERRIDDEN';
     requestBody.channelValues = {
@@ -274,6 +318,7 @@ describe('deposit API routes', () => {
     expect(commonValues.productNo).toBe('DEP-CUSTOM-TEST-001');
     expect(commonValues.merchantRef).toBe('TEST_DEPOSIT_OVERRIDDEN');
     expect(collect.product_name).toBe('Updated deposit product');
+    expect(updatedDefaults.apiKey).toBe('payout-token');
 
     const savedCommon = await readFile(join(context.depositPresetDirPath, 'common.json'), 'utf8');
     const savedChannel = await readFile(

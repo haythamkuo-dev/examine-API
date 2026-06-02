@@ -7,7 +7,7 @@ import { generateSign } from '../utils';
 import {
   buildSubscriptionPreviewResponse,
   buildSubscriptionRequestFromForm,
-  type SubscriptionFormValues,
+  type SubscriptionRequestValues,
 } from './web';
 import {
   createSeedSubscriptionPresets,
@@ -80,7 +80,7 @@ describe('subscription web helpers', () => {
       'local',
       await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
     );
-    const values: SubscriptionFormValues = {
+    const values: SubscriptionRequestValues = {
       ...defaults.form,
       commonValues: {
         ...defaults.form.commonValues,
@@ -103,7 +103,7 @@ describe('subscription web helpers', () => {
       'local',
       await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
     );
-    const values: SubscriptionFormValues = {
+    const values: SubscriptionRequestValues = {
       ...defaults.form,
       commonValues: {
         merchantRef: 'TEST_SUB_001',
@@ -145,7 +145,7 @@ describe('subscription web helpers', () => {
         'local',
         await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
       );
-      const values: SubscriptionFormValues = {
+      const values: SubscriptionRequestValues = {
         ...defaults.form,
         channel,
         commonValues: {
@@ -171,7 +171,7 @@ describe('subscription web helpers', () => {
       'local',
       await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
     );
-    const values: SubscriptionFormValues = {
+    const values: SubscriptionRequestValues = {
       ...defaults.form,
       commonValues: {
         ...defaults.form.commonValues,
@@ -191,7 +191,7 @@ describe('subscription web helpers', () => {
       'local',
       await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
     );
-    const values: SubscriptionFormValues = {
+    const values: SubscriptionRequestValues = {
       ...defaults.form,
       commonValues: {
         ...defaults.form.commonValues,
@@ -201,6 +201,22 @@ describe('subscription web helpers', () => {
 
     const request = buildSubscriptionRequestFromForm(env, values, makeId);
     expect((request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_fixed-id');
+  });
+
+  test('uses a manually provided subscription api key when present', async () => {
+    const defaults = toSubscriptionDefaultsResponse(
+      'default',
+      env,
+      'local',
+      await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
+    );
+    const values: SubscriptionRequestValues = {
+      ...defaults.form,
+      apiKey: 'manual-subscription-token',
+    };
+
+    const request = buildSubscriptionRequestFromForm(env, values, makeId);
+    expect(request.headers?.Authorization).toBe('ApiKey manual-subscription-token');
   });
 
   test('updates and writes subscription preset file by channel', async () => {
@@ -238,7 +254,7 @@ describe('subscription web helpers', () => {
       'local',
       await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
     );
-    const values: SubscriptionFormValues = {
+    const values: SubscriptionRequestValues = {
       ...defaults.form,
       channel: 'rabbitLinePay',
     };

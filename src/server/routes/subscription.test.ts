@@ -5,6 +5,7 @@ import { getCliEnvRegistry } from '../../core/env';
 import { startApiTestServer, type ApiTestServerContext } from '../../../tests/server-setup';
 
 type SubscriptionApiRequestBody = {
+  apiKey?: string;
   channel: string;
   commonValues: {
     merchantRef: string;
@@ -89,6 +90,7 @@ describe('subscription API routes', () => {
 
     expect(body.channel).toBe('default');
     expect(body.availableChannels).toEqual(['default', 'rabbitLinePay', 'touchAndGo']);
+    expect(body.apiKey).toBe('payout-token');
     expect(body.resolvedPlanId).toBe('PLAN-STAGE-DEFAULT');
     expect(commonValues.merchantRef).toBe('TEST_ORDER_1250');
   });
@@ -117,6 +119,7 @@ describe('subscription API routes', () => {
     expect(response.status).toBe(200);
 
     const body = (await response.json()) as Record<string, unknown>;
+    expect(body.apiKey).toBe(context.envRegistry.product.tokens.subscription);
     expect(body.resolvedPlanId).toBe('PLAN-PROD-TNG');
   });
 
@@ -220,6 +223,31 @@ describe('subscription API routes', () => {
     expect(capturedUpstreamBody.subs_plan_id).toBe('PLAN-STAGE-DEFAULT');
   });
 
+  test('POST /api/subscription/create uses a manually provided api key override', async () => {
+    let upstreamAuthorization = '';
+
+    globalThis.fetch = mock(async (_input, init) => {
+      upstreamAuthorization = String((init?.headers as Record<string, string> | undefined)?.Authorization || '');
+
+      return new Response(JSON.stringify({ ok: true, subscription_id: 'sub_manual_123' }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+
+    const response = await requestApi('/api/subscription/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...createValidBody(),
+        apiKey: 'manual-subscription-token',
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(upstreamAuthorization).toBe('ApiKey manual-subscription-token');
+  });
+
   test('POST /api/subscription/create returns 400 when the selected channel is missing a configured plan id', async () => {
     const missingPlanContext = await startApiTestServer({
       envRegistry: getCliEnvRegistry({
@@ -281,6 +309,7 @@ describe('subscription API routes', () => {
 
   test('PUT /api/subscription/defaults persists subscription defaults into the isolated fixture copy', async () => {
     const requestBody = {
+      apiKey: 'manual-subscription-token',
       channel: 'default',
       commonValues: {
         merchantRef: 'TEST_SUB_OVERRIDDEN',
@@ -325,6 +354,7 @@ describe('subscription API routes', () => {
     expect(commonValues.merchantRef).toBe('TEST_SUB_OVERRIDDEN');
     expect(commonValues.returnUrl).toBe('https://merchant.example.com/subscription/updated');
     expect(channelValues.product_name).toBe('Updated subscription product');
+    expect(updatedDefaults.apiKey).toBe('payout-token');
 
     const savedCommon = await readFile(join(context.subscriptionPresetDirPath, 'common.json'), 'utf8');
     const savedChannel = await readFile(join(context.subscriptionPresetDirPath, 'channels', 'default.json'), 'utf8');

@@ -26,7 +26,7 @@ beforeEach(async () => {
 describe('validateDepositForm', () => {
   test('accepts valid deposit defaults for the selected channel', async () => {
     const presets = await loadDepositPresets({ dirPath: presetDirPath, env, makeId });
-    const defaults = toDepositDefaultsResponse('southafrica_cards', presets);
+    const defaults = toDepositDefaultsResponse('southafrica_cards', env, presets);
 
     const error = validateDepositForm(defaults.form, defaults.commonSchema, defaults.channelSchema);
 
@@ -35,7 +35,7 @@ describe('validateDepositForm', () => {
 
   test('returns an error when a required common field is blank', async () => {
     const presets = await loadDepositPresets({ dirPath: presetDirPath, env, makeId });
-    const defaults = toDepositDefaultsResponse('southafrica_cards', presets);
+    const defaults = toDepositDefaultsResponse('southafrica_cards', env, presets);
 
     defaults.form.commonValues.merchantRef = '   ';
     const error = validateDepositForm(defaults.form, defaults.commonSchema, defaults.channelSchema);
@@ -45,7 +45,7 @@ describe('validateDepositForm', () => {
 
   test('returns a nested error path when a required channel field is blank', async () => {
     const presets = await loadDepositPresets({ dirPath: presetDirPath, env, makeId });
-    const defaults = toDepositDefaultsResponse('southafrica_cards', presets);
+    const defaults = toDepositDefaultsResponse('southafrica_cards', env, presets);
     const paymentOrder = defaults.form.channelValues.payment_order as Record<string, unknown>;
     const collect = paymentOrder.collect as Record<string, unknown>;
 

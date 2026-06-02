@@ -103,6 +103,37 @@ export const resolvePayoutMerchantTokenKey = (channel: PayoutChannel): MerchantT
 export const getMerchantToken = (env: CliEnv, tokenKey: MerchantTokenKey): string =>
   env.merchantTokens[tokenKey];
 
+/**
+ * Resolves the default deposit API key for the selected channel.
+ *
+ * @param env Runtime environment containing all region-scoped merchant tokens.
+ * @param channel Deposit channel selected by the caller.
+ * @returns The API key that should authorize deposit requests for the channel.
+ * @throws {TypeError} When an invalid deposit channel is passed at runtime.
+ */
+export const resolveDepositApiKey = (env: CliEnv, channel: DepositChannel): string =>
+  getMerchantToken(env, resolveDepositMerchantTokenKey(channel));
+
+/**
+ * Resolves the default payout API key for the selected channel.
+ *
+ * @param env Runtime environment containing all region-scoped merchant tokens.
+ * @param channel Payout channel selected by the caller.
+ * @returns The API key that should authorize payout requests for the channel.
+ * @throws {TypeError} When an invalid payout channel is passed at runtime.
+ */
+export const resolvePayoutApiKey = (env: CliEnv, channel: PayoutChannel): string =>
+  getMerchantToken(env, resolvePayoutMerchantTokenKey(channel));
+
+/**
+ * Resolves the default subscription API key for the selected environment.
+ *
+ * @param env Runtime environment containing subscription credentials.
+ * @returns The API key that should authorize subscription requests.
+ * @throws {TypeError} When the runtime environment cannot be read.
+ */
+export const resolveSubscriptionApiKey = (env: CliEnv): string => env.tokens.subscription;
+
 export class SubscriptionPlanConfigError extends TypeError {
   /**
    * Builds an error describing a missing subscription plan mapping for a channel/environment pair.

@@ -11,6 +11,7 @@ import {
   type SubscriptionDefaultsResponse,
   type SubscriptionFormValues,
   type SubscriptionMerchantRefResponse,
+  type SubscriptionRequestValues,
 } from './web';
 import {
   loadSubscriptionPresets,
@@ -52,7 +53,7 @@ export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
 
   const service = createPresetBackedService<
     SubscriptionChannel,
-    SubscriptionFormValues,
+    SubscriptionRequestValues,
     Awaited<ReturnType<typeof loadSubscriptionPresets>>,
     SubscriptionDefaultsResponse,
     ReturnType<typeof buildSubscriptionPreviewResponse>,

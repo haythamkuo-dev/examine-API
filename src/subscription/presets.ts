@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import {
+  resolveSubscriptionApiKey,
   resolveSubscriptionPlan,
   SUBSCRIPTION_CHANNELS,
   type CliEnv,
@@ -273,6 +274,7 @@ export const toSubscriptionDefaultsResponse = (
   target: TargetEnvironment,
   store: SubscriptionPresetStore,
 ): SubscriptionDefaultsResponse => ({
+  apiKey: resolveSubscriptionApiKey(env),
   availableChannels: [...SUBSCRIPTION_CHANNELS],
   channel,
   resolvedPlanId: resolveSubscriptionPlan(env, channel, target),

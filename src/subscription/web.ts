@@ -1,4 +1,8 @@
-import type { CliEnv, SubscriptionChannel } from '../core/env';
+import {
+  resolveSubscriptionApiKey,
+  type CliEnv,
+  type SubscriptionChannel,
+} from '../core/env';
 import { createUniqueReference, generateSign, maskRequestHeaders } from '../utils';
 import {
   createSubscriptionPayload,
@@ -71,7 +75,12 @@ export type SubscriptionFormValues = {
   channelValues: SubscriptionChannelValues;
 };
 
+export type SubscriptionRequestValues = SubscriptionFormValues & {
+  apiKey?: string;
+};
+
 export type SubscriptionDefaultsResponse = {
+  apiKey: string;
   availableChannels: SubscriptionChannel[];
   channel: SubscriptionChannel;
   resolvedPlanId: string;
@@ -99,6 +108,7 @@ export type SubscriptionMerchantRefResponse = {
 
 export type SubscriptionDefaultsSavedResponse = {
   ok: true;
+  apiKey: string;
   availableChannels: SubscriptionChannel[];
   channel: SubscriptionChannel;
   resolvedPlanId: string;
@@ -158,11 +168,11 @@ const buildPayloadFromForm = (
  */
 export const buildSubscriptionRequestFromForm = (
   env: CliEnv,
-  values: SubscriptionFormValues,
+  values: SubscriptionRequestValues,
   makeId: (prefix: string) => string,
 ): CommandRequest => {
   const merchantRef = sanitizeMerchantReference(values.commonValues.merchantRef, makeId);
-  const normalizedValues: SubscriptionFormValues = {
+  const normalizedValues: SubscriptionRequestValues = {
     ...values,
     commonValues: {
       ...values.commonValues,
@@ -170,6 +180,7 @@ export const buildSubscriptionRequestFromForm = (
     },
   };
   const request = createSubscriptionRequest(env, values.channel, {
+    apiKey: values.apiKey?.trim() || undefined,
     commonValues: normalizedValues.commonValues,
     channelValues: normalizedValues.channelValues,
   }, () => merchantRef);
@@ -190,10 +201,10 @@ export const buildSubscriptionRequestFromForm = (
  */
 export const buildSubscriptionPreviewResponse = (
   env: CliEnv,
-  values: SubscriptionFormValues,
+  values: SubscriptionRequestValues,
   makeId: (prefix: string) => string,
 ): SubscriptionPreviewResponse => {
-  const previewValues: SubscriptionFormValues = {
+  const previewValues: SubscriptionRequestValues = {
     ...values,
     commonValues: {
       ...values.commonValues,
@@ -235,3 +246,12 @@ export const buildSubscriptionMerchantRefResponse = (
   ok: true,
   merchantRef,
 });
+
+/**
+ * Builds the target-aware subscription defaults response API key.
+ *
+ * @param env Runtime environment containing subscription credentials.
+ * @returns The default API key that should populate the operator form.
+ */
+export const getSubscriptionDefaultsApiKey = (env: CliEnv): string =>
+  resolveSubscriptionApiKey(env);

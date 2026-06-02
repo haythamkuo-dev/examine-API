@@ -11,6 +11,7 @@ import {
   type PayoutDefaultsResponse,
   type PayoutFormValues,
   type PayoutMerchantReferenceResponse,
+  type PayoutRequestValues,
 } from './web';
 import { loadPayoutPresets, toPayoutDefaultsResponse, updatePayoutPreset } from './presets';
 
@@ -39,21 +40,24 @@ export const getRequestedPayoutChannel = (url: URL): PayoutChannel => {
  * @returns The payout service API used by the HTTP layer.
  */
 export const createPayoutService = (deps: PayoutServiceDeps) => {
+  const loadPresets = () =>
+    loadPayoutPresets({
+      dirPath: deps.presetDirPath,
+      makeId: deps.makeId,
+    });
+
   const service = createPresetBackedService<
     PayoutChannel,
-    PayoutFormValues,
+    PayoutRequestValues,
     Awaited<ReturnType<typeof loadPayoutPresets>>,
     PayoutDefaultsResponse,
     ReturnType<typeof buildPayoutPreviewResponse>,
     PayoutCreateResponse,
     TargetEnvironment
   >({
-    loadPresets: () =>
-      loadPayoutPresets({
-        dirPath: deps.presetDirPath,
-        makeId: deps.makeId,
-      }),
-    toDefaultsResponse: toPayoutDefaultsResponse,
+    loadPresets,
+    toDefaultsResponse: (channel, presets) =>
+      toPayoutDefaultsResponse(channel, deps.getEnvForTarget('local'), presets),
     updatePreset: (channel, values) =>
       updatePayoutPreset({
         dirPath: deps.presetDirPath,
@@ -78,8 +82,51 @@ export const createPayoutService = (deps: PayoutServiceDeps) => {
   const generateMerchantReference = (): PayoutMerchantReferenceResponse =>
     buildPayoutMerchantReferenceResponse(deps.makeId('TEST_ORDER_'));
 
+  /**
+   * Loads target-aware defaults for the selected payout channel.
+   *
+   * @param channel Payout channel selected by the caller.
+   * @param target Target operator environment whose default API key should be surfaced.
+   * @returns Defaults payload containing the environment-specific API key for the active channel.
+   */
+  const getDefaultsForTarget = async (
+    channel: PayoutChannel,
+    target: TargetEnvironment,
+  ): Promise<PayoutDefaultsResponse> => {
+    const presets = await loadPresets();
+    return toPayoutDefaultsResponse(channel, deps.getEnvForTarget(target), presets);
+  };
+
+  /**
+   * Saves defaults for a channel and returns a target-aware defaults response.
+   *
+   * @param channel Payout channel being updated.
+   * @param values Form values to persist.
+   * @param target Target operator environment whose default API key should be surfaced.
+   * @returns Saved defaults payload containing the environment-specific API key for the active channel.
+   */
+  const saveDefaultsForTarget = async (
+    channel: PayoutChannel,
+    values: PayoutFormValues,
+    target: TargetEnvironment,
+  ): Promise<PayoutDefaultsResponse & { ok: true }> => {
+    const presets = await updatePayoutPreset({
+      dirPath: deps.presetDirPath,
+      channel,
+      values,
+      makeId: deps.makeId,
+    });
+
+    return {
+      ok: true,
+      ...toPayoutDefaultsResponse(channel, deps.getEnvForTarget(target), presets),
+    };
+  };
+
   return {
     ...service,
     generateMerchantReference,
+    getDefaultsForTarget,
+    saveDefaultsForTarget,
   };
 };

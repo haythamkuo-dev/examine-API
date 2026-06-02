@@ -1,6 +1,11 @@
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
-import { PAYOUT_CHANNELS, type CliEnv, type PayoutChannel } from '../core/env';
+import {
+  PAYOUT_CHANNELS,
+  resolvePayoutApiKey,
+  type CliEnv,
+  type PayoutChannel,
+} from '../core/env';
 import type {
   PayoutChannelValues,
   PayoutCommonValues,
@@ -232,8 +237,10 @@ const buildFormValues = (
  */
 export const toPayoutDefaultsResponse = (
   channel: PayoutChannel,
+  env: CliEnv,
   store: PayoutPresetStore,
 ): PayoutDefaultsResponse => ({
+  apiKey: resolvePayoutApiKey(env, channel),
   availableChannels: [...PAYOUT_CHANNELS],
   channel,
   commonSchema: clone(store.common.schema),

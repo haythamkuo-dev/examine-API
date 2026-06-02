@@ -1,4 +1,8 @@
-import type { CliEnv, PayoutChannel } from '../core/env';
+import {
+  resolvePayoutApiKey,
+  type CliEnv,
+  type PayoutChannel,
+} from '../core/env';
 import { createUniqueReference, generateSign, maskRequestHeaders } from '../utils';
 import type { PayoutPayload } from '../domains/payout';
 import { createPayoutPayload, createPayoutRequest } from '../domains/payout';
@@ -56,7 +60,12 @@ export type PayoutFormValues = {
   channelValues: PayoutChannelValues;
 };
 
+export type PayoutRequestValues = PayoutFormValues & {
+  apiKey?: string;
+};
+
 export type PayoutDefaultsResponse = {
+  apiKey: string;
   availableChannels: PayoutChannel[];
   channel: PayoutChannel;
   commonSchema: PayoutFieldMap;
@@ -83,6 +92,7 @@ export type PayoutMerchantReferenceResponse = {
 
 export type PayoutDefaultsSavedResponse = {
   ok: true;
+  apiKey: string;
   availableChannels: PayoutChannel[];
   channel: PayoutChannel;
   commonSchema: PayoutFieldMap;
@@ -171,14 +181,16 @@ const buildPayloadFromForm = (
  */
 export const buildPayoutRequestFromForm = (
   env: CliEnv,
-  values: PayoutFormValues,
+  values: PayoutRequestValues,
   makeId: (prefix: string) => string,
 ): CommandRequest => {
   const merchantReference = sanitizeMerchantReference(
     values.commonValues.merchantReference,
     makeId,
   );
-  const request = createPayoutRequest(env, values.channel, () => merchantReference);
+  const request = createPayoutRequest(env, values.channel, () => merchantReference, {
+    apiKey: values.apiKey?.trim() || undefined,
+  });
 
   return {
     ...request,
@@ -197,10 +209,10 @@ export const buildPayoutRequestFromForm = (
  */
 export const buildPayoutPreviewResponse = (
   env: CliEnv,
-  values: PayoutFormValues,
+  values: PayoutRequestValues,
   makeId: (prefix: string) => string,
 ): PayoutPreviewResponse => {
-  const previewValues: PayoutFormValues = {
+  const previewValues: PayoutRequestValues = {
     ...values,
     commonValues: {
       ...values.commonValues,
@@ -240,3 +252,13 @@ export const buildPayoutMerchantReferenceResponse = (
   ok: true,
   merchantReference,
 });
+
+/**
+ * Builds the target-aware payout defaults response API key for the selected channel.
+ *
+ * @param env Runtime environment containing channel-scoped payout credentials.
+ * @param channel Payout channel selected by the caller.
+ * @returns The default API key that should populate the operator form.
+ */
+export const getPayoutDefaultsApiKey = (env: CliEnv, channel: PayoutChannel): string =>
+  resolvePayoutApiKey(env, channel);

@@ -3,7 +3,7 @@ import { getCliEnv } from '../core/env';
 import {
   buildDepositPreviewResponse,
   buildDepositRequestFromForm,
-  type DepositFormValues,
+  type DepositRequestValues,
 } from './web';
 import {
   createSeedDepositPresets,
@@ -41,10 +41,15 @@ describe('deposit web helpers', () => {
   });
 
   test('builds masked preview response', () => {
-    const values: DepositFormValues = {
-      ...toDepositDefaultsResponse('southafrica_cards', createSeedDepositPresets(env, makeId)).form,
+    const defaults = toDepositDefaultsResponse(
+      'southafrica_cards',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const values: DepositRequestValues = {
+      ...defaults.form,
       commonValues: {
-        ...toDepositDefaultsResponse('southafrica_cards', createSeedDepositPresets(env, makeId)).form.commonValues,
+        ...defaults.form.commonValues,
         merchantRef: 'TEST_ORDER_217',
       },
     };
@@ -56,10 +61,15 @@ describe('deposit web helpers', () => {
   });
 
   test('builds request from form values', () => {
-    const values: DepositFormValues = {
-      ...toDepositDefaultsResponse('southafrica_cards', createSeedDepositPresets(env, makeId)).form,
+    const defaults = toDepositDefaultsResponse(
+      'southafrica_cards',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const values: DepositRequestValues = {
+      ...defaults.form,
       commonValues: {
-        ...toDepositDefaultsResponse('southafrica_cards', createSeedDepositPresets(env, makeId)).form.commonValues,
+        ...defaults.form.commonValues,
         merchantRef: 'TEST_ORDER_217',
       },
     };
@@ -71,10 +81,15 @@ describe('deposit web helpers', () => {
   });
 
   test('preview generates a fresh merchant reference even when the form already has one', () => {
-    const values: DepositFormValues = {
-      ...toDepositDefaultsResponse('southafrica_cards', createSeedDepositPresets(env, makeId)).form,
+    const defaults = toDepositDefaultsResponse(
+      'southafrica_cards',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const values: DepositRequestValues = {
+      ...defaults.form,
       commonValues: {
-        ...toDepositDefaultsResponse('southafrica_cards', createSeedDepositPresets(env, makeId)).form.commonValues,
+        ...defaults.form.commonValues,
         merchantRef: 'TEST_PREVIEW_217',
       },
     };
@@ -85,10 +100,11 @@ describe('deposit web helpers', () => {
   });
 
   test('uses channel-scoped merchant token for India deposit channels', () => {
-    const values: DepositFormValues = {
-      ...toDepositDefaultsResponse('inr_upi', createSeedDepositPresets(env, makeId)).form,
+    const defaults = toDepositDefaultsResponse('inr_upi', env, createSeedDepositPresets(env, makeId));
+    const values: DepositRequestValues = {
+      ...defaults.form,
       commonValues: {
-        ...toDepositDefaultsResponse('inr_upi', createSeedDepositPresets(env, makeId)).form.commonValues,
+        ...defaults.form.commonValues,
         merchantRef: 'TEST_ORDER_IN_217',
       },
     };
@@ -98,16 +114,36 @@ describe('deposit web helpers', () => {
   });
 
   test('creates a unique merchant reference when form value is blank', () => {
-    const values: DepositFormValues = {
-      ...toDepositDefaultsResponse('southafrica_cards', createSeedDepositPresets(env, makeId)).form,
+    const defaults = toDepositDefaultsResponse(
+      'southafrica_cards',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const values: DepositRequestValues = {
+      ...defaults.form,
       commonValues: {
-        ...toDepositDefaultsResponse('southafrica_cards', createSeedDepositPresets(env, makeId)).form.commonValues,
+        ...defaults.form.commonValues,
         merchantRef: '   ',
       },
     };
 
     const request = buildDepositRequestFromForm(env, values, makeId);
     expect((request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_fixed-id');
+  });
+
+  test('uses a manually provided deposit api key when present', () => {
+    const defaults = toDepositDefaultsResponse(
+      'southafrica_cards',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const values: DepositRequestValues = {
+      ...defaults.form,
+      apiKey: 'manual-deposit-token',
+    };
+
+    const request = buildDepositRequestFromForm(env, values, makeId);
+    expect(request.headers?.Authorization).toBe('ApiKey manual-deposit-token');
   });
 
   test('adds binding hint to failed create response', async () => {
@@ -178,7 +214,7 @@ describe('deposit web helpers', () => {
   test('updates and writes preset file by channel', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'deposit-preset-'));
     const dirPath = join(tempDir, 'deposit');
-    const values = toDepositDefaultsResponse('linepay', createSeedDepositPresets(env, makeId)).form;
+    const values = toDepositDefaultsResponse('linepay', env, createSeedDepositPresets(env, makeId)).form;
     values.commonValues.productNo = 'DEP-LINEPAY-CUSTOM';
     values.commonValues.merchantRef = 'TEST_ORDER_OVERRIDDEN';
 

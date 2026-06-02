@@ -37,6 +37,7 @@ export type SubscriptionPayload = {
 };
 
 export type SubscriptionRequestOverrides = {
+  apiKey?: string;
   commonValues: SubscriptionCommonValues;
   channelValues: SubscriptionChannelValues;
 };
@@ -167,17 +168,30 @@ export function createSubscriptionRequest(
   arg2?: SubscriptionRequestOverrides | LegacySubscriptionOverrides,
   arg3?: (prefix: string) => string,
 ): CommandRequest {
-  const [channel, payload] =
+  const [channel, payload, apiKeyOverride] =
     typeof arg1 === 'function'
-      ? (['default', createSubscriptionPayload(env, arg1, (arg2 as LegacySubscriptionOverrides) || {})] as const)
-      : ([arg1, createSubscriptionPayload(env, arg1, arg2 as SubscriptionRequestOverrides, arg3 as (prefix: string) => string)] as const);
+      ? ([
+          'default',
+          createSubscriptionPayload(env, arg1, (arg2 as LegacySubscriptionOverrides) || {}),
+          undefined,
+        ] as const)
+      : ([
+          arg1,
+          createSubscriptionPayload(
+            env,
+            arg1,
+            arg2 as SubscriptionRequestOverrides,
+            arg3 as (prefix: string) => string,
+          ),
+          (arg2 as SubscriptionRequestOverrides).apiKey?.trim() || undefined,
+        ] as const);
 
   return {
     name: `subscription:create:${channel}`,
     method: 'POST',
     url: joinUrl(env.baseUrl, env.subscriptionUrl),
     headers: {
-      Authorization: `ApiKey ${env.tokens.subscription}`,
+      Authorization: `ApiKey ${apiKeyOverride || env.tokens.subscription}`,
       'Content-Type': 'application/json',
     },
     payload,

@@ -6,7 +6,11 @@ import {
   getRequestedSubscriptionChannel,
 } from '../../subscription/service';
 import { validateSubscriptionForm } from '../../subscription/validation';
-import { missingSubscriptionPlanCode, type SubscriptionFormValues } from '../../subscription/web';
+import {
+  missingSubscriptionPlanCode,
+  type SubscriptionFormValues,
+  type SubscriptionRequestValues,
+} from '../../subscription/web';
 import { badRequest, json, readJson } from '../http';
 
 const subscriptionPlanBadRequest = (message: string): Response =>
@@ -55,12 +59,12 @@ export const handleSubscriptionRoute = async ({
 
   if (request.method === 'PUT' && url.pathname === '/api/subscription/defaults') {
     const channel = getRequestedSubscriptionChannel(url);
-    const values = await readJson<SubscriptionFormValues>(request);
+    const values = await readJson<SubscriptionRequestValues>(request);
     try {
       const bundle = await service.getDefaultsForTarget(channel, targetEnvironment);
       const error = validateSubscriptionForm(values, bundle.commonSchema, bundle.channelSchema);
       if (error) return badRequest(error);
-      return json(await service.saveDefaultsForTarget(channel, values, targetEnvironment));
+      return json(await service.saveDefaultsForTarget(channel, values as SubscriptionFormValues, targetEnvironment));
     } catch (routeError) {
       if (routeError instanceof SubscriptionPlanConfigError) {
         return subscriptionPlanBadRequest(routeError.message);
@@ -75,7 +79,7 @@ export const handleSubscriptionRoute = async ({
   }
 
   if (request.method === 'POST' && url.pathname === '/api/subscription/preview') {
-    const values = await readJson<SubscriptionFormValues>(request);
+    const values = await readJson<SubscriptionRequestValues>(request);
     try {
       const bundle = await service.getDefaultsForTarget(values.channel, targetEnvironment);
       const error = validateSubscriptionForm(values, bundle.commonSchema, bundle.channelSchema);
@@ -91,7 +95,7 @@ export const handleSubscriptionRoute = async ({
   }
 
   if (request.method === 'POST' && url.pathname === '/api/subscription/create') {
-    const values = await readJson<SubscriptionFormValues>(request);
+    const values = await readJson<SubscriptionRequestValues>(request);
     try {
       const bundle = await service.getDefaultsForTarget(values.channel, targetEnvironment);
       const error = validateSubscriptionForm(values, bundle.commonSchema, bundle.channelSchema);

@@ -1,4 +1,8 @@
-import type { CliEnv, DepositChannel } from '../core/env';
+import {
+  resolveDepositApiKey,
+  type CliEnv,
+  type DepositChannel,
+} from '../core/env';
 import {
   createStructuredDepositRequest,
   type DepositCollectOverride,
@@ -68,7 +72,12 @@ export type DepositFormValues = {
   channelValues: DepositChannelValues;
 };
 
+export type DepositRequestValues = DepositFormValues & {
+  apiKey?: string;
+};
+
 export type DepositDefaultsResponse = {
+  apiKey: string;
   availableChannels: DepositChannel[];
   channel: DepositChannel;
   commonSchema: DepositFieldMap;
@@ -97,6 +106,7 @@ export type DepositMerchantRefResponse = {
 
 export type DepositDefaultsSavedResponse = {
   ok: true;
+  apiKey: string;
   availableChannels: DepositChannel[];
   channel: DepositChannel;
   commonSchema: DepositFieldMap;
@@ -114,10 +124,11 @@ export const DEFAULT_DEPOSIT_COLLECT: DepositCollectOverride = {
 
 export const buildDepositRequestFromForm = (
   env: CliEnv,
-  values: DepositFormValues,
+  values: DepositRequestValues,
   makeId: (prefix: string) => string,
 ): CommandRequest =>
   createStructuredDepositRequest(env, values.channel, makeId, {
+    apiKey: values.apiKey?.trim() || undefined,
     commonValues: values.commonValues,
     channelValues: values.channelValues,
   });
@@ -144,10 +155,10 @@ export const createLegacyDepositFormValues = (
 
 export const buildDepositPreviewResponse = (
   env: CliEnv,
-  values: DepositFormValues,
+  values: DepositRequestValues,
   makeId: (prefix: string) => string,
 ): DepositPreviewResponse => {
-  const previewValues: DepositFormValues = {
+  const previewValues: DepositRequestValues = {
     ...values,
     commonValues: {
       ...values.commonValues,
@@ -184,3 +195,13 @@ export const buildDepositMerchantRefResponse = (
   ok: true,
   merchantRef,
 });
+
+/**
+ * Builds the target-aware deposit defaults response API key for the selected channel.
+ *
+ * @param env Runtime environment containing channel-scoped deposit credentials.
+ * @param channel Deposit channel selected by the caller.
+ * @returns The default API key that should populate the operator form.
+ */
+export const getDepositDefaultsApiKey = (env: CliEnv, channel: DepositChannel): string =>
+  resolveDepositApiKey(env, channel);

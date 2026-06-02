@@ -11,6 +11,7 @@ import {
   type DepositDefaultsResponse,
   type DepositFormValues,
   type DepositMerchantRefResponse,
+  type DepositRequestValues,
 } from './web';
 import { loadDepositPresets, toDepositDefaultsResponse, updateDepositPreset } from './presets';
 
@@ -39,22 +40,25 @@ export const getRequestedDepositChannel = (url: URL): DepositChannel => {
  * @returns The deposit service API used by the HTTP layer.
  */
 export const createDepositService = (deps: DepositServiceDeps) => {
+  const loadPresets = () =>
+    loadDepositPresets({
+      dirPath: deps.presetDirPath,
+      env: deps.getEnvForTarget('local'),
+      makeId: deps.makeId,
+    });
+
   const service = createPresetBackedService<
     DepositChannel,
-    DepositFormValues,
+    DepositRequestValues,
     Awaited<ReturnType<typeof loadDepositPresets>>,
     DepositDefaultsResponse,
     ReturnType<typeof buildDepositPreviewResponse>,
     DepositCreateResponse,
     TargetEnvironment
   >({
-    loadPresets: () =>
-      loadDepositPresets({
-        dirPath: deps.presetDirPath,
-        env: deps.getEnvForTarget('local'),
-        makeId: deps.makeId,
-      }),
-    toDefaultsResponse: toDepositDefaultsResponse,
+    loadPresets,
+    toDefaultsResponse: (channel, presets) =>
+      toDepositDefaultsResponse(channel, deps.getEnvForTarget('local'), presets),
     updatePreset: (channel, values) =>
       updateDepositPreset({
         dirPath: deps.presetDirPath,
@@ -80,8 +84,52 @@ export const createDepositService = (deps: DepositServiceDeps) => {
   const generateMerchantRef = (): DepositMerchantRefResponse =>
     buildDepositMerchantRefResponse(deps.makeId('TEST_ORDER_'));
 
+  /**
+   * Loads target-aware defaults for the selected deposit channel.
+   *
+   * @param channel Deposit channel selected by the caller.
+   * @param target Target operator environment whose default API key should be surfaced.
+   * @returns Defaults payload containing the environment-specific API key for the active channel.
+   */
+  const getDefaultsForTarget = async (
+    channel: DepositChannel,
+    target: TargetEnvironment,
+  ): Promise<DepositDefaultsResponse> => {
+    const presets = await loadPresets();
+    return toDepositDefaultsResponse(channel, deps.getEnvForTarget(target), presets);
+  };
+
+  /**
+   * Saves defaults for a channel and returns a target-aware defaults response.
+   *
+   * @param channel Deposit channel being updated.
+   * @param values Form values to persist.
+   * @param target Target operator environment whose default API key should be surfaced.
+   * @returns Saved defaults payload containing the environment-specific API key for the active channel.
+   */
+  const saveDefaultsForTarget = async (
+    channel: DepositChannel,
+    values: DepositFormValues,
+    target: TargetEnvironment,
+  ): Promise<DepositDefaultsResponse & { ok: true }> => {
+    const presets = await updateDepositPreset({
+      dirPath: deps.presetDirPath,
+      channel,
+      values,
+      env: deps.getEnvForTarget('local'),
+      makeId: deps.makeId,
+    });
+
+    return {
+      ok: true,
+      ...toDepositDefaultsResponse(channel, deps.getEnvForTarget(target), presets),
+    };
+  };
+
   return {
     ...service,
     generateMerchantRef,
+    getDefaultsForTarget,
+    saveDefaultsForTarget,
   };
 };

@@ -4,6 +4,7 @@ import { join } from 'path';
 import { startApiTestServer, type ApiTestServerContext } from '../../../tests/server-setup';
 
 type PayoutApiRequestBody = {
+  apiKey?: string;
   channel: string;
   commonValues: {
     merchantReference: string;
@@ -106,6 +107,7 @@ describe('payout API routes', () => {
 
     expect(body.channel).toBe('co_bank');
     expect(body.availableChannels).toEqual(['co_bank', 'co_wallet', 'imps', 'bd_wallet']);
+    expect(body.apiKey).toBe('payout-token');
     expect(commonValues.merchantReference).toBe('TEST_PAYOUT_ORDER_131');
   });
 
@@ -165,6 +167,31 @@ describe('payout API routes', () => {
     expect(payoutInfo.remitter).toBeUndefined();
   });
 
+  test('POST /api/payout/create uses a manually provided api key override', async () => {
+    let upstreamAuthorization = '';
+
+    globalThis.fetch = mock(async (_input, init) => {
+      upstreamAuthorization = String((init?.headers as Record<string, string> | undefined)?.Authorization || '');
+
+      return new Response(JSON.stringify({ ok: true, transaction_id: 'po_manual_123' }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+
+    const response = await requestApi('/api/payout/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...createValidBody(),
+        apiKey: 'manual-payout-token',
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(upstreamAuthorization).toBe('ApiKey manual-payout-token');
+  });
+
   test('POST /api/payout/create proxies upstream status, prunes optional remitter fields, and preserves the provided merchant ref', async () => {
     let upstreamBody: PayoutUpstreamBody | null = null;
     let upstreamAuthorization = '';
@@ -216,6 +243,7 @@ describe('payout API routes', () => {
 
   test('PUT /api/payout/defaults persists payout defaults into the isolated fixture copy', async () => {
     const requestBody = {
+      apiKey: 'manual-payout-token',
       channel: 'co_wallet',
       commonValues: {
         merchantReference: 'TEST_ORDER_OVERRIDDEN',
@@ -257,6 +285,7 @@ describe('payout API routes', () => {
 
     expect(commonValues.merchantReference).toBe('TEST_ORDER_OVERRIDDEN');
     expect(payoutInfo.narration).toBe('Updated payout narration');
+    expect(updatedDefaults.apiKey).toBe('payout-token');
 
     const savedCommon = await readFile(join(context.payoutPresetDirPath, 'common.json'), 'utf8');
     const savedChannel = await readFile(join(context.payoutPresetDirPath, 'channels', 'co_wallet.json'), 'utf8');

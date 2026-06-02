@@ -2,7 +2,7 @@ import type { PayoutServiceDeps } from '../../payout/service';
 import { resolveTargetEnvironment } from '../../core/targetEnvironment';
 import { createPayoutService, getRequestedPayoutChannel } from '../../payout/service';
 import { validatePayoutForm } from '../../payout/validation';
-import type { PayoutFormValues } from '../../payout/web';
+import type { PayoutFormValues, PayoutRequestValues } from '../../payout/web';
 import { badRequest, json, readJson } from '../http';
 
 /**
@@ -25,18 +25,24 @@ export const handlePayoutRoute = async ({
   deps: PayoutServiceDeps;
 }): Promise<Response | null> => {
   const service = createPayoutService(deps);
+  let targetEnvironment;
+  try {
+    targetEnvironment = resolveTargetEnvironment(request.headers);
+  } catch (error) {
+    return badRequest(error instanceof Error ? error.message : String(error));
+  }
 
   if (request.method === 'GET' && url.pathname === '/api/payout/defaults') {
-    return json(await service.getDefaults(getRequestedPayoutChannel(url)));
+    return json(await service.getDefaultsForTarget(getRequestedPayoutChannel(url), targetEnvironment));
   }
 
   if (request.method === 'PUT' && url.pathname === '/api/payout/defaults') {
     const channel = getRequestedPayoutChannel(url);
-    const values = await readJson<PayoutFormValues>(request);
-    const bundle = await service.getDefaults(channel);
+    const values = await readJson<PayoutRequestValues>(request);
+    const bundle = await service.getDefaultsForTarget(channel, targetEnvironment);
     const error = validatePayoutForm(values, bundle.commonSchema, bundle.channelSchema);
     if (error) return badRequest(error);
-    return json(await service.saveDefaults(channel, values));
+    return json(await service.saveDefaultsForTarget(channel, values as PayoutFormValues, targetEnvironment));
   }
 
   if (request.method === 'POST' && url.pathname === '/api/payout/merchant-reference') {
@@ -44,30 +50,16 @@ export const handlePayoutRoute = async ({
   }
 
   if (request.method === 'POST' && url.pathname === '/api/payout/preview') {
-    let targetEnvironment;
-    try {
-      targetEnvironment = resolveTargetEnvironment(request.headers);
-    } catch (error) {
-      return badRequest(error instanceof Error ? error.message : String(error));
-    }
-
-    const values = await readJson<PayoutFormValues>(request);
-    const bundle = await service.getDefaults(values.channel);
+    const values = await readJson<PayoutRequestValues>(request);
+    const bundle = await service.getDefaultsForTarget(values.channel, targetEnvironment);
     const error = validatePayoutForm(values, bundle.commonSchema, bundle.channelSchema);
     if (error) return badRequest(error);
     return json(service.preview(values, targetEnvironment));
   }
 
   if (request.method === 'POST' && url.pathname === '/api/payout/create') {
-    let targetEnvironment;
-    try {
-      targetEnvironment = resolveTargetEnvironment(request.headers);
-    } catch (error) {
-      return badRequest(error instanceof Error ? error.message : String(error));
-    }
-
-    const values = await readJson<PayoutFormValues>(request);
-    const bundle = await service.getDefaults(values.channel);
+    const values = await readJson<PayoutRequestValues>(request);
+    const bundle = await service.getDefaultsForTarget(values.channel, targetEnvironment);
     const error = validatePayoutForm(values, bundle.commonSchema, bundle.channelSchema);
     if (error) return badRequest(error);
     const result = await service.execute(values, targetEnvironment);

@@ -1,6 +1,11 @@
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
-import { DEPOSIT_CHANNELS, type CliEnv, type DepositChannel } from '../core/env';
+import {
+  DEPOSIT_CHANNELS,
+  resolveDepositApiKey,
+  type CliEnv,
+  type DepositChannel,
+} from '../core/env';
 import type {
   DepositChannelValues,
   DepositCommonValues,
@@ -606,8 +611,10 @@ const buildFormValues = (
 
 export const toDepositDefaultsResponse = (
   channel: DepositChannel,
+  env: CliEnv,
   store: DepositPresetStore,
 ): DepositDefaultsResponse => ({
+  apiKey: resolveDepositApiKey(env, channel),
   availableChannels: [...DEPOSIT_CHANNELS],
   channel,
   commonSchema: clone(store.common.schema),

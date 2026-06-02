@@ -47,6 +47,12 @@ export type PayoutPayload = {
   sign?: string;
 };
 
+export type PayoutRequestOverrides = {
+  apiKey?: string;
+  baseUrl?: string;
+  payoutUrl?: string;
+};
+
 const createPayoutTemplates = (env: CliEnv): Record<PayoutChannel, PayoutTemplate> => ({
   co_bank: {
     productNo: env.payoutProductNos.co_bank,
@@ -145,6 +151,7 @@ export const createPayoutPayload = (
  * @param env Runtime environment containing endpoints, signing config, and merchant tokens.
  * @param channel Payout channel selected by the caller.
  * @param makeId ID factory used to create unique merchant references.
+ * @param overrides Optional request overrides for operator-driven testing.
  * @returns A runner-compatible payout request with channel-scoped authorization.
  * @throws {TypeError} When the configured base URL or payout URL cannot be composed into a valid request URL.
  */
@@ -152,12 +159,14 @@ export const createPayoutRequest = (
   env: CliEnv,
   channel: PayoutChannel,
   makeId: (prefix: string) => string,
+  overrides: PayoutRequestOverrides = {},
 ): CommandRequest => ({
   name: `payout:create:${channel}`,
   method: 'POST',
-  url: joinUrl(env.baseUrl, env.payoutUrls[channel]),
+  url: joinUrl(overrides.baseUrl || env.baseUrl, overrides.payoutUrl || env.payoutUrls[channel]),
   headers: {
-    Authorization: `ApiKey ${getMerchantToken(env, resolvePayoutMerchantTokenKey(channel))}`,
+    Authorization:
+      `ApiKey ${overrides.apiKey?.trim() || getMerchantToken(env, resolvePayoutMerchantTokenKey(channel))}`,
     'Content-Type': 'application/json',
   },
   payload: createPayoutPayload(env, channel, makeId),

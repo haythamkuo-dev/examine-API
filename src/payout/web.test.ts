@@ -4,7 +4,7 @@ import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { getCliEnv } from '../core/env';
 import { generateSign } from '../utils';
-import { buildPayoutPreviewResponse, buildPayoutRequestFromForm, type PayoutFormValues } from './web';
+import { buildPayoutPreviewResponse, buildPayoutRequestFromForm, type PayoutRequestValues } from './web';
 import { createSeedPayoutPresets, loadPayoutPresets, toPayoutDefaultsResponse, updatePayoutPreset } from './presets';
 
 const env = getCliEnv({
@@ -48,8 +48,12 @@ describe('payout web helpers', () => {
   });
 
   test('builds masked payout preview response', async () => {
-    const defaults = toPayoutDefaultsResponse('co_bank', await loadPayoutPresets({ dirPath: presetDirPath, makeId }));
-    const values: PayoutFormValues = {
+    const defaults = toPayoutDefaultsResponse(
+      'co_bank',
+      env,
+      await loadPayoutPresets({ dirPath: presetDirPath, makeId }),
+    );
+    const values: PayoutRequestValues = {
       ...defaults.form,
       commonValues: {
         merchantReference: 'TEST_ORDER_217',
@@ -71,8 +75,12 @@ describe('payout web helpers', () => {
   });
 
   test('builds payout request from form values', async () => {
-    const defaults = toPayoutDefaultsResponse('imps', await loadPayoutPresets({ dirPath: presetDirPath, makeId }));
-    const values: PayoutFormValues = {
+    const defaults = toPayoutDefaultsResponse(
+      'imps',
+      env,
+      await loadPayoutPresets({ dirPath: presetDirPath, makeId }),
+    );
+    const values: PayoutRequestValues = {
       ...defaults.form,
       commonValues: {
         merchantReference: 'TEST_IMPS_001',
@@ -86,8 +94,12 @@ describe('payout web helpers', () => {
   });
 
   test('preview generates a fresh merchant reference even when the form already has one', async () => {
-    const defaults = toPayoutDefaultsResponse('co_bank', await loadPayoutPresets({ dirPath: presetDirPath, makeId }));
-    const values: PayoutFormValues = {
+    const defaults = toPayoutDefaultsResponse(
+      'co_bank',
+      env,
+      await loadPayoutPresets({ dirPath: presetDirPath, makeId }),
+    );
+    const values: PayoutRequestValues = {
       ...defaults.form,
       commonValues: {
         merchantReference: 'TEST_PREVIEW_001',
@@ -100,15 +112,23 @@ describe('payout web helpers', () => {
   });
 
   test('uses Bangladesh merchant token for bd_wallet payout requests', async () => {
-    const defaults = toPayoutDefaultsResponse('bd_wallet', await loadPayoutPresets({ dirPath: presetDirPath, makeId }));
+    const defaults = toPayoutDefaultsResponse(
+      'bd_wallet',
+      env,
+      await loadPayoutPresets({ dirPath: presetDirPath, makeId }),
+    );
     const request = buildPayoutRequestFromForm(env, defaults.form, makeId);
 
     expect(request.headers?.Authorization).toBe('ApiKey india-bangladesh-token');
   });
 
   test('prunes optional placeholder and blank payout fields before signing', async () => {
-    const defaults = toPayoutDefaultsResponse('co_bank', await loadPayoutPresets({ dirPath: presetDirPath, makeId }));
-    const values: PayoutFormValues = {
+    const defaults = toPayoutDefaultsResponse(
+      'co_bank',
+      env,
+      await loadPayoutPresets({ dirPath: presetDirPath, makeId }),
+    );
+    const values: PayoutRequestValues = {
       ...defaults.form,
       commonValues: {
         merchantReference: 'TEST_BT_ORDER_125',
@@ -142,8 +162,12 @@ describe('payout web helpers', () => {
   });
 
   test('creates a unique merchant reference when form value is blank', async () => {
-    const defaults = toPayoutDefaultsResponse('bd_wallet', await loadPayoutPresets({ dirPath: presetDirPath, makeId }));
-    const values: PayoutFormValues = {
+    const defaults = toPayoutDefaultsResponse(
+      'bd_wallet',
+      env,
+      await loadPayoutPresets({ dirPath: presetDirPath, makeId }),
+    );
+    const values: PayoutRequestValues = {
       ...defaults.form,
       commonValues: {
         merchantReference: '   ',
@@ -154,8 +178,27 @@ describe('payout web helpers', () => {
     expect((request.payload as Record<string, unknown>).merchant_reference).toBe('TEST_ORDER_fixed-id');
   });
 
+  test('uses a manually provided payout api key when present', async () => {
+    const defaults = toPayoutDefaultsResponse(
+      'co_bank',
+      env,
+      await loadPayoutPresets({ dirPath: presetDirPath, makeId }),
+    );
+    const values: PayoutRequestValues = {
+      ...defaults.form,
+      apiKey: 'manual-payout-token',
+    };
+
+    const request = buildPayoutRequestFromForm(env, values, makeId);
+    expect(request.headers?.Authorization).toBe('ApiKey manual-payout-token');
+  });
+
   test('updates and writes payout preset file by channel', async () => {
-    const values = toPayoutDefaultsResponse('co_wallet', await loadPayoutPresets({ dirPath: presetDirPath, makeId })).form;
+    const values = toPayoutDefaultsResponse(
+      'co_wallet',
+      env,
+      await loadPayoutPresets({ dirPath: presetDirPath, makeId }),
+    ).form;
     values.commonValues.merchantReference = 'TEST_ORDER_OVERRIDDEN';
     (values.channelValues.payout_info as Record<string, unknown>).narration = 'Updated payout narration';
 
