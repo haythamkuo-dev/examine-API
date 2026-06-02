@@ -25,6 +25,7 @@ export function SubscriptionPage() {
   const theme = useOperatorTheme();
   const {
     form,
+    apiKey,
     commonSchema,
     channelSchema,
     channels,
@@ -39,6 +40,7 @@ export function SubscriptionPage() {
     previewLogContext,
     createLogContext,
     commonFieldOverrides,
+    updateApiKey,
     updateCommonValue,
     updateChannelValue,
     onChannelChange,
@@ -85,17 +87,30 @@ export function SubscriptionPage() {
             selectedChannel={form.channel}
             onChannelChange={onChannelChange}
             channelDetail={(
-              <label className="grid gap-2">
-                <span className="text-[13px] font-medium tracking-[0.01em] text-[color:var(--color-text-muted)]">
-                  Plan ID
-                </span>
-                <input
-                  className="w-full rounded-2xl border border-[var(--operator-input-border)] bg-[var(--operator-input-bg)] px-4 py-3 text-[var(--color-text)] shadow-[var(--operator-input-shadow)] transition duration-200"
-                  value={resolvedPlanId}
-                  readOnly
-                  aria-readonly="true"
-                />
-              </label>
+              <div className="grid gap-3">
+                <label className="grid gap-2">
+                  <span className="text-[13px] font-medium tracking-[0.01em] text-[color:var(--color-text-muted)]">
+                    Plan ID
+                  </span>
+                  <input
+                    className="w-full rounded-2xl border border-[var(--operator-input-border)] bg-[var(--operator-input-bg)] px-4 py-3 text-[var(--color-text)] shadow-[var(--operator-input-shadow)] transition duration-200"
+                    value={resolvedPlanId}
+                    readOnly
+                    aria-readonly="true"
+                  />
+                </label>
+                <label className="grid gap-2">
+                  <span className="text-[13px] font-medium tracking-[0.01em] text-[color:var(--color-text-muted)]">
+                    API key
+                  </span>
+                  <input
+                    className="w-full rounded-2xl border border-[var(--operator-input-border)] bg-[var(--operator-input-bg)] px-4 py-3 text-[var(--color-text)] shadow-[var(--operator-input-shadow)] transition duration-200"
+                    value={apiKey}
+                    onChange={(event) => updateApiKey(event.target.value)}
+                    onInput={(event) => updateApiKey((event.target as HTMLInputElement).value)}
+                  />
+                </label>
+              </div>
             )}
             commonSchema={commonSchema}
             commonValues={form.commonValues as Record<string, unknown>}

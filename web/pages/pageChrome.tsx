@@ -8,6 +8,7 @@ import {
   type PropsWithChildren,
   type ReactNode,
 } from 'react';
+import { ToastContainer } from 'react-toastify';
 import {
   getOperatorEnvironmentLabel,
   type ApiLogContext,
@@ -269,7 +270,19 @@ export function AppThemeProvider({ children }: PropsWithChildren) {
     [colorTheme, environmentMode],
   );
 
-  return <AppThemeContext.Provider value={value}>{children}</AppThemeContext.Provider>;
+  return (
+    <AppThemeContext.Provider value={value}>
+      {children}
+      <ToastContainer
+        position="bottom-right"
+        autoClose={2600}
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss={false}
+        theme={colorTheme}
+      />
+    </AppThemeContext.Provider>
+  );
 }
 
 /**

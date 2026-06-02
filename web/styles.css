@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "react-toastify/dist/ReactToastify.css";
 
 :root {
   font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;

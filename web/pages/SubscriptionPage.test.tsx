@@ -10,14 +10,16 @@ import type {
   SubscriptionFieldMap,
   SubscriptionFormValues,
   SubscriptionMerchantRefResponse,
+  SubscriptionRequestValues,
 } from '../../src/subscription/web';
 import { normalizeCreateResult, SubscriptionPage } from './SubscriptionPage';
+import { apiKeyResetToastMessage } from './operatorShared';
 import { AppThemeProvider } from './pageChrome';
 
 const channel = 'default';
 
 type FetchRequestRecord = {
-  body: SubscriptionFormValues | null;
+  body: SubscriptionRequestValues | null;
   method: string;
   url: string;
 };
@@ -61,6 +63,7 @@ const createForm = (overrides?: Partial<SubscriptionFormValues>): SubscriptionFo
 const createDefaultsResponse = (
   overrides?: Partial<SubscriptionDefaultsResponse>,
 ): SubscriptionDefaultsResponse => ({
+  apiKey: 'subscription-default-key',
   availableChannels: [channel],
   channel,
   resolvedPlanId: 'plan-default',
@@ -74,6 +77,7 @@ const createSavedDefaultsResponse = (
   productName: string,
 ): SubscriptionDefaultsSavedResponse => ({
   ok: true,
+  apiKey: 'subscription-saved-key',
   availableChannels: [channel],
   channel,
   resolvedPlanId: 'plan-default',
@@ -118,12 +122,12 @@ const renderSubscriptionPage = () => {
   return { ...view, ...within(view.container) };
 };
 
-const readPostedForm = (body: BodyInit | null | undefined): SubscriptionFormValues | null => {
+const readPostedForm = (body: BodyInit | null | undefined): SubscriptionRequestValues | null => {
   if (typeof body !== 'string' || !body.trim()) {
     return null;
   }
 
-  return JSON.parse(body) as SubscriptionFormValues;
+  return JSON.parse(body) as SubscriptionRequestValues;
 };
 
 beforeEach(() => {
@@ -206,6 +210,7 @@ describe('SubscriptionPage', () => {
     expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
     expect(view.getByLabelText('Plan ID')).toHaveAttribute('readonly');
     expect(view.getByLabelText('Plan ID')).toHaveValue('plan-default');
+    expect(view.getByLabelText('API key')).toHaveValue('subscription-default-key');
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
@@ -316,6 +321,8 @@ describe('SubscriptionPage', () => {
       expect(view.getByText(`Saved defaults for ${channel}.`)).toBeInTheDocument();
       expect(view.getByLabelText('Product name *')).toHaveValue('Saved subscription product');
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-003');
+      expect(view.getByLabelText('API key')).toHaveValue('subscription-saved-key');
+      expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -374,7 +381,18 @@ describe('SubscriptionPage', () => {
     const view = renderSubscriptionPage();
 
     await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    await view.findByLabelText('Merchant reference *');
     expect(view.getByLabelText('Merchant reference *')).toHaveValue('subscription-preview-start');
+
+    await act(async () => {
+      fireEvent.input(view.getByLabelText('API key'), {
+        target: { value: 'typed-subscription-key' },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('API key')).toHaveValue('typed-subscription-key');
+    });
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
@@ -391,6 +409,11 @@ describe('SubscriptionPage', () => {
     await waitFor(() => {
       expect(view.getByText('Request sent successfully.')).toBeInTheDocument();
     });
+
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === '/api/subscription/preview');
+    const createCall = fetchRecords.find((record) => record.method === 'POST' && record.url === '/api/subscription/create');
+    expect(previewCall?.body?.apiKey).toBe('typed-subscription-key');
+    expect(createCall?.body?.apiKey).toBe('typed-subscription-key');
   });
 
   test('updates the displayed plan id when the selected channel changes', async () => {
@@ -479,6 +502,7 @@ describe('SubscriptionPage', () => {
       [`GET /api/subscription/defaults?channel=${channel}`]: async () =>
         jsonResponse(
           createDefaultsResponse({
+            apiKey: 'subscription-product-key',
             resolvedPlanId: 'plan-product-default',
           }),
         ),
@@ -495,6 +519,7 @@ describe('SubscriptionPage', () => {
 
     await waitFor(() => {
       expect(view.getByLabelText('Plan ID')).toHaveValue('plan-product-default');
+      expect(view.getByLabelText('API key')).toHaveValue('subscription-product-key');
     });
   });
 

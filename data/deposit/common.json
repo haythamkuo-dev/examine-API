@@ -27,7 +27,7 @@
     }
   },
   "values": {
-    "merchantRef": "TEST_ORDER_000001",
+    "merchantRef": "Click buton to acquire a merchant ref",
     "returnUrl": "https://example.com/deposit-return"
   }
 }

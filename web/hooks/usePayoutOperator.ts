@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import type {
   PayoutCreateResponse,
   PayoutDefaultsResponse,
@@ -6,6 +6,7 @@ import type {
   PayoutFieldMap,
   PayoutFormValues,
   PayoutPreviewResponse,
+  PayoutRequestValues,
 } from '../../src/payout/web';
 import {
   createPayoutRequest,
@@ -17,6 +18,7 @@ import {
 import {
   extractMerchantReferenceValue,
   buildApiLogContext,
+  showApiKeyResetToast,
   type ApiResultView,
   type OperatorEnvironmentMode,
   updatePathValue,
@@ -180,6 +182,8 @@ export const shouldHidePayoutField = (
  */
 export function usePayoutOperator(mode: OperatorEnvironmentMode) {
   const [form, setForm] = useState<PayoutFormValues | null>(null);
+  const [apiKey, setApiKey] = useState('');
+  const apiKeyRef = useRef('');
   const [commonSchema, setCommonSchema] = useState<PayoutFieldMap>({});
   const [channelSchema, setChannelSchema] = useState<PayoutFieldMap>({});
   const [channels, setChannels] = useState<string[]>([]);
@@ -199,6 +203,8 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     options?: { preserveMerchantReference?: string | null },
   ) => {
     setChannels(response.availableChannels);
+    apiKeyRef.current = response.apiKey;
+    setApiKey(response.apiKey);
     setCommonSchema(response.commonSchema);
     setChannelSchema(response.channelSchema);
     setPersistedMerchantReference(response.form.commonValues.merchantReference);
@@ -236,8 +242,10 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
   };
 
   useEffect(() => {
-    void loadDefaults();
-  }, []);
+    void loadDefaults(form?.channel, {
+      preserveMerchantReference: form?.commonValues.merchantReference ?? null,
+    });
+  }, [mode]);
 
   const createSavePayload = (values: PayoutFormValues): PayoutFormValues => ({
     ...values,
@@ -312,7 +320,10 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     setSaveMessage(null);
 
     try {
-      const response = await previewPayoutRequest(mode, form);
+      const response = await previewPayoutRequest(mode, {
+        ...form,
+        apiKey: apiKeyRef.current,
+      });
       const merchantReference = extractMerchantReferenceValue(
         response.request.payload,
         'merchant_reference',
@@ -350,7 +361,10 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
     try {
       const nextForm = await ensureMerchantReference(form);
-      const response = await createPayoutRequest(mode, nextForm);
+      const response = await createPayoutRequest(mode, {
+        ...nextForm,
+        apiKey: apiKeyRef.current,
+      });
       setResult({
         ...(await normalizeCreateResult(response)),
         logContext: createLogContext,
@@ -445,6 +459,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
         createSavePayload(form),
       );
       applyBundle(response, { preserveMerchantReference: form.commonValues.merchantReference });
+      showApiKeyResetToast();
       setSaveMessage(`Saved defaults for ${response.channel}.`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -465,6 +480,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
   return {
     form,
+    apiKey,
     commonSchema,
     channelSchema,
     channels,
@@ -478,6 +494,10 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     createLogContext,
     commonFieldOverrides,
     visibilityResolver: shouldHidePayoutField as FieldVisibilityResolver,
+    updateApiKey: (value: string) => {
+      apiKeyRef.current = value;
+      setApiKey(value);
+    },
     updateCommonValue,
     updateChannelValue,
     onChannelChange: (channel: string) =>

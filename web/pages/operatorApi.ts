@@ -5,6 +5,7 @@ import type {
   DepositFormValues,
   DepositMerchantRefResponse,
   DepositPreviewResponse,
+  DepositRequestValues,
 } from '../../src/deposit/web';
 import type {
   PayoutDefaultsResponse,
@@ -12,6 +13,7 @@ import type {
   PayoutFormValues,
   PayoutMerchantReferenceResponse,
   PayoutPreviewResponse,
+  PayoutRequestValues,
 } from '../../src/payout/web';
 import type {
   SubscriptionDefaultsResponse,
@@ -19,6 +21,7 @@ import type {
   SubscriptionFormValues,
   SubscriptionMerchantRefResponse,
   SubscriptionPreviewResponse,
+  SubscriptionRequestValues,
 } from '../../src/subscription/web';
 import {
   buildOperatorHeaders,
@@ -71,7 +74,7 @@ export const fetchDepositDefaults = (
  */
 export const previewDepositRequest = (
   mode: OperatorEnvironmentMode,
-  form: DepositFormValues,
+  form: DepositRequestValues,
 ): Promise<DepositPreviewResponse> =>
   fetchJson<DepositPreviewResponse>(depositPreviewEndpoint, {
     method: 'POST',
@@ -89,7 +92,7 @@ export const previewDepositRequest = (
  */
 export const createDepositRequest = (
   mode: OperatorEnvironmentMode,
-  form: DepositFormValues,
+  form: DepositRequestValues,
 ): Promise<DepositCreateResponse> =>
   fetchJson<DepositCreateResponse>(depositCreateEndpoint, {
     method: 'POST',
@@ -161,7 +164,7 @@ export const fetchPayoutDefaults = (
  */
 export const previewPayoutRequest = (
   mode: OperatorEnvironmentMode,
-  form: PayoutFormValues,
+  form: PayoutRequestValues,
 ): Promise<PayoutPreviewResponse> =>
   fetchJson<PayoutPreviewResponse>(payoutPreviewEndpoint, {
     method: 'POST',
@@ -179,7 +182,7 @@ export const previewPayoutRequest = (
  */
 export const createPayoutRequest = (
   mode: OperatorEnvironmentMode,
-  form: PayoutFormValues,
+  form: PayoutRequestValues,
 ): Promise<Response> =>
   fetch(resolveApiUrl(payoutCreateEndpoint), {
     method: 'POST',
@@ -254,7 +257,7 @@ export const fetchSubscriptionDefaults = (
  */
 export const previewSubscriptionRequest = (
   mode: OperatorEnvironmentMode,
-  form: SubscriptionFormValues,
+  form: SubscriptionRequestValues,
 ): Promise<SubscriptionPreviewResponse> =>
   fetchJson<SubscriptionPreviewResponse>(subscriptionPreviewEndpoint, {
     method: 'POST',
@@ -272,7 +275,7 @@ export const previewSubscriptionRequest = (
  */
 export const createSubscriptionRequest = (
   mode: OperatorEnvironmentMode,
-  form: SubscriptionFormValues,
+  form: SubscriptionRequestValues,
 ): Promise<Response> =>
   fetch(resolveApiUrl(subscriptionCreateEndpoint), {
     method: 'POST',

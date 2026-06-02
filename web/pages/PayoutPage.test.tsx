@@ -12,8 +12,10 @@ import type {
   PayoutFieldMap,
   PayoutFormValues,
   PayoutMerchantReferenceResponse,
+  PayoutRequestValues,
 } from '../../src/payout/web';
 import { normalizeCreateResult, PayoutPage, shouldHidePayoutField } from './PayoutPage';
+import { apiKeyResetToastMessage } from './operatorShared';
 import { AppThemeProvider } from './pageChrome';
 
 const defaultsEndpoint = '/api/payout/defaults';
@@ -29,7 +31,7 @@ if (!primaryChannel || !secondaryChannel) {
 }
 
 type FetchRequestRecord = {
-  body: PayoutFormValues | null;
+  body: PayoutRequestValues | null;
   method: string;
   url: string;
 };
@@ -130,6 +132,7 @@ const createDefaultsResponse = (
   channel: typeof primaryChannel,
   overrides?: Partial<PayoutDefaultsResponse>,
 ): PayoutDefaultsResponse => ({
+  apiKey: `api-key-${channel}`,
   availableChannels: [primaryChannel, secondaryChannel],
   channel,
   commonSchema,
@@ -143,6 +146,7 @@ const createSavedDefaultsResponse = (
   productNo: string,
 ): PayoutDefaultsSavedResponse => ({
   ok: true,
+  apiKey: `saved-api-key-${channel}`,
   availableChannels: [primaryChannel, secondaryChannel],
   channel,
   commonSchema,
@@ -201,7 +205,7 @@ beforeEach(() => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     const method = init?.method ?? (input instanceof Request ? input.method : 'GET');
     const rawBody = typeof init?.body === 'string' ? init.body : null;
-    const body = rawBody ? (JSON.parse(rawBody) as PayoutFormValues) : null;
+    const body = rawBody ? (JSON.parse(rawBody) as PayoutRequestValues) : null;
 
     fetchRecords.push({ url, method, body });
 
@@ -310,6 +314,7 @@ describe('PayoutPage', () => {
     });
 
     expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
+    expect(view.getByLabelText('API key')).toHaveValue(`api-key-${primaryChannel}`);
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
@@ -498,6 +503,16 @@ describe('PayoutPage', () => {
     });
 
     await act(async () => {
+      fireEvent.input(view.getByLabelText('API key'), {
+        target: { value: 'typed-payout-key' },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('API key')).toHaveValue('typed-payout-key');
+    });
+
+    await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Send request' }));
     });
 
@@ -506,6 +521,9 @@ describe('PayoutPage', () => {
       expect(view.getByText('CREATE Status 200')).toBeInTheDocument();
       expect(view.getAllByText('模式 沙盒 · 目標 沙盒代理').length).toBeGreaterThan(0);
     });
+
+    const createCall = fetchRecords.find((record) => record.method === 'POST' && record.url === createEndpoint);
+    expect(createCall?.body?.apiKey).toBe('typed-payout-key');
   });
 
   test('preview replaces the current merchant reference with the backend-generated value and create reuses it', async () => {
@@ -559,6 +577,16 @@ describe('PayoutPage', () => {
     expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-preview-start');
 
     await act(async () => {
+      fireEvent.input(view.getByLabelText('API key'), {
+        target: { value: 'preview-payout-key' },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('API key')).toHaveValue('preview-payout-key');
+    });
+
+    await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
     });
 
@@ -572,6 +600,77 @@ describe('PayoutPage', () => {
 
     await waitFor(() => {
       expect(view.getByText('Request sent successfully.')).toBeInTheDocument();
+    });
+
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
+    expect(previewCall?.body?.apiKey).toBe('preview-payout-key');
+  });
+
+  test('resets the api key to the backend default when the environment changes', async () => {
+    setRouteHandler(defaultsEndpoint, ({ url }) => {
+      const parsedUrl = new URL(url, 'http://localhost');
+      if (parsedUrl.searchParams.get('channel') === primaryChannel) {
+        return jsonResponse(
+          createDefaultsResponse(primaryChannel, {
+            apiKey: 'product-payout-key',
+          }),
+        );
+      }
+
+      return jsonResponse(createDefaultsResponse(primaryChannel));
+    });
+
+    const view = renderPayoutPage();
+
+    await waitFor(() => {
+      expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
+    });
+
+    await act(async () => {
+      fireEvent.input(view.getByLabelText('API key'), {
+        target: { value: 'typed-payout-key' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: '產品' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('API key')).toHaveValue('product-payout-key');
+    });
+  });
+
+  test('save defaults resets api key to the backend default', async () => {
+    setRouteHandler(defaultsEndpoint, ({ method, body }) => {
+      if (method === 'PUT') {
+        expect(body?.apiKey).toBeUndefined();
+        return jsonResponse(createSavedDefaultsResponse(primaryChannel, 'product-saved'));
+      }
+
+      return jsonResponse(createDefaultsResponse(primaryChannel));
+    });
+
+    const view = renderPayoutPage();
+
+    await waitFor(() => {
+      expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
+    });
+
+    await act(async () => {
+      fireEvent.input(view.getByLabelText('API key'), {
+        target: { value: 'typed-payout-key' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Save defaults' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByText(`Saved defaults for ${primaryChannel}.`)).toBeInTheDocument();
+      expect(view.getByLabelText('API key')).toHaveValue(`saved-api-key-${primaryChannel}`);
+      expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();
     });
   });
 

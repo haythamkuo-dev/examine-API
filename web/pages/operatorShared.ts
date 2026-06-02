@@ -5,6 +5,7 @@ import {
   resolveApiUrl,
   type OperatorEnvironmentMode,
 } from './operatorTransport';
+import { toast } from 'react-toastify';
 
 export { ApiRequestError, buildOperatorHeaders, fetchJson, resolveApiUrl };
 export type { OperatorEnvironmentMode } from './operatorTransport';
@@ -14,6 +15,7 @@ const localEnvironmentLabel = '沙盒';
 const productEnvironmentLabel = '產品';
 const localTargetLabel = '沙盒代理';
 const remoteTargetLabel = '線上 API';
+export const apiKeyResetToastMessage = 'API key reset to the selected environment default.';
 
 export const loadingLabels = {
   defaults: 'Loading defaults',
@@ -155,6 +157,18 @@ export const buildFailureResult = (
       message,
     },
   };
+};
+
+/**
+ * Shows the shared toast that explains the API key has been reset to the backend default.
+ *
+ * @returns Nothing.
+ */
+export const showApiKeyResetToast = (): void => {
+  toast.info(apiKeyResetToastMessage, {
+    autoClose: 2600,
+    closeOnClick: true,
+  });
 };
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));

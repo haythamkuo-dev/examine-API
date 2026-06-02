@@ -27,6 +27,7 @@ if (!primaryDepositChannel) {
 }
 
 const createDepositDefaultsResponse = (): DepositDefaultsResponse => ({
+  apiKey: 'default-api-key',
   availableChannels: [primaryDepositChannel],
   channel: primaryDepositChannel,
   commonSchema: {

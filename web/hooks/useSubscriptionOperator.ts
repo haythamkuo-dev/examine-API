@@ -5,6 +5,7 @@ import type {
   SubscriptionFieldMap,
   SubscriptionFormValues,
   SubscriptionPreviewResponse,
+  SubscriptionRequestValues,
 } from '../../src/subscription/web';
 import { missingSubscriptionPlanCode } from '../../src/subscription/web';
 import {
@@ -20,6 +21,7 @@ import {
   buildApiLogContext,
   buildFailureResult,
   getNumericStatus,
+  showApiKeyResetToast,
   type ApiResultView,
   type OperatorEnvironmentMode,
   updatePathValue,
@@ -119,6 +121,7 @@ export const normalizeCreateResult = async (response: Response): Promise<ApiResu
  */
 export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
   const [form, setForm] = useState<SubscriptionFormValues | null>(null);
+  const [apiKey, setApiKey] = useState('');
   const [commonSchema, setCommonSchema] = useState<SubscriptionFieldMap>({});
   const [channelSchema, setChannelSchema] = useState<SubscriptionFieldMap>({});
   const [channels, setChannels] = useState<string[]>([]);
@@ -129,6 +132,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
   const [error, setError] = useState<string | null>(null);
   const [persistedMerchantRef, setPersistedMerchantRef] = useState<string | null>(null);
   const [hasMissingPlanConfig, setHasMissingPlanConfig] = useState(false);
+  const apiKeyRef = useRef('');
   const latestDefaultsRequestIdRef = useRef(0);
   const defaultsLogContext = buildApiLogContext(defaultsEndpoint, mode);
   const previewLogContext = buildApiLogContext(previewEndpoint, mode);
@@ -140,6 +144,8 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     options?: { preserveMerchantRef?: string | null },
   ) => {
     setChannels(response.availableChannels);
+    apiKeyRef.current = response.apiKey;
+    setApiKey(response.apiKey);
     setCommonSchema(response.commonSchema);
     setChannelSchema(response.channelSchema);
     setResolvedPlanId(response.resolvedPlanId);
@@ -270,7 +276,10 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     setLoading('preview');
 
     try {
-      const response = await previewSubscriptionRequest(mode, form);
+      const response = await previewSubscriptionRequest(mode, {
+        ...form,
+        apiKey: apiKeyRef.current,
+      });
       const merchantRef = extractMerchantReferenceValue(
         response.request.payload,
         'merchant_ref',
@@ -319,7 +328,10 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
 
     try {
       const nextForm = await ensureMerchantRef(form);
-      const response = await createSubscriptionRequest(mode, nextForm);
+      const response = await createSubscriptionRequest(mode, {
+        ...nextForm,
+        apiKey: apiKeyRef.current,
+      });
       setApiResult({
         ...(await normalizeCreateResult(response)),
         logContext: createLogContext,
@@ -381,6 +393,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
         createSavePayload(form),
       );
       applyBundle(response, { preserveMerchantRef: form.commonValues.merchantRef });
+      showApiKeyResetToast();
       setApiResult({
         ok: true,
         action: 'save',
@@ -415,6 +428,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
 
   return {
     form,
+    apiKey,
     commonSchema,
     channelSchema,
     channels,
@@ -429,6 +443,10 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     previewLogContext,
     createLogContext,
     commonFieldOverrides,
+    updateApiKey: (value: string) => {
+      apiKeyRef.current = value;
+      setApiKey(value);
+    },
     updateCommonValue,
     updateChannelValue,
     onChannelChange: (channel: string) => {

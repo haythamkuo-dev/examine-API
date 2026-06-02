@@ -13,8 +13,10 @@ import type {
   DepositFormValues,
   DepositMerchantRefResponse,
   DepositPreviewResponse,
+  DepositRequestValues,
 } from '../../src/deposit/web';
 import { DepositPage } from './DepositPage';
+import { apiKeyResetToastMessage } from './operatorShared';
 import { AppThemeProvider } from './pageChrome';
 
 const defaultsEndpoint = '/api/deposit/defaults';
@@ -30,7 +32,7 @@ if (!primaryChannel || !secondaryChannel) {
 }
 
 type FetchRequestRecord = {
-  body: DepositFormValues | null;
+  body: DepositRequestValues | null;
   method: string;
   url: string;
 };
@@ -151,6 +153,7 @@ const createDefaultsResponse = (
   channel: typeof primaryChannel,
   overrides?: Partial<DepositDefaultsResponse>,
 ): DepositDefaultsResponse => ({
+  apiKey: `api-key-${channel}`,
   availableChannels: [primaryChannel, secondaryChannel],
   channel,
   commonSchema,
@@ -201,6 +204,7 @@ const createSavedDefaultsResponse = (
   productNo: string,
 ): DepositDefaultsSavedResponse => ({
   ok: true,
+  apiKey: `saved-api-key-${channel}`,
   availableChannels: [primaryChannel, secondaryChannel],
   channel,
   commonSchema,
@@ -241,12 +245,12 @@ const setRouteHandlers = (handlers: Record<string, MockRouteHandler>): void => {
   routeHandlers = new Map(Object.entries(handlers));
 };
 
-const readPostedForm = (body: BodyInit | null | undefined): DepositFormValues | null => {
+const readPostedForm = (body: BodyInit | null | undefined): DepositRequestValues | null => {
   if (typeof body !== 'string' || !body.trim()) {
     return null;
   }
 
-  return JSON.parse(body) as DepositFormValues;
+  return JSON.parse(body) as DepositRequestValues;
 };
 
 beforeEach(() => {
@@ -289,6 +293,7 @@ describe('DepositPage', () => {
 
     expect(view.getByText('Request builder')).toBeInTheDocument();
     expect(view.getByLabelText('Channel')).toHaveValue(primaryChannel);
+    expect(view.getByLabelText('API key')).toHaveValue(`api-key-${primaryChannel}`);
     expect(view.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
     expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
   });
@@ -328,12 +333,16 @@ describe('DepositPage', () => {
       fireEvent.change(view.getByLabelText('Currency code *'), {
         target: { value: 'USD' },
       });
+      fireEvent.input(view.getByLabelText('API key'), {
+        target: { value: 'typed-deposit-key' },
+      });
       fireEvent.click(view.getByLabelText('Approval required'));
       fireEvent.click(view.getByLabelText('Enabled flag'));
     });
 
     await waitFor(() => {
       expect(view.getByLabelText('Currency code *')).toHaveValue('USD');
+      expect(view.getByLabelText('API key')).toHaveValue('typed-deposit-key');
     });
 
     await act(async () => {
@@ -343,6 +352,7 @@ describe('DepositPage', () => {
     await view.findByText('Preview completed.');
 
     const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
+    expect(previewCall?.body?.apiKey).toBe('typed-deposit-key');
     expect(previewCall?.body?.commonValues.currencyCode).toBe('USD');
 
     const channelValues = previewCall?.body?.channelValues as {
@@ -395,6 +405,7 @@ describe('DepositPage', () => {
     });
 
     expect(view.getByLabelText('Product number *')).toHaveValue('PROD-SECONDARY');
+    expect(view.getByLabelText('API key')).toHaveValue(`api-key-${secondaryChannel}`);
   });
 
   test('generates a new merchant reference and keeps it while shared fields change', async () => {
@@ -484,6 +495,38 @@ describe('DepositPage', () => {
     expect(view.getByLabelText('Product number *')).toHaveValue('PROD-RELOADED');
   });
 
+  test('resets the api key to the backend default when the environment changes', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      [`GET /api/deposit/defaults?channel=${primaryChannel}`]: async () =>
+        jsonResponse(
+          createDefaultsResponse(primaryChannel, {
+            apiKey: 'product-deposit-key',
+          }),
+        ),
+    });
+
+    const view = renderDepositPage();
+
+    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+
+    await act(async () => {
+      fireEvent.input(view.getByLabelText('API key'), {
+        target: { value: 'typed-deposit-key' },
+      });
+    });
+
+    expect(view.getByLabelText('API key')).toHaveValue('typed-deposit-key');
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: '產品' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('API key')).toHaveValue('product-deposit-key');
+    });
+  });
+
   test('new draft resets the merchant reference to the backend default', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
@@ -518,6 +561,38 @@ describe('DepositPage', () => {
 
     await waitFor(() => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('MERCHANT-NEW-DRAFT');
+    });
+  });
+
+  test('save defaults strips merchant reference but resets api key to backend default', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      [`PUT /api/deposit/defaults?channel=${primaryChannel}`]: async (request) => {
+        expect(request.body?.apiKey).toBeUndefined();
+        expect(request.body?.commonValues.merchantRef).toBe(`MERCHANT-${primaryChannel}`);
+        return jsonResponse(createSavedDefaultsResponse(primaryChannel, 'PROD-SAVED'));
+      },
+    });
+
+    const view = renderDepositPage();
+
+    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+
+    await act(async () => {
+      fireEvent.input(view.getByLabelText('API key'), {
+        target: { value: 'typed-deposit-key' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Save defaults' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getByText(`Saved defaults for ${primaryChannel}.`)).toBeInTheDocument();
+      expect(view.getByLabelText('Product number *')).toHaveValue('PROD-SAVED');
+      expect(view.getByLabelText('API key')).toHaveValue(`saved-api-key-${primaryChannel}`);
+      expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();
     });
   });
 
