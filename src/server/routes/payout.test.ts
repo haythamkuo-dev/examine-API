@@ -137,6 +137,22 @@ describe('payout API routes', () => {
     expect(body.message).toBe('payout_info.beneficiary.name is required');
   });
 
+  test('PUT /api/payout/defaults returns 400 when product_no looks like a token instead of a payout product code', async () => {
+    const requestBody = createValidBody();
+    requestBody.channelValues.product_no = 'mk_general_01ksse4ja1th.ksqLSyDPzAQbdZu_DOAvvfPlZythxXGj';
+
+    const response = await context.requestApi('/api/payout/defaults?channel=co_bank', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    expect(response.status).toBe(400);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body.message).toBe('product_no must be a valid payout product code');
+  });
+
   test('POST /api/payout/preview returns masked preview payload for valid payout form', async () => {
     const response = await context.requestApi('/api/payout/preview', {
       method: 'POST',
