@@ -1,5 +1,4 @@
 import type { SubscriptionServiceDeps } from '../../subscription/service';
-import { resolveTargetEnvironment } from '../../core/targetEnvironment';
 import { SubscriptionPlanConfigError } from '../../core/env';
 import {
   createSubscriptionService,
@@ -11,7 +10,8 @@ import {
   type SubscriptionFormValues,
   type SubscriptionRequestValues,
 } from '../../subscription/web';
-import { badRequest, json, readJson } from '../http';
+import { badRequest, json } from '../http';
+import { handlePresetBackedRoute } from './_shared';
 
 const subscriptionPlanBadRequest = (message: string): Response =>
   json({ ok: false, code: missingSubscriptionPlanCode, message }, { status: 400 });
@@ -35,81 +35,44 @@ export const handleSubscriptionRoute = async ({
   url: URL;
   deps: SubscriptionServiceDeps;
 }): Promise<Response | null> => {
-  const service = createSubscriptionService(deps);
-  let targetEnvironment;
-  try {
-    targetEnvironment = resolveTargetEnvironment(request.headers);
-  } catch (error) {
-    return badRequest(error instanceof Error ? error.message : String(error));
-  }
-
-  if (request.method === 'GET' && url.pathname === '/api/subscription/defaults') {
-    try {
-      return json(
-        await service.getDefaultsForTarget(getRequestedSubscriptionChannel(url), targetEnvironment),
-      );
-    } catch (routeError) {
-      if (routeError instanceof SubscriptionPlanConfigError) {
-        return subscriptionPlanBadRequest(routeError.message);
+  return handlePresetBackedRoute<
+    ReturnType<typeof getRequestedSubscriptionChannel>,
+    SubscriptionRequestValues,
+    unknown,
+    unknown,
+    ReturnType<typeof createSubscriptionService>,
+    Awaited<ReturnType<ReturnType<typeof createSubscriptionService>['getDefaultsForTarget']>>,
+    SubscriptionFormValues,
+    Awaited<ReturnType<ReturnType<typeof createSubscriptionService>['execute']>>,
+    Response
+  >({
+    request,
+    url,
+    defaultsPath: '/api/subscription/defaults',
+    previewPath: '/api/subscription/preview',
+    createPath: '/api/subscription/create',
+    merchantRefPath: '/api/subscription/merchant-ref',
+    createService: () => createSubscriptionService(deps),
+    resolveChannel: getRequestedSubscriptionChannel,
+    resolveChannelFromValues: (values) => values.channel,
+    getDefaults: (service, channel, targetEnvironment) => service.getDefaultsForTarget(channel, targetEnvironment),
+    saveDefaults: (service, channel, values, targetEnvironment) =>
+      service.saveDefaultsForTarget(channel, values, targetEnvironment),
+    generateMerchantRef: (service) => service.generateMerchantRef(),
+    preview: (service, values, targetEnvironment) => service.preview(values, targetEnvironment),
+    execute: (service, values, targetEnvironment) => service.execute(values, targetEnvironment),
+    validate: (values, bundle) =>
+      validateSubscriptionForm(
+        values,
+        bundle.commonSchema as Parameters<typeof validateSubscriptionForm>[1],
+        bundle.channelSchema as Parameters<typeof validateSubscriptionForm>[2],
+      ),
+    onRouteError: (error) => {
+      if (error instanceof SubscriptionPlanConfigError) {
+        return subscriptionPlanBadRequest(error.message);
       }
 
-      throw routeError;
-    }
-  }
-
-  if (request.method === 'PUT' && url.pathname === '/api/subscription/defaults') {
-    const channel = getRequestedSubscriptionChannel(url);
-    const values = await readJson<SubscriptionRequestValues>(request);
-    try {
-      const bundle = await service.getDefaultsForTarget(channel, targetEnvironment);
-      const error = validateSubscriptionForm(values, bundle.commonSchema, bundle.channelSchema);
-      if (error) return badRequest(error);
-      return json(await service.saveDefaultsForTarget(channel, values as SubscriptionFormValues, targetEnvironment));
-    } catch (routeError) {
-      if (routeError instanceof SubscriptionPlanConfigError) {
-        return subscriptionPlanBadRequest(routeError.message);
-      }
-
-      throw routeError;
-    }
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/subscription/merchant-ref') {
-    return json(service.generateMerchantRef());
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/subscription/preview') {
-    const values = await readJson<SubscriptionRequestValues>(request);
-    try {
-      const bundle = await service.getDefaultsForTarget(values.channel, targetEnvironment);
-      const error = validateSubscriptionForm(values, bundle.commonSchema, bundle.channelSchema);
-      if (error) return badRequest(error);
-      return json(service.preview(values, targetEnvironment));
-    } catch (routeError) {
-      if (routeError instanceof SubscriptionPlanConfigError) {
-        return subscriptionPlanBadRequest(routeError.message);
-      }
-
-      throw routeError;
-    }
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/subscription/create') {
-    const values = await readJson<SubscriptionRequestValues>(request);
-    try {
-      const bundle = await service.getDefaultsForTarget(values.channel, targetEnvironment);
-      const error = validateSubscriptionForm(values, bundle.commonSchema, bundle.channelSchema);
-      if (error) return badRequest(error);
-      const result = await service.execute(values, targetEnvironment);
-      return json(result, { status: result.ok ? 200 : result.status || 500 });
-    } catch (routeError) {
-      if (routeError instanceof SubscriptionPlanConfigError) {
-        return subscriptionPlanBadRequest(routeError.message);
-      }
-
-      throw routeError;
-    }
-  }
-
-  return null;
+      throw error;
+    },
+  });
 };

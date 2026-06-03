@@ -1,9 +1,8 @@
 import type { PayoutServiceDeps } from '../../payout/service';
-import { resolveTargetEnvironment } from '../../core/targetEnvironment';
 import { createPayoutService, getRequestedPayoutChannel } from '../../payout/service';
 import { validatePayoutForm } from '../../payout/validation';
 import type { PayoutFormValues, PayoutRequestValues } from '../../payout/web';
-import { badRequest, json, readJson } from '../http';
+import { handlePresetBackedRoute } from './_shared';
 
 /**
  * Handles payout API routes for defaults, preview, create, and preset persistence.
@@ -24,47 +23,39 @@ export const handlePayoutRoute = async ({
   url: URL;
   deps: PayoutServiceDeps;
 }): Promise<Response | null> => {
-  const service = createPayoutService(deps);
-  let targetEnvironment;
-  try {
-    targetEnvironment = resolveTargetEnvironment(request.headers);
-  } catch (error) {
-    return badRequest(error instanceof Error ? error.message : String(error));
-  }
-
-  if (request.method === 'GET' && url.pathname === '/api/payout/defaults') {
-    return json(await service.getDefaultsForTarget(getRequestedPayoutChannel(url), targetEnvironment));
-  }
-
-  if (request.method === 'PUT' && url.pathname === '/api/payout/defaults') {
-    const channel = getRequestedPayoutChannel(url);
-    const values = await readJson<PayoutRequestValues>(request);
-    const bundle = await service.getDefaultsForTarget(channel, targetEnvironment);
-    const error = validatePayoutForm(values, bundle.commonSchema, bundle.channelSchema);
-    if (error) return badRequest(error);
-    return json(await service.saveDefaultsForTarget(channel, values as PayoutFormValues, targetEnvironment));
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/payout/merchant-reference') {
-    return json(service.generateMerchantReference());
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/payout/preview') {
-    const values = await readJson<PayoutRequestValues>(request);
-    const bundle = await service.getDefaultsForTarget(values.channel, targetEnvironment);
-    const error = validatePayoutForm(values, bundle.commonSchema, bundle.channelSchema);
-    if (error) return badRequest(error);
-    return json(service.preview(values, targetEnvironment));
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/payout/create') {
-    const values = await readJson<PayoutRequestValues>(request);
-    const bundle = await service.getDefaultsForTarget(values.channel, targetEnvironment);
-    const error = validatePayoutForm(values, bundle.commonSchema, bundle.channelSchema);
-    if (error) return badRequest(error);
-    const result = await service.execute(values, targetEnvironment);
-    return json(result, { status: result.ok ? 200 : result.status || 500 });
-  }
-
-  return null;
+  return handlePresetBackedRoute<
+    ReturnType<typeof getRequestedPayoutChannel>,
+    PayoutRequestValues,
+    unknown,
+    unknown,
+    ReturnType<typeof createPayoutService>,
+    Awaited<ReturnType<ReturnType<typeof createPayoutService>['getDefaultsForTarget']>>,
+    PayoutFormValues,
+    Awaited<ReturnType<ReturnType<typeof createPayoutService>['execute']>>
+  >({
+    request,
+    url,
+    defaultsPath: '/api/payout/defaults',
+    previewPath: '/api/payout/preview',
+    createPath: '/api/payout/create',
+    merchantRefPath: '/api/payout/merchant-reference',
+    createService: () => createPayoutService(deps),
+    resolveChannel: getRequestedPayoutChannel,
+    resolveChannelFromValues: (values) => values.channel,
+    getDefaults: (service, channel, targetEnvironment) => service.getDefaultsForTarget(channel, targetEnvironment),
+    saveDefaults: (service, channel, values, targetEnvironment) =>
+      service.saveDefaultsForTarget(channel, values, targetEnvironment),
+    generateMerchantRef: (service) => service.generateMerchantReference(),
+    preview: (service, values, targetEnvironment) => service.preview(values, targetEnvironment),
+    execute: (service, values, targetEnvironment) => service.execute(values, targetEnvironment),
+    validate: (values, bundle) =>
+      validatePayoutForm(
+        values,
+        bundle.commonSchema as Parameters<typeof validatePayoutForm>[1],
+        bundle.channelSchema as Parameters<typeof validatePayoutForm>[2],
+      ),
+    onRouteError: (error) => {
+      throw error;
+    },
+  });
 };
