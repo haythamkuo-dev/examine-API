@@ -4,6 +4,11 @@
 
 ### Project Structure
 - see `structure.md`
+- CLI 入口： `index.ts`
+- API server 入口： `src/server/index.ts`
+- Web 前端入口：`web/main.tsx`
+- Web 路由入口：`web/App.tsx`
+      - 定義前端頁面路由：`/deposit`、`/payout`、`/subscription`
 
 #### Project Structure & Directory Map
 雖然詳細結構請參閱 `structure.md`，但在進行開發與修改時，請嚴格遵守以下路徑分界：

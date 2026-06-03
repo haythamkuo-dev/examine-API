@@ -50,7 +50,7 @@ export const createPresetBackedService = <
   PreviewResponse,
   CreateResponse,
   ExecutionContext = void,
->(
+  >(
   options: CreatePresetBackedServiceOptions<
     Channel,
     FormValues,
@@ -60,7 +60,7 @@ export const createPresetBackedService = <
     CreateResponse,
     ExecutionContext
   >,
-): PresetBackedService<
+  ): PresetBackedService<
   Channel,
   FormValues,
   DefaultsResponse,
@@ -68,6 +68,8 @@ export const createPresetBackedService = <
   CreateResponse,
   ExecutionContext
 > => {
+  const { loadPresets, toDefaultsResponse, updatePreset, buildPreviewResponse, buildRequestFromForm, buildCreateResponse } =
+    options;
   const runner = createRunner({
     httpClient: options.httpClient || fetch,
     logger: options.logger,
@@ -76,29 +78,29 @@ export const createPresetBackedService = <
   });
 
   const getDefaults = async (channel: Channel): Promise<DefaultsResponse> => {
-    const presets = await options.loadPresets();
-    return options.toDefaultsResponse(channel, presets);
+    const presets = await loadPresets();
+    return toDefaultsResponse(channel, presets);
   };
 
   const saveDefaults = async (
     channel: Channel,
     values: FormValues,
   ): Promise<DefaultsResponse & { ok: true }> => {
-    const presets = await options.updatePreset(channel, values);
+    const presets = await updatePreset(channel, values);
 
     return {
       ok: true,
-      ...options.toDefaultsResponse(channel, presets),
+      ...toDefaultsResponse(channel, presets),
     };
   };
 
   const preview = (values: FormValues, context: ExecutionContext): PreviewResponse =>
-    options.buildPreviewResponse(values, context);
+    buildPreviewResponse(values, context);
 
   const execute = async (values: FormValues, context: ExecutionContext): Promise<CreateResponse> => {
-    const request = options.buildRequestFromForm(values, context);
+    const request = buildRequestFromForm(values, context);
     const result = await runner.run(request);
-    return options.buildCreateResponse(result);
+    return buildCreateResponse(result);
   };
 
   return {
