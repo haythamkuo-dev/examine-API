@@ -16,7 +16,7 @@ import type {
   DepositRequestValues,
 } from '../../src/deposit/web';
 import { DepositPage } from './DepositPage';
-import { apiKeyResetToastMessage } from './operatorShared';
+import { apiKeyResetToastMessage } from './helper/operatorShared';
 import { AppThemeProvider } from './pageChrome';
 
 const defaultsEndpoint = '/api/deposit/defaults';

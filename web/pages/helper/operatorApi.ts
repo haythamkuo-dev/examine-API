@@ -6,7 +6,7 @@ import type {
   DepositMerchantRefResponse,
   DepositPreviewResponse,
   DepositRequestValues,
-} from '../../src/deposit/web';
+} from '../../../src/deposit/web';
 import type {
   PayoutDefaultsResponse,
   PayoutDefaultsSavedResponse,
@@ -14,7 +14,7 @@ import type {
   PayoutMerchantReferenceResponse,
   PayoutPreviewResponse,
   PayoutRequestValues,
-} from '../../src/payout/web';
+} from '../../../src/payout/web';
 import type {
   SubscriptionDefaultsResponse,
   SubscriptionDefaultsSavedResponse,
@@ -22,13 +22,15 @@ import type {
   SubscriptionMerchantRefResponse,
   SubscriptionPreviewResponse,
   SubscriptionRequestValues,
-} from '../../src/subscription/web';
+} from '../../../src/subscription/web';
+import type { OperatorEnvironmentMode } from './operatorShared';
 import {
-  buildOperatorHeaders,
-  fetchJson,
-  resolveApiUrl,
-  type OperatorEnvironmentMode,
-} from './operatorShared';
+  buildChannelQuery,
+  fetchOperatorJson,
+  postOperatorJson,
+  putOperatorJson,
+  sendOperatorRequest,
+} from './operatorRequest';
 
 const depositDefaultsEndpoint = '/api/deposit/defaults';
 const depositPreviewEndpoint = '/api/deposit/preview';
@@ -45,9 +47,6 @@ const subscriptionPreviewEndpoint = '/api/subscription/preview';
 const subscriptionCreateEndpoint = '/api/subscription/create';
 const subscriptionMerchantRefEndpoint = '/api/subscription/merchant-ref';
 
-const buildChannelQuery = (channel?: string): string =>
-  channel ? `?channel=${encodeURIComponent(channel)}` : '';
-
 /**
  * Requests deposit default form data for the selected channel.
  *
@@ -60,9 +59,7 @@ export const fetchDepositDefaults = (
   mode: OperatorEnvironmentMode,
   channel?: string,
 ): Promise<DepositDefaultsResponse> =>
-  fetchJson<DepositDefaultsResponse>(`${depositDefaultsEndpoint}${buildChannelQuery(channel)}`, {
-    headers: buildOperatorHeaders(mode),
-  });
+  fetchOperatorJson<DepositDefaultsResponse>(`${depositDefaultsEndpoint}${buildChannelQuery(channel)}`, mode);
 
 /**
  * Requests a deposit payload preview for the current form values.
@@ -76,11 +73,7 @@ export const previewDepositRequest = (
   mode: OperatorEnvironmentMode,
   form: DepositRequestValues,
 ): Promise<DepositPreviewResponse> =>
-  fetchJson<DepositPreviewResponse>(depositPreviewEndpoint, {
-    method: 'POST',
-    headers: buildOperatorHeaders(mode),
-    body: JSON.stringify(form),
-  });
+  postOperatorJson<DepositPreviewResponse>(depositPreviewEndpoint, mode, form);
 
 /**
  * Sends a deposit create request for the current form values.
@@ -94,11 +87,7 @@ export const createDepositRequest = (
   mode: OperatorEnvironmentMode,
   form: DepositRequestValues,
 ): Promise<DepositCreateResponse> =>
-  fetchJson<DepositCreateResponse>(depositCreateEndpoint, {
-    method: 'POST',
-    headers: buildOperatorHeaders(mode),
-    body: JSON.stringify(form),
-  });
+  postOperatorJson<DepositCreateResponse>(depositCreateEndpoint, mode, form);
 
 /**
  * Requests a fresh deposit merchant reference from the API.
@@ -110,10 +99,7 @@ export const createDepositRequest = (
 export const generateDepositMerchantRef = (
   mode: OperatorEnvironmentMode,
 ): Promise<DepositMerchantRefResponse> =>
-  fetchJson<DepositMerchantRefResponse>(depositMerchantRefEndpoint, {
-    method: 'POST',
-    headers: buildOperatorHeaders(mode),
-  });
+  postOperatorJson<DepositMerchantRefResponse>(depositMerchantRefEndpoint, mode, {});
 
 /**
  * Saves deposit defaults for the active channel.
@@ -129,13 +115,10 @@ export const saveDepositDefaults = (
   channel: string,
   form: DepositFormValues,
 ): Promise<DepositDefaultsSavedResponse> =>
-  fetchJson<DepositDefaultsSavedResponse>(
-    `${depositDefaultsEndpoint}?channel=${encodeURIComponent(channel)}`,
-    {
-      method: 'PUT',
-      headers: buildOperatorHeaders(mode),
-      body: JSON.stringify(form),
-    },
+  putOperatorJson<DepositDefaultsSavedResponse>(
+    `${depositDefaultsEndpoint}${buildChannelQuery(channel)}`,
+    mode,
+    form,
   );
 
 /**
@@ -150,9 +133,7 @@ export const fetchPayoutDefaults = (
   mode: OperatorEnvironmentMode,
   channel?: string,
 ): Promise<PayoutDefaultsResponse> =>
-  fetchJson<PayoutDefaultsResponse>(`${payoutDefaultsEndpoint}${buildChannelQuery(channel)}`, {
-    headers: buildOperatorHeaders(mode),
-  });
+  fetchOperatorJson<PayoutDefaultsResponse>(`${payoutDefaultsEndpoint}${buildChannelQuery(channel)}`, mode);
 
 /**
  * Requests a payout payload preview for the current form values.
@@ -166,11 +147,7 @@ export const previewPayoutRequest = (
   mode: OperatorEnvironmentMode,
   form: PayoutRequestValues,
 ): Promise<PayoutPreviewResponse> =>
-  fetchJson<PayoutPreviewResponse>(payoutPreviewEndpoint, {
-    method: 'POST',
-    headers: buildOperatorHeaders(mode),
-    body: JSON.stringify(form),
-  });
+  postOperatorJson<PayoutPreviewResponse>(payoutPreviewEndpoint, mode, form);
 
 /**
  * Sends a payout create request for the current form values.
@@ -184,11 +161,7 @@ export const createPayoutRequest = (
   mode: OperatorEnvironmentMode,
   form: PayoutRequestValues,
 ): Promise<Response> =>
-  fetch(resolveApiUrl(payoutCreateEndpoint), {
-    method: 'POST',
-    headers: buildOperatorHeaders(mode),
-    body: JSON.stringify(form),
-  });
+  sendOperatorRequest(payoutCreateEndpoint, mode, form);
 
 /**
  * Requests a fresh payout merchant reference from the API.
@@ -200,10 +173,7 @@ export const createPayoutRequest = (
 export const generatePayoutMerchantReference = (
   mode: OperatorEnvironmentMode,
 ): Promise<PayoutMerchantReferenceResponse> =>
-  fetchJson<PayoutMerchantReferenceResponse>(payoutMerchantReferenceEndpoint, {
-    method: 'POST',
-    headers: buildOperatorHeaders(mode),
-  });
+  postOperatorJson<PayoutMerchantReferenceResponse>(payoutMerchantReferenceEndpoint, mode, {});
 
 /**
  * Saves payout defaults for the active channel.
@@ -219,13 +189,10 @@ export const savePayoutDefaults = (
   channel: string,
   form: PayoutFormValues,
 ): Promise<PayoutDefaultsSavedResponse> =>
-  fetchJson<PayoutDefaultsSavedResponse>(
-    `${payoutDefaultsEndpoint}?channel=${encodeURIComponent(channel)}`,
-    {
-      method: 'PUT',
-      headers: buildOperatorHeaders(mode),
-      body: JSON.stringify(form),
-    },
+  putOperatorJson<PayoutDefaultsSavedResponse>(
+    `${payoutDefaultsEndpoint}${buildChannelQuery(channel)}`,
+    mode,
+    form,
   );
 
 /**
@@ -240,11 +207,9 @@ export const fetchSubscriptionDefaults = (
   mode: OperatorEnvironmentMode,
   channel?: string,
 ): Promise<SubscriptionDefaultsResponse> =>
-  fetchJson<SubscriptionDefaultsResponse>(
+  fetchOperatorJson<SubscriptionDefaultsResponse>(
     `${subscriptionDefaultsEndpoint}${buildChannelQuery(channel)}`,
-    {
-      headers: buildOperatorHeaders(mode),
-    },
+    mode,
   );
 
 /**
@@ -259,11 +224,7 @@ export const previewSubscriptionRequest = (
   mode: OperatorEnvironmentMode,
   form: SubscriptionRequestValues,
 ): Promise<SubscriptionPreviewResponse> =>
-  fetchJson<SubscriptionPreviewResponse>(subscriptionPreviewEndpoint, {
-    method: 'POST',
-    headers: buildOperatorHeaders(mode),
-    body: JSON.stringify(form),
-  });
+  postOperatorJson<SubscriptionPreviewResponse>(subscriptionPreviewEndpoint, mode, form);
 
 /**
  * Sends a subscription create request for the current form values.
@@ -277,11 +238,7 @@ export const createSubscriptionRequest = (
   mode: OperatorEnvironmentMode,
   form: SubscriptionRequestValues,
 ): Promise<Response> =>
-  fetch(resolveApiUrl(subscriptionCreateEndpoint), {
-    method: 'POST',
-    headers: buildOperatorHeaders(mode),
-    body: JSON.stringify(form),
-  });
+  sendOperatorRequest(subscriptionCreateEndpoint, mode, form);
 
 /**
  * Requests a fresh subscription merchant reference from the API.
@@ -293,10 +250,7 @@ export const createSubscriptionRequest = (
 export const generateSubscriptionMerchantRef = (
   mode: OperatorEnvironmentMode,
 ): Promise<SubscriptionMerchantRefResponse> =>
-  fetchJson<SubscriptionMerchantRefResponse>(subscriptionMerchantRefEndpoint, {
-    method: 'POST',
-    headers: buildOperatorHeaders(mode),
-  });
+  postOperatorJson<SubscriptionMerchantRefResponse>(subscriptionMerchantRefEndpoint, mode, {});
 
 /**
  * Saves subscription defaults for the active channel.
@@ -312,11 +266,8 @@ export const saveSubscriptionDefaults = (
   channel: string,
   form: SubscriptionFormValues,
 ): Promise<SubscriptionDefaultsSavedResponse> =>
-  fetchJson<SubscriptionDefaultsSavedResponse>(
-    `${subscriptionDefaultsEndpoint}?channel=${encodeURIComponent(channel)}`,
-    {
-      method: 'PUT',
-      headers: buildOperatorHeaders(mode),
-      body: JSON.stringify(form),
-    },
+  putOperatorJson<SubscriptionDefaultsSavedResponse>(
+    `${subscriptionDefaultsEndpoint}${buildChannelQuery(channel)}`,
+    mode,
+    form,
   );

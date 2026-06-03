@@ -6,7 +6,7 @@ import {
   ResultPanel,
   useOperatorTheme,
 } from './pageChrome';
-import { loadingLabels } from './operatorShared';
+import { loadingLabels } from './helper/operatorShared';
 import { RequestBuilderCard } from './requestBuilder';
 export { normalizeCreateResult } from '../hooks/useSubscriptionOperator';
 import { useSubscriptionOperator } from '../hooks/useSubscriptionOperator';

@@ -2,7 +2,7 @@ import {
   defaultTargetEnvironment,
   targetEnvironmentHeaderName,
   type TargetEnvironment,
-} from '../../src/core/targetEnvironment';
+} from '../../../src/core/targetEnvironment';
 
 const jsonContentTypeHeader = 'Content-Type';
 const jsonContentTypeValue = 'application/json';

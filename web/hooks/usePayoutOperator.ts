@@ -14,7 +14,7 @@ import {
   generatePayoutMerchantReference,
   previewPayoutRequest,
   savePayoutDefaults,
-} from '../pages/operatorApi';
+} from '../pages/helper/operatorApi';
 import {
   extractMerchantReferenceValue,
   buildApiLogContext,
@@ -22,7 +22,7 @@ import {
   type ApiResultView,
   type OperatorEnvironmentMode,
   updatePathValue,
-} from '../pages/operatorShared';
+} from '../pages/helper/operatorShared';
 import type {
   FieldVisibilityResolver,
   RequestBuilderFieldOverride,

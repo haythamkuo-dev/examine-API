@@ -13,7 +13,7 @@ import type {
   SubscriptionRequestValues,
 } from '../../src/subscription/web';
 import { normalizeCreateResult, SubscriptionPage } from './SubscriptionPage';
-import { apiKeyResetToastMessage } from './operatorShared';
+import { apiKeyResetToastMessage } from './helper/operatorShared';
 import { AppThemeProvider } from './pageChrome';
 
 const channel = 'default';

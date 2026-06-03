@@ -13,7 +13,7 @@ import {
   generateDepositMerchantRef,
   previewDepositRequest,
   saveDepositDefaults,
-} from '../pages/operatorApi';
+} from '../pages/helper/operatorApi';
 import {
   extractMerchantReferenceValue,
   buildApiLogContext,
@@ -23,7 +23,7 @@ import {
   type ApiResultView,
   type OperatorEnvironmentMode,
   updatePathValue,
-} from '../pages/operatorShared';
+} from '../pages/helper/operatorShared';
 import type { RequestBuilderFieldOverride } from '../pages/requestBuilder';
 
 const defaultsEndpoint = '/api/deposit/defaults';

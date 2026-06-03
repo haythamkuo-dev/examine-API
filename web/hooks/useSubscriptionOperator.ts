@@ -14,7 +14,7 @@ import {
   generateSubscriptionMerchantRef,
   previewSubscriptionRequest,
   saveSubscriptionDefaults,
-} from '../pages/operatorApi';
+} from '../pages/helper/operatorApi';
 import {
   ApiRequestError,
   extractMerchantReferenceValue,
@@ -25,7 +25,7 @@ import {
   type ApiResultView,
   type OperatorEnvironmentMode,
   updatePathValue,
-} from '../pages/operatorShared';
+} from '../pages/helper/operatorShared';
 import type { RequestBuilderFieldOverride } from '../pages/requestBuilder';
 
 const defaultsEndpoint = '/api/subscription/defaults';

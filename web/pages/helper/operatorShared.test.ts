@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 
-import '../../tests/web-setup';
+import '../../../tests/web-setup';
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 import {
   buildOperatorHeaders,
@@ -8,7 +8,7 @@ import {
   fetchJson,
   getOperatorEnvironmentLabel,
 } from './operatorShared';
-import { targetEnvironmentHeaderName } from '../../src/core/targetEnvironment';
+import { targetEnvironmentHeaderName } from '../../../src/core/targetEnvironment';
 
 describe('operatorShared', () => {
   const originalFetch = globalThis.fetch;

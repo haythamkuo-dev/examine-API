@@ -15,7 +15,7 @@ import type {
   PayoutRequestValues,
 } from '../../src/payout/web';
 import { normalizeCreateResult, PayoutPage, shouldHidePayoutField } from './PayoutPage';
-import { apiKeyResetToastMessage } from './operatorShared';
+import { apiKeyResetToastMessage } from './helper/operatorShared';
 import { AppThemeProvider } from './pageChrome';
 
 const defaultsEndpoint = '/api/payout/defaults';

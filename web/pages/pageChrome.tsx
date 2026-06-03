@@ -13,7 +13,7 @@ import {
   getOperatorEnvironmentLabel,
   type ApiLogContext,
   type OperatorEnvironmentMode,
-} from './operatorShared';
+} from './helper/operatorShared';
 
 const panelClassName =
   'relative overflow-hidden rounded-[28px] border border-[var(--operator-panel-border)] bg-[var(--operator-panel-bg)] shadow-[var(--shadow-lg)] backdrop-blur-xl transition-colors duration-200';

@@ -6,14 +6,11 @@ import {
   ResultPanel,
   useOperatorTheme,
 } from './pageChrome';
-import { loadingLabels } from './operatorShared';
+import { loadingLabels } from './helper/operatorShared';
 import {
   RequestBuilderCard,
 } from './requestBuilder';
-export {
-  normalizeCreateResult,
-  shouldHidePayoutField,
-} from '../hooks/usePayoutOperator';
+export { normalizeCreateResult, shouldHidePayoutField } from '../hooks/usePayoutOperator';
 import { usePayoutOperator } from '../hooks/usePayoutOperator';
 
 const moduleName = 'Payout Module';

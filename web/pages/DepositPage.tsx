@@ -6,7 +6,7 @@ import {
   ResultPanel,
   useOperatorTheme,
 } from './pageChrome';
-import { loadingLabels } from './operatorShared';
+import { loadingLabels } from './helper/operatorShared';
 import { RequestBuilderCard } from './requestBuilder';
 import { useDepositOperator } from '../hooks/useDepositOperator';
 
