@@ -4,6 +4,7 @@ import '../../tests/web-setup';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
+import { targetEnvironmentHeaderName } from '../../src/core/targetEnvironment';
 import type {
   SubscriptionDefaultsResponse,
   SubscriptionDefaultsSavedResponse,
@@ -20,6 +21,7 @@ const channel = 'default';
 
 type FetchRequestRecord = {
   body: SubscriptionRequestValues | null;
+  headers: Headers;
   method: string;
   url: string;
 };
@@ -142,6 +144,7 @@ beforeEach(() => {
       url,
       method,
       body: readPostedForm(init?.body),
+      headers: new Headers(init?.headers),
     };
 
     fetchRecords.push(record);
@@ -550,6 +553,15 @@ describe('SubscriptionPage', () => {
       expect(view.getByLabelText('Plan ID')).toHaveValue('plan-product-default');
       expect(view.getByLabelText('API key')).toHaveValue('subscription-product-key');
     });
+
+    const productDefaultsCall = fetchRecords.find(
+      (record) =>
+        record.method === 'GET' &&
+        record.url === `/api/subscription/defaults?channel=${channel}` &&
+        record.headers.get(targetEnvironmentHeaderName) === 'product',
+    );
+
+    expect(productDefaultsCall).toBeDefined();
   });
 
   test('shows the exact missing-plan error and blocks request actions for the selected channel', async () => {

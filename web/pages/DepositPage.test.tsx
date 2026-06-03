@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
 import { DEPOSIT_CHANNELS } from '../../src/core/env';
+import { targetEnvironmentHeaderName } from '../../src/core/targetEnvironment';
 import type {
   DepositCreateResponse,
   DepositDefaultsResponse,
@@ -33,6 +34,7 @@ if (!primaryChannel || !secondaryChannel) {
 
 type FetchRequestRecord = {
   body: DepositRequestValues | null;
+  headers: Headers;
   method: string;
   url: string;
 };
@@ -265,6 +267,7 @@ beforeEach(() => {
       url,
       method,
       body: readPostedForm(init?.body),
+      headers: new Headers(init?.headers),
     };
 
     fetchRecords.push(record);
@@ -525,6 +528,15 @@ describe('DepositPage', () => {
     await waitFor(() => {
       expect(view.getByLabelText('API key')).toHaveValue('product-deposit-key');
     });
+
+    const productDefaultsCall = fetchRecords.find(
+      (record) =>
+        record.method === 'GET' &&
+        record.url === `${defaultsEndpoint}?channel=${primaryChannel}` &&
+        record.headers.get(targetEnvironmentHeaderName) === 'product',
+    );
+
+    expect(productDefaultsCall).toBeDefined();
   });
 
   test('new draft resets the merchant reference to the backend default', async () => {

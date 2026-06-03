@@ -1,4 +1,8 @@
 .
+├── .codebase-memory
+│   ├── .gitattributes
+│   ├── artifact.json
+│   └── graph.db.zst
 ├── .env
 ├── .env.example
 ├── .env.production
@@ -45,6 +49,7 @@
 │   │   ├── index.test.ts
 │   │   └── index.ts
 │   ├── core
+│   │   ├── codeFormatValidation.ts
 │   │   ├── createPresetBackedService.test.ts
 │   │   ├── createPresetBackedService.ts
 │   │   ├── env.ts
@@ -67,6 +72,7 @@
 │   ├── payout
 │   │   ├── presets.ts
 │   │   ├── service.ts
+│   │   ├── validation.test.ts
 │   │   ├── validation.ts
 │   │   ├── web.test.ts
 │   │   └── web.ts
@@ -76,6 +82,7 @@
 │   │   ├── http.ts
 │   │   ├── index.ts
 │   │   └── routes
+│   │       ├── _shared.ts
 │   │       ├── deposit.test.ts
 │   │       ├── deposit.ts
 │   │       ├── payout.test.ts
@@ -85,6 +92,7 @@
 │   ├── subscription
 │   │   ├── presets.ts
 │   │   ├── service.ts
+│   │   ├── validation.test.ts
 │   │   ├── validation.ts
 │   │   ├── web.test.ts
 │   │   └── web.ts
@@ -116,12 +124,16 @@
     │   ├── PayoutPage.tsx
     │   ├── SubscriptionPage.test.tsx
     │   ├── SubscriptionPage.tsx
-    │   ├── operatorApi.ts
-    │   ├── operatorShared.test.ts
-    │   ├── operatorShared.ts
+    │   ├── helper
+    │   │   ├── operatorApi.ts
+    │   │   ├── operatorRequest.test.ts
+    │   │   ├── operatorRequest.ts
+    │   │   ├── operatorShared.test.ts
+    │   │   ├── operatorShared.ts
+    │   │   └── operatorTransport.ts
     │   ├── pageChrome.tsx
     │   ├── requestBuilder.test.tsx
     │   └── requestBuilder.tsx
     └── styles.css
 
-22 directories, 103 files
+24 directories, 113 files

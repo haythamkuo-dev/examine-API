@@ -44,6 +44,29 @@ describe('operatorShared', () => {
     ).resolves.toEqual({ ok: true });
   });
 
+  test('fetchJson preserves target environment when headers are passed as a plain object', async () => {
+    globalThis.fetch = mock(async (_input, init) => {
+      const headers = new Headers(init?.headers);
+
+      expect(headers.get(targetEnvironmentHeaderName)).toBe('product');
+      expect(headers.get('X-Custom-Header')).toBe('present');
+
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+
+    await expect(
+      fetchJson<{ ok: boolean }>('/api/test', {
+        headers: {
+          ...Object.fromEntries(buildOperatorHeaders('product').entries()),
+          'X-Custom-Header': 'present',
+        },
+      }),
+    ).resolves.toEqual({ ok: true });
+  });
+
   test('returns the localized label for the product environment', () => {
     expect(getOperatorEnvironmentLabel('product')).toBe('產品');
   });

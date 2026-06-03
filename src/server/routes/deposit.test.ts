@@ -136,6 +136,22 @@ describe('deposit API routes', () => {
     expect(body.message).toBe('payment_order.collect.product_name is required');
   });
 
+  test('POST /api/deposit/preview returns 400 when productNo looks like a token instead of a deposit product code', async () => {
+    const requestBody = createValidBody();
+    requestBody.commonValues.productNo = 'mk_general_01ksse4ja1th.ksqLSyDPzAQbdZu_DOAvvfPlZythxXGj';
+
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    expect(response.status).toBe(400);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body.message).toBe('commonValues.productNo must be a valid deposit product code');
+  });
+
   test('POST /api/deposit/preview returns masked preview payload for valid deposit form', async () => {
     const response = await context.requestApi('/api/deposit/preview', {
       method: 'POST',

@@ -92,13 +92,13 @@ export const resolveApiUrl = (path: string): string => {
  * @throws {ApiRequestError} When the response is non-OK, empty, non-JSON, or malformed.
  */
 export const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
-  const targetEnvironment = init?.headers instanceof Headers
-    ? init.headers.get(targetEnvironmentHeaderName) || defaultTargetEnvironment
-    : defaultTargetEnvironment;
+  const requestHeaders = new Headers(init?.headers);
+  const targetEnvironment =
+    requestHeaders.get(targetEnvironmentHeaderName) || defaultTargetEnvironment;
   const requestUrl = resolveApiUrl(url);
   const response = await fetch(requestUrl, {
     ...init,
-    headers: buildOperatorHeaders(targetEnvironment, init?.headers),
+    headers: buildOperatorHeaders(targetEnvironment, requestHeaders),
   });
   const rawBody = await response.text();
   const contentType = response.headers.get('content-type') || '';

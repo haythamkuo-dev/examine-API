@@ -25,10 +25,7 @@ export const fetchOperatorJson = <T>(
 ): Promise<T> =>
   fetchJson<T>(path, {
     ...init,
-    headers: {
-      ...buildOperatorHeaders(mode),
-      ...(init.headers || {}),
-    },
+    headers: buildOperatorHeaders(mode, init.headers),
   });
 
 /**

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
 import { PAYOUT_CHANNELS } from '../../src/core/env';
+import { targetEnvironmentHeaderName } from '../../src/core/targetEnvironment';
 import type {
   PayoutCreateResponse,
   PayoutDefaultsResponse,
@@ -32,6 +33,7 @@ if (!primaryChannel || !secondaryChannel) {
 
 type FetchRequestRecord = {
   body: PayoutRequestValues | null;
+  headers: Headers;
   method: string;
   url: string;
 };
@@ -207,7 +209,7 @@ beforeEach(() => {
     const rawBody = typeof init?.body === 'string' ? init.body : null;
     const body = rawBody ? (JSON.parse(rawBody) as PayoutRequestValues) : null;
 
-    fetchRecords.push({ url, method, body });
+    fetchRecords.push({ url, method, body, headers: new Headers(init?.headers) });
 
     const [pathname] = url.split('?');
     const handler = routeHandlers.get(pathname);
@@ -639,6 +641,15 @@ describe('PayoutPage', () => {
     await waitFor(() => {
       expect(view.getByLabelText('API key')).toHaveValue('product-payout-key');
     });
+
+    const productDefaultsCall = fetchRecords.find(
+      (record) =>
+        record.method === 'GET' &&
+        record.url === `${defaultsEndpoint}?channel=${primaryChannel}` &&
+        record.headers.get(targetEnvironmentHeaderName) === 'product',
+    );
+
+    expect(productDefaultsCall).toBeDefined();
   });
 
   test('save defaults resets api key to the backend default', async () => {

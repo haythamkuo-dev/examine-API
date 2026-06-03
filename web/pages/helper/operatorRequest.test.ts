@@ -2,6 +2,7 @@
 
 import '../../../tests/web-setup';
 import { afterEach, describe, expect, mock, test } from 'bun:test';
+import { targetEnvironmentHeaderName } from '../../../src/core/targetEnvironment';
 import {
   buildChannelQuery,
   fetchOperatorJson,
@@ -38,6 +39,26 @@ describe('operatorRequest', () => {
     await expect(fetchOperatorJson<{ ok: boolean }>('/api/deposit/defaults?channel=alpha', 'local')).resolves.toEqual({
       ok: true,
     });
+  });
+
+  test('fetchOperatorJson preserves the selected target environment', async () => {
+    const fetchMock = mock(async (_input: string | URL | Request, init?: RequestInit) => {
+      const headers = new Headers(init?.headers);
+
+      expect(headers.get(targetEnvironmentHeaderName)).toBe('product');
+      expect(headers.get('Content-Type')).toBe('application/json');
+
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(
+      fetchOperatorJson<{ ok: boolean }>('/api/deposit/defaults?channel=alpha', 'product'),
+    ).resolves.toEqual({ ok: true });
   });
 
   test('postOperatorJson sends a JSON body', async () => {

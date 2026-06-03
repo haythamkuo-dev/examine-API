@@ -54,4 +54,14 @@ describe('validateDepositForm', () => {
 
     expect(error).toBe('payment_order.collect.product_name is required');
   });
+
+  test('returns an error when productNo does not match the deposit product code format', async () => {
+    const presets = await loadDepositPresets({ dirPath: presetDirPath, env, makeId });
+    const defaults = toDepositDefaultsResponse('southafrica_cards', env, presets);
+
+    defaults.form.commonValues.productNo = 'mk_general_01ksse4ja1th.ksqLSyDPzAQbdZu_DOAvvfPlZythxXGj';
+    const error = validateDepositForm(defaults.form, defaults.commonSchema, defaults.channelSchema);
+
+    expect(error).toBe('commonValues.productNo must be a valid deposit product code');
+  });
 });

@@ -1,17 +1,14 @@
+import { validateCodeFormatRules } from '../core/codeFormatValidation';
 import { validateFormSections } from '../core/formValidation';
 import type { PayoutFieldMap, PayoutFormValues } from './web';
 
-const payoutProductNoPattern = /^PAY-[A-Za-z0-9_-]+$/;
-
-const validatePayoutProductNo = (value: unknown): string | undefined => {
-  if (typeof value !== 'string' || !value.trim()) {
-    return undefined;
-  }
-
-  return payoutProductNoPattern.test(value.trim())
-    ? undefined
-    : 'product_no must be a valid payout product code';
-};
+const payoutValidationRules = [
+  {
+    path: ['channelValues', 'product_no'],
+    pattern: /^PAY-[A-Za-z0-9_-]+$/,
+    message: 'product_no must be a valid payout product code',
+  },
+] as const;
 
 /**
  * Validates a payout form payload against the active common and channel schemas.
@@ -39,5 +36,5 @@ export const validatePayoutForm = (
     return schemaError;
   }
 
-  return validatePayoutProductNo(value.channelValues.product_no);
+  return validateCodeFormatRules(value as unknown as Record<string, unknown>, payoutValidationRules);
 };

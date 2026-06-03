@@ -205,6 +205,24 @@ describe('subscription API routes', () => {
     expect(payload.subs_plan_id).toBe('PLAN-DRAFT-ROUTE-001');
   });
 
+  test('POST /api/subscription/preview accepts non-empty draft subs_plan_id values without enforcing a prefix format', async () => {
+    const requestBody = createValidBody();
+    requestBody.channelValues.subs_plan_id = 'mk_general_01ksse4ja1th.ksqLSyDPzAQbdZu_DOAvvfPlZythxXGj';
+
+    const response = await context.requestApi('/api/subscription/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const request = body.request as Record<string, unknown>;
+    const payload = request.payload as Record<string, unknown>;
+    expect(payload.subs_plan_id).toBe('mk_general_01ksse4ja1th.ksqLSyDPzAQbdZu_DOAvvfPlZythxXGj');
+  });
+
   test('POST /api/subscription/create proxies upstream status and preserves the provided merchant ref', async () => {
     let upstreamBody: SubscriptionUpstreamBody | null = null;
     let upstreamAuthorization = '';
