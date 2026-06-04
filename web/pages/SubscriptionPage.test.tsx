@@ -16,6 +16,7 @@ import type {
 import { normalizeCreateResult, SubscriptionPage } from './SubscriptionPage';
 import { apiKeyResetToastMessage } from './helper/operatorShared';
 import { AppThemeProvider } from './pageChrome';
+import { ModalProvider } from './utils/modal';
 
 const channel = 'default';
 
@@ -117,11 +118,37 @@ let routeHandlers = new Map<string, MockRouteHandler>();
 const renderSubscriptionPage = () => {
   const view = render(
     <AppThemeProvider>
-      <SubscriptionPage />
+      <ModalProvider>
+        <SubscriptionPage />
+      </ModalProvider>
     </AppThemeProvider>,
   );
 
   return { ...view, ...within(view.container) };
+};
+
+const updateApiKeyFromModal = async (
+  view: ReturnType<typeof renderSubscriptionPage>,
+  value: string,
+  action: 'Confirm' | 'Cancel' = 'Confirm',
+) => {
+  await act(async () => {
+    fireEvent.click(view.getByRole('button', { name: 'Edit API key' }));
+  });
+
+  await waitFor(() => {
+    expect(view.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  await act(async () => {
+    fireEvent.input(view.getByLabelText('API key'), {
+      target: { value },
+    });
+  });
+
+  await act(async () => {
+    fireEvent.click(view.getByRole('button', { name: action }));
+  });
 };
 
 const readPostedForm = (body: BodyInit | null | undefined): SubscriptionRequestValues | null => {
@@ -212,7 +239,8 @@ describe('SubscriptionPage', () => {
     await view.findByLabelText('Merchant reference *');
     expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
     expect(view.getByLabelText('Plan ID')).toHaveValue('plan-default');
-    expect(view.getByLabelText('API key')).toHaveValue('subscription-default-key');
+    expect(view.getByText('subscription-default-key')).toBeInTheDocument();
+    expect(view.getByRole('button', { name: 'Edit API key' })).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.input(view.getByLabelText('Plan ID'), {
@@ -344,7 +372,7 @@ describe('SubscriptionPage', () => {
       expect(view.getByText(`Saved defaults for ${channel}.`)).toBeInTheDocument();
       expect(view.getByLabelText('Product name *')).toHaveValue('Subscription product');
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-003');
-      expect(view.getByLabelText('API key')).toHaveValue('subscription-saved-key');
+      expect(view.getByText('subscription-saved-key')).toBeInTheDocument();
       expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();
     });
 
@@ -407,11 +435,7 @@ describe('SubscriptionPage', () => {
     await view.findByLabelText('Merchant reference *');
     expect(view.getByLabelText('Merchant reference *')).toHaveValue('subscription-preview-start');
 
-    await act(async () => {
-      fireEvent.input(view.getByLabelText('API key'), {
-        target: { value: 'typed-subscription-key' },
-      });
-    });
+    await updateApiKeyFromModal(view, 'typed-subscription-key');
 
     await act(async () => {
       fireEvent.input(view.getByLabelText('Plan ID'), {
@@ -420,7 +444,7 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('API key')).toHaveValue('typed-subscription-key');
+      expect(view.getByText('typed-subscription-key')).toBeInTheDocument();
       expect(view.getByLabelText('Plan ID')).toHaveValue('plan-preview-override');
     });
 
@@ -446,6 +470,41 @@ describe('SubscriptionPage', () => {
     expect(previewCall?.body?.channelValues.subs_plan_id).toBe('plan-preview-override');
     expect(createCall?.body?.apiKey).toBe('typed-subscription-key');
     expect(createCall?.body?.channelValues.subs_plan_id).toBe('plan-preview-override');
+  });
+
+  test('cancels api key edits without applying the draft value', async () => {
+    setRouteHandlers({
+      'GET /api/subscription/defaults': async () => jsonResponse(createDefaultsResponse()),
+      'POST /api/subscription/preview': async () =>
+        jsonResponse({
+          request: {
+            name: 'subscription:create:default',
+            method: 'POST',
+            url: 'https://gateway.example.test/subscription',
+            headers: { Authorization: 'ApiKey ****-token' },
+            payload: {
+              merchant_ref: 'preview-merchant',
+            },
+          },
+        }),
+    });
+
+    const view = renderSubscriptionPage();
+
+    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+
+    await updateApiKeyFromModal(view, 'cancelled-subscription-key', 'Cancel');
+
+    expect(view.queryByRole('dialog')).toBeNull();
+    expect(view.getByText('subscription-default-key')).toBeInTheDocument();
+    expect(view.queryByText('cancelled-subscription-key')).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === '/api/subscription/preview');
+    expect(previewCall?.body?.apiKey).toBe('subscription-default-key');
   });
 
   test('updates the displayed plan id when the selected channel changes', async () => {
@@ -551,7 +610,7 @@ describe('SubscriptionPage', () => {
 
     await waitFor(() => {
       expect(view.getByLabelText('Plan ID')).toHaveValue('plan-product-default');
-      expect(view.getByLabelText('API key')).toHaveValue('subscription-product-key');
+      expect(view.getByText('subscription-product-key')).toBeInTheDocument();
     });
 
     const productDefaultsCall = fetchRecords.find(

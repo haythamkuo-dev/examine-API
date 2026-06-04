@@ -18,6 +18,7 @@ import type {
 import { normalizeCreateResult, PayoutPage, shouldHidePayoutField } from './PayoutPage';
 import { apiKeyResetToastMessage } from './helper/operatorShared';
 import { AppThemeProvider } from './pageChrome';
+import { ModalProvider } from './utils/modal';
 
 const defaultsEndpoint = '/api/payout/defaults';
 const previewEndpoint = '/api/payout/preview';
@@ -185,11 +186,37 @@ let routeHandlers = new Map<string, MockRouteHandler>();
 const renderPayoutPage = () => {
   const view = render(
     <AppThemeProvider>
-      <PayoutPage />
+      <ModalProvider>
+        <PayoutPage />
+      </ModalProvider>
     </AppThemeProvider>,
   );
 
   return { ...view, ...within(view.container) };
+};
+
+const updateApiKeyFromModal = async (
+  view: ReturnType<typeof renderPayoutPage>,
+  value: string,
+  action: 'Confirm' | 'Cancel' = 'Confirm',
+) => {
+  await act(async () => {
+    fireEvent.click(view.getByRole('button', { name: 'Edit API key' }));
+  });
+
+  await waitFor(() => {
+    expect(view.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  await act(async () => {
+    fireEvent.input(view.getByLabelText('API key'), {
+      target: { value },
+    });
+  });
+
+  await act(async () => {
+    fireEvent.click(view.getByRole('button', { name: action }));
+  });
 };
 
 const setRouteHandler = (url: string, handler: MockRouteHandler) => {
@@ -316,7 +343,8 @@ describe('PayoutPage', () => {
     });
 
     expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
-    expect(view.getByLabelText('API key')).toHaveValue(`api-key-${primaryChannel}`);
+    expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();
+    expect(view.getByRole('button', { name: 'Edit API key' })).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
@@ -504,14 +532,10 @@ describe('PayoutPage', () => {
       expect(view.getByRole('button', { name: 'Send request' })).toBeEnabled();
     });
 
-    await act(async () => {
-      fireEvent.input(view.getByLabelText('API key'), {
-        target: { value: 'typed-payout-key' },
-      });
-    });
+    await updateApiKeyFromModal(view, 'typed-payout-key');
 
     await waitFor(() => {
-      expect(view.getByLabelText('API key')).toHaveValue('typed-payout-key');
+      expect(view.getByText('typed-payout-key')).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -578,14 +602,10 @@ describe('PayoutPage', () => {
 
     expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-preview-start');
 
-    await act(async () => {
-      fireEvent.input(view.getByLabelText('API key'), {
-        target: { value: 'preview-payout-key' },
-      });
-    });
+    await updateApiKeyFromModal(view, 'preview-payout-key');
 
     await waitFor(() => {
-      expect(view.getByLabelText('API key')).toHaveValue('preview-payout-key');
+      expect(view.getByText('preview-payout-key')).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -628,18 +648,14 @@ describe('PayoutPage', () => {
       expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
     });
 
-    await act(async () => {
-      fireEvent.input(view.getByLabelText('API key'), {
-        target: { value: 'typed-payout-key' },
-      });
-    });
+    await updateApiKeyFromModal(view, 'typed-payout-key');
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: '產品' }));
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('API key')).toHaveValue('product-payout-key');
+      expect(view.getByText('product-payout-key')).toBeInTheDocument();
     });
 
     const productDefaultsCall = fetchRecords.find(
@@ -668,11 +684,7 @@ describe('PayoutPage', () => {
       expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
     });
 
-    await act(async () => {
-      fireEvent.input(view.getByLabelText('API key'), {
-        target: { value: 'typed-payout-key' },
-      });
-    });
+    await updateApiKeyFromModal(view, 'typed-payout-key');
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Save defaults' }));
@@ -681,9 +693,44 @@ describe('PayoutPage', () => {
     await waitFor(() => {
       expect(view.getByText(`Saved defaults for ${primaryChannel}.`)).toBeInTheDocument();
       expect(view.getByLabelText('Product number *')).toHaveValue(`product-${primaryChannel}`);
-      expect(view.getByLabelText('API key')).toHaveValue(`saved-api-key-${primaryChannel}`);
+      expect(view.getByText(`saved-api-key-${primaryChannel}`)).toBeInTheDocument();
       expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();
     });
+  });
+
+  test('cancels api key edits without applying the draft value', async () => {
+    setRouteHandler(previewEndpoint, () =>
+      jsonResponse({
+        request: {
+          name: 'payout:create:co_bank',
+          method: 'POST',
+          url: 'https://gateway.example.test/payout',
+          headers: { Authorization: 'ApiKey ****-token' },
+          payload: {
+            merchant_reference: `merchant-${primaryChannel}`,
+          },
+        },
+      }),
+    );
+
+    const view = renderPayoutPage();
+
+    await waitFor(() => {
+      expect(view.getByRole('button', { name: 'Preview request' })).toBeEnabled();
+    });
+
+    await updateApiKeyFromModal(view, 'cancelled-payout-key', 'Cancel');
+
+    expect(view.queryByRole('dialog')).toBeNull();
+    expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();
+    expect(view.queryByText('cancelled-payout-key')).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
+    expect(previewCall?.body?.apiKey).toBe(`api-key-${primaryChannel}`);
   });
 
   test('shows a failure banner with diagnostics after create fails', async () => {

@@ -19,6 +19,7 @@ import type {
 import { DepositPage } from './DepositPage';
 import { apiKeyResetToastMessage } from './helper/operatorShared';
 import { AppThemeProvider } from './pageChrome';
+import { ModalProvider } from './utils/modal';
 
 const defaultsEndpoint = '/api/deposit/defaults';
 const previewEndpoint = '/api/deposit/preview';
@@ -236,11 +237,37 @@ let routeHandlers = new Map<string, MockRouteHandler>();
 const renderDepositPage = () => {
   const view = render(
     <AppThemeProvider>
-      <DepositPage />
+      <ModalProvider>
+        <DepositPage />
+      </ModalProvider>
     </AppThemeProvider>,
   );
 
   return { ...view, ...within(view.container) };
+};
+
+const updateApiKeyFromModal = async (
+  view: ReturnType<typeof renderDepositPage>,
+  value: string,
+  action: 'Confirm' | 'Cancel' = 'Confirm',
+) => {
+  await act(async () => {
+    fireEvent.click(view.getByRole('button', { name: 'Edit API key' }));
+  });
+
+  await waitFor(() => {
+    expect(view.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  await act(async () => {
+    fireEvent.input(view.getByLabelText('API key'), {
+      target: { value },
+    });
+  });
+
+  await act(async () => {
+    fireEvent.click(view.getByRole('button', { name: action }));
+  });
 };
 
 const setRouteHandlers = (handlers: Record<string, MockRouteHandler>): void => {
@@ -296,7 +323,8 @@ describe('DepositPage', () => {
 
     expect(view.getByText('Request builder')).toBeInTheDocument();
     expect(view.getByLabelText('Channel')).toHaveValue(primaryChannel);
-    expect(view.getByLabelText('API key')).toHaveValue(`api-key-${primaryChannel}`);
+    expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();
+    expect(view.getByRole('button', { name: 'Edit API key' })).toBeInTheDocument();
     expect(view.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
     expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
   });
@@ -336,16 +364,15 @@ describe('DepositPage', () => {
       fireEvent.change(view.getByLabelText('Currency code *'), {
         target: { value: 'USD' },
       });
-      fireEvent.input(view.getByLabelText('API key'), {
-        target: { value: 'typed-deposit-key' },
-      });
       fireEvent.click(view.getByLabelText('Approval required'));
       fireEvent.click(view.getByLabelText('Enabled flag'));
     });
 
+    await updateApiKeyFromModal(view, 'typed-deposit-key');
+
     await waitFor(() => {
       expect(view.getByLabelText('Currency code *')).toHaveValue('USD');
-      expect(view.getByLabelText('API key')).toHaveValue('typed-deposit-key');
+      expect(view.getByText('typed-deposit-key')).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -408,7 +435,7 @@ describe('DepositPage', () => {
     });
 
     expect(view.getByLabelText('Product number *')).toHaveValue('PROD-SECONDARY');
-    expect(view.getByLabelText('API key')).toHaveValue(`api-key-${secondaryChannel}`);
+    expect(view.getByText(`api-key-${secondaryChannel}`)).toBeInTheDocument();
   });
 
   test('generates a new merchant reference and keeps it while shared fields change', async () => {
@@ -513,20 +540,16 @@ describe('DepositPage', () => {
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
 
-    await act(async () => {
-      fireEvent.input(view.getByLabelText('API key'), {
-        target: { value: 'typed-deposit-key' },
-      });
-    });
+    await updateApiKeyFromModal(view, 'typed-deposit-key');
 
-    expect(view.getByLabelText('API key')).toHaveValue('typed-deposit-key');
+    expect(view.getByText('typed-deposit-key')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: '產品' }));
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('API key')).toHaveValue('product-deposit-key');
+      expect(view.getByText('product-deposit-key')).toBeInTheDocument();
     });
 
     const productDefaultsCall = fetchRecords.find(
@@ -590,11 +613,7 @@ describe('DepositPage', () => {
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
 
-    await act(async () => {
-      fireEvent.input(view.getByLabelText('API key'), {
-        target: { value: 'typed-deposit-key' },
-      });
-    });
+    await updateApiKeyFromModal(view, 'typed-deposit-key');
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Save defaults' }));
@@ -603,7 +622,7 @@ describe('DepositPage', () => {
     await waitFor(() => {
       expect(view.getByText(`Saved defaults for ${primaryChannel}.`)).toBeInTheDocument();
       expect(view.getByLabelText('Product number *')).toHaveValue(`PROD-${primaryChannel}`);
-      expect(view.getByLabelText('API key')).toHaveValue(`saved-api-key-${primaryChannel}`);
+      expect(view.getByText(`saved-api-key-${primaryChannel}`)).toBeInTheDocument();
       expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();
     });
   });
@@ -723,12 +742,38 @@ describe('DepositPage', () => {
     await view.findByText(`Saved defaults for ${primaryChannel}.`);
     expect(view.getByLabelText('Product number *')).toHaveValue(`PROD-${primaryChannel}`);
     expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SAVE');
-    expect(view.getByLabelText('API key')).toHaveValue(`saved-api-key-${primaryChannel}`);
+    expect(view.getByText(`saved-api-key-${primaryChannel}`)).toBeInTheDocument();
 
     const saveCall = fetchRecords.find(
       (record) => record.method === 'PUT' && record.url === `${defaultsEndpoint}?channel=${primaryChannel}`,
     );
     expect(saveCall?.body?.commonValues.merchantRef).toBe(`MERCHANT-${primaryChannel}`);
+  });
+
+  test('cancels api key edits without applying the draft value', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      'POST /api/deposit/preview': async () => jsonResponse(createPreviewResponse(`PREVIEW-${primaryChannel}`)),
+    });
+
+    const view = renderDepositPage();
+
+    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+
+    await updateApiKeyFromModal(view, 'cancelled-deposit-key', 'Cancel');
+
+    expect(view.queryByRole('dialog')).toBeNull();
+    expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();
+    expect(view.queryByText('cancelled-deposit-key')).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    await view.findByText('Preview completed.');
+
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
+    expect(previewCall?.body?.apiKey).toBe(`api-key-${primaryChannel}`);
   });
 
   test('shows an error state when loading defaults fails', async () => {
