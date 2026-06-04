@@ -417,6 +417,7 @@ describe('DepositPage', () => {
     const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('button', { name: 'Generate' });
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
@@ -447,6 +448,7 @@ describe('DepositPage', () => {
     const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('button', { name: 'Generate' });
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));

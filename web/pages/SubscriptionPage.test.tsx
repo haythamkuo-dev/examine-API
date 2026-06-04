@@ -151,6 +151,30 @@ const updateApiKeyFromModal = async (
   });
 };
 
+const updatePlanIdFromModal = async (
+  view: ReturnType<typeof renderSubscriptionPage>,
+  value: string,
+  action: 'Confirm' | 'Cancel' = 'Confirm',
+) => {
+  await act(async () => {
+    fireEvent.click(view.getByRole('button', { name: 'Edit Plan ID' }));
+  });
+
+  await waitFor(() => {
+    expect(view.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  await act(async () => {
+    fireEvent.input(view.getByLabelText('Plan ID'), {
+      target: { value },
+    });
+  });
+
+  await act(async () => {
+    fireEvent.click(view.getByRole('button', { name: action }));
+  });
+};
+
 const readPostedForm = (body: BodyInit | null | undefined): SubscriptionRequestValues | null => {
   if (typeof body !== 'string' || !body.trim()) {
     return null;
@@ -238,18 +262,15 @@ describe('SubscriptionPage', () => {
     await view.findByRole('heading', { name: 'Subscription Operator Console' });
     await view.findByLabelText('Merchant reference *');
     expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
-    expect(view.getByLabelText('Plan ID')).toHaveValue('plan-default');
+    expect(view.getByText('plan-default')).toBeInTheDocument();
+    expect(view.getByRole('button', { name: 'Edit Plan ID' })).toBeInTheDocument();
     expect(view.getByText('subscription-default-key')).toBeInTheDocument();
     expect(view.getByRole('button', { name: 'Edit API key' })).toBeInTheDocument();
 
-    await act(async () => {
-      fireEvent.input(view.getByLabelText('Plan ID'), {
-        target: { value: 'plan-draft-override' },
-      });
-    });
+    await updatePlanIdFromModal(view, 'plan-draft-override');
 
     await waitFor(() => {
-      expect(view.getByLabelText('Plan ID')).toHaveValue('plan-draft-override');
+      expect(view.getByText('plan-draft-override')).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -354,14 +375,10 @@ describe('SubscriptionPage', () => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-003');
     });
 
-    await act(async () => {
-      fireEvent.input(view.getByLabelText('Plan ID'), {
-        target: { value: 'plan-save-draft-only' },
-      });
-    });
+    await updatePlanIdFromModal(view, 'plan-save-draft-only');
 
     await waitFor(() => {
-      expect(view.getByLabelText('Plan ID')).toHaveValue('plan-save-draft-only');
+      expect(view.getByText('plan-save-draft-only')).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -437,15 +454,11 @@ describe('SubscriptionPage', () => {
 
     await updateApiKeyFromModal(view, 'typed-subscription-key');
 
-    await act(async () => {
-      fireEvent.input(view.getByLabelText('Plan ID'), {
-        target: { value: 'plan-preview-override' },
-      });
-    });
+    await updatePlanIdFromModal(view, 'plan-preview-override');
 
     await waitFor(() => {
       expect(view.getByText('typed-subscription-key')).toBeInTheDocument();
-      expect(view.getByLabelText('Plan ID')).toHaveValue('plan-preview-override');
+      expect(view.getByText('plan-preview-override')).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -531,7 +544,7 @@ describe('SubscriptionPage', () => {
     const view = renderSubscriptionPage();
 
     await view.findByRole('heading', { name: 'Subscription Operator Console' });
-    expect(view.getByLabelText('Plan ID')).toHaveValue('plan-default');
+    expect(view.getByText('plan-default')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(view.getByLabelText('Channel'), {
@@ -540,7 +553,7 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Plan ID')).toHaveValue('plan-rabbit-linepay');
+      expect(view.getByText('plan-rabbit-linepay')).toBeInTheDocument();
     });
   });
 
@@ -582,7 +595,7 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Plan ID')).toHaveValue('plan-rabbit-linepay');
+      expect(view.getByText('plan-rabbit-linepay')).toBeInTheDocument();
       expect(view.getByLabelText('Channel')).toHaveValue('rabbitLinePay');
     });
   });
@@ -602,14 +615,14 @@ describe('SubscriptionPage', () => {
     const view = renderSubscriptionPage();
 
     await view.findByRole('heading', { name: 'Subscription Operator Console' });
-    expect(view.getByLabelText('Plan ID')).toHaveValue('plan-default');
+    expect(view.getByText('plan-default')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: '產品' }));
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Plan ID')).toHaveValue('plan-product-default');
+      expect(view.getByText('plan-product-default')).toBeInTheDocument();
       expect(view.getByText('subscription-product-key')).toBeInTheDocument();
     });
 
@@ -657,7 +670,6 @@ describe('SubscriptionPage', () => {
 
     await waitFor(() => {
       expect(view.getByLabelText('Channel')).toHaveValue('rabbitLinePay');
-      expect(view.getByLabelText('Plan ID')).toHaveValue('');
       expect(view.getByRole('alert')).toHaveTextContent(missingPlanMessage);
     });
 
@@ -666,5 +678,40 @@ describe('SubscriptionPage', () => {
     expect(view.queryByRole('button', { name: 'Save defaults' })).toBeNull();
     expect(view.getByRole('button', { name: 'Reload defaults' })).toBeInTheDocument();
     expect(view.getByRole('button', { name: 'New draft' })).toBeInTheDocument();
+  });
+
+  test('cancels plan id edits without applying the draft value', async () => {
+    setRouteHandlers({
+      'GET /api/subscription/defaults': async () => jsonResponse(createDefaultsResponse()),
+      'POST /api/subscription/preview': async () =>
+        jsonResponse({
+          request: {
+            name: 'subscription:create:default',
+            method: 'POST',
+            url: 'https://gateway.example.test/subscription',
+            headers: { Authorization: 'ApiKey ****-token' },
+            payload: {
+              merchant_ref: 'preview-merchant',
+            },
+          },
+        }),
+    });
+
+    const view = renderSubscriptionPage();
+
+    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+
+    await updatePlanIdFromModal(view, 'cancelled-plan-id', 'Cancel');
+
+    expect(view.queryByRole('dialog')).toBeNull();
+    expect(view.getByText('plan-default')).toBeInTheDocument();
+    expect(view.queryByText('cancelled-plan-id')).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === '/api/subscription/preview');
+    expect(previewCall?.body?.channelValues.subs_plan_id).toBeUndefined();
   });
 });

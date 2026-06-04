@@ -6,7 +6,7 @@ import {
   ResultPanel,
   useOperatorTheme,
 } from './pageChrome';
-import { ApiKeyEditorTrigger } from './ApiKeyEditorTrigger';
+import { ApiKeyEditorTrigger, EditableSummaryFieldTrigger } from './ApiKeyEditorTrigger';
 import { loadingLabels } from './helper/operatorShared';
 import { RequestBuilderCard } from './requestBuilder';
 export { normalizeCreateResult } from '../hooks/useSubscriptionOperator';
@@ -91,19 +91,16 @@ export function SubscriptionPage() {
             onChannelChange={onChannelChange}
             channelDetail={(
               <div className="grid gap-3">
-                <label className="grid gap-2">
-                  <span className="text-[13px] font-medium tracking-[0.01em] text-[color:var(--color-text-muted)]">
-                    Plan ID
-                  </span>
-                  <input
-                    className="w-full rounded-2xl border border-[var(--operator-input-border)] bg-[var(--operator-input-bg)] px-4 py-3 text-[var(--color-text)] shadow-[var(--operator-input-shadow)] transition duration-200"
-                    value={draftPlanId}
-                    onChange={(event) => updateChannelValue(['subs_plan_id'], event.target.value)}
-                    onInput={(event) =>
-                      updateChannelValue(['subs_plan_id'], (event.target as HTMLInputElement).value)
-                    }
-                  />
-                </label>
+                <EditableSummaryFieldTrigger
+                  label="Plan ID"
+                  value={draftPlanId}
+                  editLabel="Edit Plan ID"
+                  modalTitle="Edit Plan ID"
+                  modalDescription="Update the subscription plan id and confirm the change before applying it."
+                  inputId="subscription-plan-id-modal-input"
+                  disabled={loading !== null}
+                  onConfirm={(value) => updateChannelValue(['subs_plan_id'], value)}
+                />
                 <ApiKeyEditorTrigger
                   apiKey={apiKey}
                   disabled={loading !== null}
