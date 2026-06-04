@@ -10,7 +10,7 @@
     "client_ip": "127.0.0.1",
     "beneficiary": {
       "name": "E2E Payout Beneficiary",
-      "first_name": "E2E",
+      "first_name": "b2b",
       "last_name": "Beneficiary",
       "identification_type": "CC",
       "id_number": "1020806281",
