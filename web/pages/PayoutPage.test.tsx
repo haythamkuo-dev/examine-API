@@ -27,8 +27,12 @@ const merchantReferenceEndpoint = '/api/payout/merchant-reference';
 
 const primaryChannel = PAYOUT_CHANNELS[0];
 const secondaryChannel = PAYOUT_CHANNELS[1];
+const specialPayoutChannels = PAYOUT_CHANNELS.filter(
+  (channel): channel is 'imps' | 'bd_wallet' => channel === 'imps' || channel === 'bd_wallet',
+);
+const [firstSpecialPayoutChannel, secondSpecialPayoutChannel] = specialPayoutChannels;
 
-if (!primaryChannel || !secondaryChannel) {
+if (!primaryChannel || !secondaryChannel || !firstSpecialPayoutChannel || !secondSpecialPayoutChannel) {
   throw new Error('Payout channels are not configured.');
 }
 
@@ -136,7 +140,7 @@ const createDefaultsResponse = (
   overrides?: Partial<PayoutDefaultsResponse>,
 ): PayoutDefaultsResponse => ({
   apiKey: `api-key-${channel}`,
-  availableChannels: [primaryChannel, secondaryChannel],
+  availableChannels: [primaryChannel, secondaryChannel, ...specialPayoutChannels],
   channel,
   commonSchema,
   channelSchema,
@@ -150,7 +154,7 @@ const createSavedDefaultsResponse = (
 ): PayoutDefaultsSavedResponse => ({
   ok: true,
   apiKey: `saved-api-key-${channel}`,
-  availableChannels: [primaryChannel, secondaryChannel],
+  availableChannels: [primaryChannel, secondaryChannel, ...specialPayoutChannels],
   channel,
   commonSchema,
   channelSchema,
@@ -444,6 +448,130 @@ describe('PayoutPage', () => {
 
     const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
     expect(previewCall?.body?.apiKey).toBe('typed-payout-key');
+  });
+
+  test('switching to a special payout channel resets the api key to that channel default', async () => {
+    setRouteHandler(defaultsEndpoint, ({ url }) => {
+      const parsedUrl = new URL(url, 'http://localhost');
+      const channel = parsedUrl.searchParams.get('channel');
+
+      if (channel === firstSpecialPayoutChannel) {
+        return jsonResponse(createDefaultsResponse(firstSpecialPayoutChannel));
+      }
+
+      return jsonResponse(createDefaultsResponse(primaryChannel));
+    });
+    setRouteHandler(previewEndpoint, () =>
+      jsonResponse({
+        request: {
+          name: 'payout:preview:test',
+          method: 'POST',
+          url: 'https://gateway.example.test/payout',
+          headers: {
+            Authorization: 'ApiKey ****token',
+          },
+          payload: {
+            merchant_reference: `SPECIAL-${firstSpecialPayoutChannel}`,
+          },
+        },
+      }),
+    );
+
+    const view = renderPayoutPage();
+
+    await waitFor(() => {
+      expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
+    });
+
+    await updateApiKeyFromModal(view, 'typed-payout-key');
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Channel'), {
+        target: { value: firstSpecialPayoutChannel },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByText(`api-key-${firstSpecialPayoutChannel}`)).toBeInTheDocument();
+    });
+
+    expect(view.queryByText('typed-payout-key')).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
+    expect(previewCall?.body?.apiKey).toBe(`api-key-${firstSpecialPayoutChannel}`);
+  });
+
+  test('switching from a special payout channel back to a normal channel resets the api key to the normal default', async () => {
+    setRouteHandler(defaultsEndpoint, ({ url }) => {
+      const parsedUrl = new URL(url, 'http://localhost');
+      const channel = parsedUrl.searchParams.get('channel');
+
+      if (channel === firstSpecialPayoutChannel) {
+        return jsonResponse(createDefaultsResponse(firstSpecialPayoutChannel));
+      }
+
+      if (channel === secondSpecialPayoutChannel) {
+        return jsonResponse(createDefaultsResponse(secondSpecialPayoutChannel));
+      }
+
+      return jsonResponse(createDefaultsResponse(primaryChannel));
+    });
+    setRouteHandler(previewEndpoint, () =>
+      jsonResponse({
+        request: {
+          name: 'payout:preview:test',
+          method: 'POST',
+          url: 'https://gateway.example.test/payout',
+          headers: {
+            Authorization: 'ApiKey ****token',
+          },
+          payload: {
+            merchant_reference: `RESET-${primaryChannel}`,
+          },
+        },
+      }),
+    );
+
+    const view = renderPayoutPage();
+
+    await waitFor(() => {
+      expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
+    });
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Channel'), {
+        target: { value: firstSpecialPayoutChannel },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByText(`api-key-${firstSpecialPayoutChannel}`)).toBeInTheDocument();
+    });
+
+    await updateApiKeyFromModal(view, 'typed-special-payout-key');
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Channel'), {
+        target: { value: primaryChannel },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();
+    });
+
+    expect(view.queryByText('typed-special-payout-key')).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
+    expect(previewCall?.body?.apiKey).toBe(`api-key-${primaryChannel}`);
   });
 
   test('new draft resets the generated merchant reference and save strips it from the payload', async () => {

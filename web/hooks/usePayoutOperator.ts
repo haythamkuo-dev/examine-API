@@ -36,6 +36,14 @@ const previewEndpoint = '/api/payout/preview';
 const createEndpoint = '/api/payout/create';
 const merchantReferenceEndpoint = '/api/payout/merchant-reference';
 const merchantReferenceFieldKey = 'merchantReference';
+const specialPayoutChannels = new Set<PayoutFormValues['channel']>(['imps', 'bd_wallet']);
+
+const shouldPreservePayoutApiKey = (
+  currentChannel: PayoutFormValues['channel'] | undefined,
+  nextChannel: string,
+): boolean =>
+  !specialPayoutChannels.has(nextChannel as PayoutFormValues['channel']) &&
+  (!currentChannel || !specialPayoutChannels.has(currentChannel));
 
 const extractCreateMessage = (statusText: string, body: unknown): string => {
   if (body && typeof body === 'object') {
@@ -514,7 +522,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     onChannelChange: (channel: string) =>
       void loadDefaults(channel, {
         preserveMerchantReference: form?.commonValues.merchantReference ?? null,
-        preserveApiKey: true,
+        preserveApiKey: shouldPreservePayoutApiKey(form?.channel, channel),
       }),
     actions: form
       ? [

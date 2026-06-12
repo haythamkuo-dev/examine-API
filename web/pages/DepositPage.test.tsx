@@ -28,8 +28,13 @@ const merchantRefEndpoint = '/api/deposit/merchant-ref';
 
 const primaryChannel = DEPOSIT_CHANNELS[0];
 const secondaryChannel = DEPOSIT_CHANNELS[1];
+const specialDepositChannels = DEPOSIT_CHANNELS.filter(
+  (channel): channel is 'bdt_worldpay' | 'inr_upi' =>
+    channel === 'bdt_worldpay' || channel === 'inr_upi',
+);
+const [firstSpecialDepositChannel, secondSpecialDepositChannel] = specialDepositChannels;
 
-if (!primaryChannel || !secondaryChannel) {
+if (!primaryChannel || !secondaryChannel || !firstSpecialDepositChannel || !secondSpecialDepositChannel) {
   throw new Error('Deposit channels are not configured.');
 }
 
@@ -157,7 +162,7 @@ const createDefaultsResponse = (
   overrides?: Partial<DepositDefaultsResponse>,
 ): DepositDefaultsResponse => ({
   apiKey: `api-key-${channel}`,
-  availableChannels: [primaryChannel, secondaryChannel],
+  availableChannels: [primaryChannel, secondaryChannel, ...specialDepositChannels],
   channel,
   commonSchema,
   channelSchema,
@@ -208,7 +213,7 @@ const createSavedDefaultsResponse = (
 ): DepositDefaultsSavedResponse => ({
   ok: true,
   apiKey: `saved-api-key-${channel}`,
-  availableChannels: [primaryChannel, secondaryChannel],
+  availableChannels: [primaryChannel, secondaryChannel, ...specialDepositChannels],
   channel,
   commonSchema,
   channelSchema,
@@ -449,6 +454,90 @@ describe('DepositPage', () => {
 
     const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
     expect(previewCall?.body?.apiKey).toBe('typed-deposit-key');
+  });
+
+  test('switching to a special deposit channel resets the api key to that channel default', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      [`GET /api/deposit/defaults?channel=${firstSpecialDepositChannel}`]: async () =>
+        jsonResponse(createDefaultsResponse(firstSpecialDepositChannel)),
+      'POST /api/deposit/preview': async () =>
+        jsonResponse(createPreviewResponse(`SPECIAL-${firstSpecialDepositChannel}`)),
+    });
+
+    const view = renderDepositPage();
+
+    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('button', { name: 'Edit API key' });
+    await updateApiKeyFromModal(view, 'typed-deposit-key');
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Channel'), {
+        target: { value: firstSpecialDepositChannel },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByText(`api-key-${firstSpecialDepositChannel}`)).toBeInTheDocument();
+    });
+
+    expect(view.queryByText('typed-deposit-key')).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
+    expect(previewCall?.body?.apiKey).toBe(`api-key-${firstSpecialDepositChannel}`);
+  });
+
+  test('switching from a special deposit channel back to a normal channel resets the api key to the normal default', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      [`GET /api/deposit/defaults?channel=${firstSpecialDepositChannel}`]: async () =>
+        jsonResponse(createDefaultsResponse(firstSpecialDepositChannel)),
+      [`GET /api/deposit/defaults?channel=${secondSpecialDepositChannel}`]: async () =>
+        jsonResponse(createDefaultsResponse(secondSpecialDepositChannel)),
+      [`GET /api/deposit/defaults?channel=${primaryChannel}`]: async () =>
+        jsonResponse(createDefaultsResponse(primaryChannel)),
+      'POST /api/deposit/preview': async () =>
+        jsonResponse(createPreviewResponse(`RESET-${primaryChannel}`)),
+    });
+
+    const view = renderDepositPage();
+
+    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Channel'), {
+        target: { value: firstSpecialDepositChannel },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByText(`api-key-${firstSpecialDepositChannel}`)).toBeInTheDocument();
+    });
+
+    await updateApiKeyFromModal(view, 'typed-special-deposit-key');
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Channel'), {
+        target: { value: primaryChannel },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();
+    });
+
+    expect(view.queryByText('typed-special-deposit-key')).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
+    expect(previewCall?.body?.apiKey).toBe(`api-key-${primaryChannel}`);
   });
 
   test('generates a new merchant reference and keeps it while shared fields change', async () => {

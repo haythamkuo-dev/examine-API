@@ -34,6 +34,14 @@ const merchantRefEndpoint = '/api/deposit/merchant-ref';
 const merchantRefFieldKey = 'merchantRef';
 const productNoFieldKey = 'productNo';
 const depositOnlyBadgeLabel = 'ReadOnly';
+const specialDepositChannels = new Set<DepositFormValues['channel']>(['bdt_worldpay', 'inr_upi']);
+
+const shouldPreserveDepositApiKey = (
+  currentChannel: DepositFormValues['channel'] | undefined,
+  nextChannel: string,
+): boolean =>
+  !specialDepositChannels.has(nextChannel as DepositFormValues['channel']) &&
+  (!currentChannel || !specialDepositChannels.has(currentChannel));
 
 /**
  * Manages page-local state and request handlers for the deposit operator screen.
@@ -336,7 +344,7 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
     onChannelChange: (channel: string) =>
       void loadDefaults(channel, {
         preserveMerchantRef: form?.commonValues.merchantRef ?? null,
-        preserveApiKey: true,
+        preserveApiKey: shouldPreserveDepositApiKey(form?.channel, channel),
       }),
     actions: form
       ? [
