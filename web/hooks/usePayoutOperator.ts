@@ -201,11 +201,15 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
   const applyBundle = (
     response: PayoutDefaultsResponse | PayoutDefaultsSavedResponse,
-    options?: { preserveMerchantReference?: string | null },
+    options?: { preserveMerchantReference?: string | null; preserveApiKey?: boolean },
   ) => {
     setChannels(response.availableChannels);
-    apiKeyRef.current = response.apiKey;
-    setApiKey(response.apiKey);
+    if (options?.preserveApiKey) {
+      apiKeyRef.current = apiKeyRef.current || response.apiKey;
+    } else {
+      apiKeyRef.current = response.apiKey;
+      setApiKey(response.apiKey);
+    }
     setCommonSchema(response.commonSchema);
     setChannelSchema(response.channelSchema);
     setPersistedMerchantReference(response.form.commonValues.merchantReference);
@@ -221,7 +225,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
   const loadDefaults = async (
     channel?: string,
-    options?: { preserveMerchantReference?: string | null },
+    options?: { preserveMerchantReference?: string | null; preserveApiKey?: boolean },
   ) => {
     setLoading('defaults');
     setError(null);
@@ -510,6 +514,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     onChannelChange: (channel: string) =>
       void loadDefaults(channel, {
         preserveMerchantReference: form?.commonValues.merchantReference ?? null,
+        preserveApiKey: true,
       }),
     actions: form
       ? [

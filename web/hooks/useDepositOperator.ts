@@ -60,11 +60,15 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
 
   const applyBundle = (
     response: DepositDefaultsResponse | DepositDefaultsSavedResponse,
-    options?: { preserveMerchantRef?: string | null },
+    options?: { preserveMerchantRef?: string | null; preserveApiKey?: boolean },
   ) => {
     setChannels(response.availableChannels);
-    apiKeyRef.current = response.apiKey;
-    setApiKey(response.apiKey);
+    if (options?.preserveApiKey) {
+      apiKeyRef.current = apiKeyRef.current || response.apiKey;
+    } else {
+      apiKeyRef.current = response.apiKey;
+      setApiKey(response.apiKey);
+    }
     setCommonSchema(response.commonSchema);
     setChannelSchema(response.channelSchema);
     setPersistedMerchantRef(response.form.commonValues.merchantRef);
@@ -79,7 +83,7 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
 
   const loadDefaults = async (
     channel?: string,
-    options?: { preserveMerchantRef?: string | null },
+    options?: { preserveMerchantRef?: string | null; preserveApiKey?: boolean },
   ) => {
     setLoading('defaults');
     setError(null);
@@ -330,7 +334,10 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
     updateCommonValue,
     updateChannelValue,
     onChannelChange: (channel: string) =>
-      void loadDefaults(channel, { preserveMerchantRef: form?.commonValues.merchantRef ?? null }),
+      void loadDefaults(channel, {
+        preserveMerchantRef: form?.commonValues.merchantRef ?? null,
+        preserveApiKey: true,
+      }),
     actions: form
       ? [
           {

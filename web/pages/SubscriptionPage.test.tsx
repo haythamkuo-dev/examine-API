@@ -528,6 +528,20 @@ describe('SubscriptionPage', () => {
             availableChannels: ['default', 'rabbitLinePay'],
           }),
         ),
+      'POST /api/subscription/preview': async () =>
+        jsonResponse({
+          request: {
+            name: 'subscription:preview:test',
+            method: 'POST',
+            url: 'https://gateway.example.test/subscription',
+            headers: {
+              Authorization: 'ApiKey ****token',
+            },
+            payload: {
+              merchant_ref: 'subscription-preview',
+            },
+          },
+        }),
       'GET /api/subscription/defaults?channel=rabbitLinePay': async () =>
         jsonResponse(
           createDefaultsResponse({
@@ -546,6 +560,8 @@ describe('SubscriptionPage', () => {
     await view.findByRole('heading', { name: 'Subscription Operator Console' });
     expect(view.getByText('plan-default')).toBeInTheDocument();
 
+    await updateApiKeyFromModal(view, 'typed-subscription-key');
+
     await act(async () => {
       fireEvent.change(view.getByLabelText('Channel'), {
         target: { value: 'rabbitLinePay' },
@@ -555,6 +571,16 @@ describe('SubscriptionPage', () => {
     await waitFor(() => {
       expect(view.getByText('plan-rabbit-linepay')).toBeInTheDocument();
     });
+
+    expect(view.getByText('typed-subscription-key')).toBeInTheDocument();
+    expect(view.queryByText('subscription-default-key')).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === '/api/subscription/preview');
+    expect(previewCall?.body?.apiKey).toBe('typed-subscription-key');
   });
 
   test('keeps the selected channel visible while channel defaults are still loading', async () => {

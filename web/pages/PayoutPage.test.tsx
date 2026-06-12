@@ -392,6 +392,21 @@ describe('PayoutPage', () => {
         }),
       );
     });
+    setRouteHandler(previewEndpoint, () =>
+      jsonResponse({
+        request: {
+          name: 'payout:preview:test',
+          method: 'POST',
+          url: 'https://gateway.example.test/payout',
+          headers: {
+            Authorization: 'ApiKey ****token',
+          },
+          payload: {
+            merchant_reference: 'GENERATED-PAYOUT-002',
+          },
+        },
+      }),
+    );
 
     const view = renderPayoutPage();
 
@@ -407,6 +422,8 @@ describe('PayoutPage', () => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-002');
     });
 
+    await updateApiKeyFromModal(view, 'typed-payout-key');
+
     await act(async () => {
       fireEvent.change(view.getByLabelText('Channel'), {
         target: { value: secondaryChannel },
@@ -418,13 +435,15 @@ describe('PayoutPage', () => {
       expect(view.getByLabelText('Product number *')).toHaveValue('product-secondary-server');
     });
 
+    expect(view.getByText('typed-payout-key')).toBeInTheDocument();
+    expect(view.queryByText(`api-key-${secondaryChannel}`)).toBeNull();
+
     await act(async () => {
-      fireEvent.click(view.getByRole('button', { name: 'Reload defaults' }));
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
     });
 
-    await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-002');
-    });
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
+    expect(previewCall?.body?.apiKey).toBe('typed-payout-key');
   });
 
   test('new draft resets the generated merchant reference and save strips it from the payload', async () => {

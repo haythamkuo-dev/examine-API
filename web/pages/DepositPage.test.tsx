@@ -400,6 +400,8 @@ describe('DepositPage', () => {
   test('reloads channel defaults when the selected channel changes', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      'POST /api/deposit/preview': async () =>
+        jsonResponse(createPreviewResponse(`SWITCH-${primaryChannel}`)),
       'POST /api/deposit/merchant-ref': async () => jsonResponse(createMerchantRefResponse('GENERATED-001')),
       [`GET /api/deposit/defaults?channel=${secondaryChannel}`]: async () =>
         jsonResponse(
@@ -419,6 +421,8 @@ describe('DepositPage', () => {
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
     await view.findByRole('button', { name: 'Generate' });
 
+    await updateApiKeyFromModal(view, 'typed-deposit-key');
+
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
     });
@@ -436,7 +440,15 @@ describe('DepositPage', () => {
     });
 
     expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue('PROD-SECONDARY');
-    expect(view.getByText(`api-key-${secondaryChannel}`)).toBeInTheDocument();
+    expect(view.getByText('typed-deposit-key')).toBeInTheDocument();
+    expect(view.queryByText(`api-key-${secondaryChannel}`)).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
+    expect(previewCall?.body?.apiKey).toBe('typed-deposit-key');
   });
 
   test('generates a new merchant reference and keeps it while shared fields change', async () => {
