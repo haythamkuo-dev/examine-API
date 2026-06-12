@@ -25,6 +25,7 @@ import {
   updatePathValue,
 } from '../pages/helper/operatorShared';
 import type { RequestBuilderFieldOverride } from '../pages/requestBuilder';
+import { usePersistentApiKey } from './usePersistentApiKey';
 
 const defaultsEndpoint = '/api/deposit/defaults';
 const previewEndpoint = '/api/deposit/preview';
@@ -42,8 +43,8 @@ const depositOnlyBadgeLabel = 'ReadOnly';
  */
 export function useDepositOperator(mode: OperatorEnvironmentMode) {
   const [form, setForm] = useState<DepositFormValues | null>(null);
-  const [apiKey, setApiKey] = useState('');
-  const apiKeyRef = useRef('');
+  const [apiKey, setApiKey] = usePersistentApiKey('');
+  const apiKeyRef = useRef(apiKey);
   const [commonSchema, setCommonSchema] = useState<DepositFieldMap>({});
   const [channelSchema, setChannelSchema] = useState<DepositFieldMap>({});
   const [channels, setChannels] = useState<string[]>([]);
@@ -101,6 +102,10 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
   useEffect(() => {
     void loadDefaults(form?.channel, { preserveMerchantRef: form?.commonValues.merchantRef ?? null });
   }, [mode]);
+
+  useEffect(() => {
+    apiKeyRef.current = apiKey;
+  }, [apiKey]);
 
   const createSavePayload = (values: DepositFormValues): DepositFormValues => ({
     ...values,

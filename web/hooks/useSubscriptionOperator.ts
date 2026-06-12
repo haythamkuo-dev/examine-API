@@ -27,6 +27,7 @@ import {
   updatePathValue,
 } from '../pages/helper/operatorShared';
 import type { RequestBuilderFieldOverride } from '../pages/requestBuilder';
+import { usePersistentApiKey } from './usePersistentApiKey';
 
 const defaultsEndpoint = '/api/subscription/defaults';
 const previewEndpoint = '/api/subscription/preview';
@@ -122,7 +123,7 @@ export const normalizeCreateResult = async (response: Response): Promise<ApiResu
  */
 export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
   const [form, setForm] = useState<SubscriptionFormValues | null>(null);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = usePersistentApiKey('');
   const [commonSchema, setCommonSchema] = useState<SubscriptionFieldMap>({});
   const [channelSchema, setChannelSchema] = useState<SubscriptionFieldMap>({});
   const [channels, setChannels] = useState<string[]>([]);
@@ -133,7 +134,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
   const [error, setError] = useState<string | null>(null);
   const [persistedMerchantRef, setPersistedMerchantRef] = useState<string | null>(null);
   const [hasMissingPlanConfig, setHasMissingPlanConfig] = useState(false);
-  const apiKeyRef = useRef('');
+  const apiKeyRef = useRef(apiKey);
   const latestDefaultsRequestIdRef = useRef(0);
   const defaultsLogContext = buildApiLogContext(defaultsEndpoint, mode);
   const previewLogContext = buildApiLogContext(previewEndpoint, mode);
@@ -206,6 +207,10 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
   useEffect(() => {
     void loadDefaults(form?.channel, { preserveMerchantRef: form?.commonValues.merchantRef ?? null });
   }, [mode]);
+
+  useEffect(() => {
+    apiKeyRef.current = apiKey;
+  }, [apiKey]);
 
   const createSavePayload = (values: SubscriptionFormValues): SubscriptionFormValues => ({
     ...values,

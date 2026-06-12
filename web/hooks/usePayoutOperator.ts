@@ -28,6 +28,7 @@ import type {
   RequestBuilderFieldOverride,
   SharedFieldSchema,
 } from '../pages/requestBuilder';
+import { usePersistentApiKey } from './usePersistentApiKey';
 
 const optionalFieldMarker = '非必填';
 const defaultsEndpoint = '/api/payout/defaults';
@@ -182,8 +183,8 @@ export const shouldHidePayoutField = (
  */
 export function usePayoutOperator(mode: OperatorEnvironmentMode) {
   const [form, setForm] = useState<PayoutFormValues | null>(null);
-  const [apiKey, setApiKey] = useState('');
-  const apiKeyRef = useRef('');
+  const [apiKey, setApiKey] = usePersistentApiKey('');
+  const apiKeyRef = useRef(apiKey);
   const [commonSchema, setCommonSchema] = useState<PayoutFieldMap>({});
   const [channelSchema, setChannelSchema] = useState<PayoutFieldMap>({});
   const [channels, setChannels] = useState<string[]>([]);
@@ -246,6 +247,10 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
       preserveMerchantReference: form?.commonValues.merchantReference ?? null,
     });
   }, [mode]);
+
+  useEffect(() => {
+    apiKeyRef.current = apiKey;
+  }, [apiKey]);
 
   const createSavePayload = (values: PayoutFormValues): PayoutFormValues => ({
     ...values,
