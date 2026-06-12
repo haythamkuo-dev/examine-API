@@ -27,7 +27,7 @@
     "preview:deposit": "bun run index.ts deposit preview",
     "preview:payout": "bun run index.ts payout preview",
     "preview:subscription": "bun run index.ts subscription preview",
-    "structure": "tree -a -L 4 -I 'node_modules|dist|design-system|.git|.claude|.github|.codex|.DS_Store|.gitignore|.gitnexus' > structure.md"
+    "structure": "tree -a -L 4 -I 'node_modules|dist|design-system|.git|.claude|.github|.codex|.DS_Store|.gitignore' > structure.md"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.9.0",

@@ -435,7 +435,7 @@ describe('DepositPage', () => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-001');
     });
 
-    expect(view.getByLabelText('Product number *')).toHaveValue('PROD-SECONDARY');
+    expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue('PROD-SECONDARY');
     expect(view.getByText(`api-key-${secondaryChannel}`)).toBeInTheDocument();
   });
 
@@ -458,14 +458,11 @@ describe('DepositPage', () => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-002');
     });
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Product number *'), {
-        target: { value: 'PROD-UPDATED' },
-      });
-    });
-
     expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-002');
-    expect(view.getByLabelText('Product number *')).toHaveValue('PROD-UPDATED');
+    const productNoField = view.getByRole('textbox', { name: /Product number/ });
+    expect(productNoField).toHaveProperty('readOnly', true);
+    expect(view.getByText('ReadOnly')).toBeInTheDocument();
+    expect(productNoField).toHaveValue(`PROD-${primaryChannel}`);
   });
 
   test('keeps the existing merchant reference when generation fails', async () => {
@@ -524,7 +521,7 @@ describe('DepositPage', () => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-003');
     });
 
-    expect(view.getByLabelText('Product number *')).toHaveValue('PROD-RELOADED');
+    expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue('PROD-RELOADED');
   });
 
   test('resets the api key to the backend default when the environment changes', async () => {
@@ -623,7 +620,7 @@ describe('DepositPage', () => {
 
     await waitFor(() => {
       expect(view.getByText(`Saved defaults for ${primaryChannel}.`)).toBeInTheDocument();
-      expect(view.getByLabelText('Product number *')).toHaveValue(`PROD-${primaryChannel}`);
+      expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue(`PROD-${primaryChannel}`);
       expect(view.getByText(`saved-api-key-${primaryChannel}`)).toBeInTheDocument();
       expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();
     });
@@ -742,7 +739,7 @@ describe('DepositPage', () => {
     });
 
     await view.findByText(`Saved defaults for ${primaryChannel}.`);
-    expect(view.getByLabelText('Product number *')).toHaveValue(`PROD-${primaryChannel}`);
+    expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue(`PROD-${primaryChannel}`);
     expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SAVE');
     expect(view.getByText(`saved-api-key-${primaryChannel}`)).toBeInTheDocument();
 
@@ -805,7 +802,7 @@ describe('DepositPage', () => {
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
 
     await act(async () => {
-      fireEvent.change(view.getByLabelText('Product number *'), {
+      fireEvent.change(view.getByRole('textbox', { name: /Product number/ }), {
         target: { value: '' },
       });
       fireEvent.click(view.getByRole('button', { name: 'Preview request' }));

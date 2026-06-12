@@ -31,6 +31,8 @@ const previewEndpoint = '/api/deposit/preview';
 const createEndpoint = '/api/deposit/create';
 const merchantRefEndpoint = '/api/deposit/merchant-ref';
 const merchantRefFieldKey = 'merchantRef';
+const productNoFieldKey = 'productNo';
+const depositOnlyBadgeLabel = 'ReadOnly';
 
 /**
  * Manages page-local state and request handlers for the deposit operator screen.
@@ -289,6 +291,10 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
   };
 
   const commonFieldOverrides: Record<string, RequestBuilderFieldOverride> = {
+    [productNoFieldKey]: {
+      readOnly: true,
+      badge: depositOnlyBadgeLabel,
+    },
     [merchantRefFieldKey]: {
       readOnly: true,
       action: {

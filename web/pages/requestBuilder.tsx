@@ -78,6 +78,7 @@ type RequestBuilderAction = {
 export type RequestBuilderFieldOverride = {
   action?: RequestBuilderAction;
   readOnly?: boolean;
+  badge?: string;
 };
 
 const FieldLabel = ({
@@ -260,7 +261,17 @@ export function SchemaFields(props: {
       return (
         <div className={fieldLabelClassName} key={pathKey}>
           <label htmlFor={inputId}>
-            <FieldLabel label={schema.label} required={schema.required} helperText={schema.helperText} />
+            <span className="flex flex-wrap items-center gap-2">
+              <FieldLabel label={schema.label} required={schema.required} helperText={schema.helperText} />
+              {fieldOverride?.badge ? (
+                <span
+                  aria-hidden="true"
+                  className="rounded-full border border-[var(--operator-card-soft-border)] bg-[var(--operator-card-soft-bg)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-muted)]"
+                >
+                  {fieldOverride.badge}
+                </span>
+              ) : null}
+            </span>
           </label>
           <input
             id={inputId}
@@ -281,7 +292,17 @@ export function SchemaFields(props: {
     return (
       <div className={fieldLabelClassName} key={pathKey}>
         <label htmlFor={inputId}>
-          <FieldLabel label={schema.label} required={schema.required} helperText={schema.helperText} />
+            <span className="flex flex-wrap items-center gap-2">
+              <FieldLabel label={schema.label} required={schema.required} helperText={schema.helperText} />
+              {fieldOverride?.badge ? (
+                <span
+                  aria-hidden="true"
+                  className="rounded-full border border-[var(--operator-card-soft-border)] bg-[var(--operator-card-soft-bg)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-muted)]"
+                >
+                  {fieldOverride.badge}
+                </span>
+              ) : null}
+            </span>
         </label>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
