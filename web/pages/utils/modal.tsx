@@ -146,7 +146,7 @@ export function ModalProvider({ children }: PropsWithChildren) {
       {modalOptions && portalRoot
         ? createPortal(
             <div
-              className="fixed inset-0 z-[1000] flex items-center justify-center bg-[rgba(2,6,23,0.70)] px-4 py-6 backdrop-blur-sm"
+              className="fixed inset-0 z-[1000] flex items-center justify-center bg-[var(--modal-backdrop-bg)] px-4 py-6 backdrop-blur-sm"
               onMouseDown={handleOverlayClick}
             >
               <div
@@ -156,7 +156,7 @@ export function ModalProvider({ children }: PropsWithChildren) {
                 aria-labelledby={titleId}
                 aria-describedby={modalOptions.description ? descriptionId : undefined}
                 tabIndex={-1}
-                className="w-full max-w-[min(92vw,640px)] rounded-[28px] border border-[var(--operator-card-border)] bg-[var(--operator-panel-bg)] p-6 text-[var(--color-text)] shadow-[0_24px_80px_rgba(0,0,0,0.35)] outline-none sm:p-8"
+                className="w-full max-w-[min(92vw,640px)] rounded-[28px] border border-[var(--operator-card-border)] bg-[var(--operator-panel-bg)] p-6 text-[var(--color-text)] shadow-[var(--modal-shadow)] outline-none sm:p-8"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">

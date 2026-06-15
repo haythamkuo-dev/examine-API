@@ -87,7 +87,7 @@ const AppShell = () => {
                     to="/deposit"
                     className={({ isActive }) =>
                       isActive
-                        ? `${navBaseClassName} border-[var(--color-cta)]/70 bg-[var(--color-cta)] text-white shadow-[0_0_0_1px_rgba(139,92,246,0.25)]`
+                        ? `${navBaseClassName} border-[var(--app-nav-active-border)] bg-[var(--app-nav-active-bg)] text-[var(--app-nav-active-text)] shadow-[var(--app-nav-active-shadow)]`
                         : `${navBaseClassName} border-[var(--app-nav-idle-border)] bg-[var(--app-nav-idle-bg)] text-[var(--app-nav-idle-text)] hover:border-[var(--color-primary)]/60 hover:bg-[var(--app-option-card-hover-bg)]`
                     }
                   >
@@ -97,7 +97,7 @@ const AppShell = () => {
                     to="/payout"
                     className={({ isActive }) =>
                       isActive
-                        ? `${navBaseClassName} border-[var(--color-cta)]/70 bg-[var(--color-cta)] text-white shadow-[0_0_0_1px_rgba(139,92,246,0.25)]`
+                        ? `${navBaseClassName} border-[var(--app-nav-active-border)] bg-[var(--app-nav-active-bg)] text-[var(--app-nav-active-text)] shadow-[var(--app-nav-active-shadow)]`
                         : `${navBaseClassName} border-[var(--app-nav-idle-border)] bg-[var(--app-nav-idle-bg)] text-[var(--app-nav-idle-text)] hover:border-[var(--color-primary)]/60 hover:bg-[var(--app-option-card-hover-bg)]`
                     }
                   >
@@ -107,7 +107,7 @@ const AppShell = () => {
                     to="/subscription"
                     className={({ isActive }) =>
                       isActive
-                        ? `${navBaseClassName} border-[var(--color-cta)]/70 bg-[var(--color-cta)] text-white shadow-[0_0_0_1px_rgba(139,92,246,0.25)]`
+                        ? `${navBaseClassName} border-[var(--app-nav-active-border)] bg-[var(--app-nav-active-bg)] text-[var(--app-nav-active-text)] shadow-[var(--app-nav-active-shadow)]`
                         : `${navBaseClassName} border-[var(--app-nav-idle-border)] bg-[var(--app-nav-idle-bg)] text-[var(--app-nav-idle-text)] hover:border-[var(--color-primary)]/60 hover:bg-[var(--app-option-card-hover-bg)]`
                     }
                   >

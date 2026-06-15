@@ -25,6 +25,12 @@
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  --focus-ring-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+  --selection-bg: rgba(139, 92, 246, 0.35);
+  --modal-backdrop-bg: rgba(2, 6, 23, 0.7);
+  --modal-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+  --accent-shadow-outline: 0 0 0 1px rgba(139, 92, 246, 0.25);
+  --color-on-cta: #f8fafc;
   color: var(--color-text);
   background: var(--app-canvas-bg);
 }
@@ -79,11 +85,11 @@ a {
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+  box-shadow: var(--focus-ring-shadow);
 }
 
 ::selection {
-  background: rgba(139, 92, 246, 0.35);
+  background: var(--selection-bg);
   color: var(--color-text);
 }
 

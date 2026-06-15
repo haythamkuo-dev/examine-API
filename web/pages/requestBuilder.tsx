@@ -316,14 +316,15 @@ export function SchemaFields(props: {
             onChange={(event) => onChange(fieldPath, event.target.value)}
           />
           {fieldOverride?.action ? (
-            <button
+            <ActionButton
               type="button"
-              className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border border-[var(--color-primary)]/35 bg-[var(--color-primary)] px-5 text-sm font-semibold text-[var(--button-secondary-text)] transition duration-200 hover:border-[var(--color-secondary)] hover:bg-[var(--color-secondary)] disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:bg-[var(--color-primary)]"
+              tone={fieldOverride.action.tone}
               onClick={fieldOverride.action.onClick}
               disabled={disabled}
+              className="min-h-11 shrink-0 px-4 sm:min-h-12 sm:px-5"
             >
               {fieldOverride.action.label}
-            </button>
+            </ActionButton>
           ) : null}
         </div>
       </div>

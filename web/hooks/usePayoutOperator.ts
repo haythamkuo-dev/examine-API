@@ -492,6 +492,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
       readOnly: true,
       action: {
         label: 'Generate',
+        tone: 'secondary',
         onClick: () => void generateMerchantReference(),
       },
     },
@@ -528,13 +529,14 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
       ? [
           {
             label: 'Reload defaults',
+            tone: 'ghost' as const,
             onClick: () =>
               void loadDefaults(form.channel, {
                 preserveMerchantReference: form.commonValues.merchantReference,
               }),
           },
-          { label: 'New draft', onClick: () => void loadDefaults(form.channel) },
-          { label: 'Preview request', onClick: () => void submitPreview() },
+          { label: 'New draft', tone: 'ghost' as const, onClick: () => void loadDefaults(form.channel) },
+          { label: 'Preview request', tone: 'secondary' as const, onClick: () => void submitPreview() },
           { label: 'Send request', tone: 'primary' as const, onClick: () => void submitCreate() },
           { label: 'Save defaults', tone: 'ghost' as const, onClick: () => void saveDefaults() },
         ]

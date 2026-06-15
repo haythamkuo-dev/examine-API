@@ -64,6 +64,10 @@ const createColorThemeVariables = (mode: ColorThemeMode): CSSProperties => {
     '--app-nav-idle-bg': 'rgba(255,255,255,0.05)',
     '--app-nav-idle-border': 'rgba(255,255,255,0.15)',
     '--app-nav-idle-text': 'rgba(248,250,252,0.74)',
+    '--app-nav-active-bg': 'linear-gradient(135deg,#8B5CF6,#7C3AED)',
+    '--app-nav-active-border': 'rgba(167,139,250,0.72)',
+    '--app-nav-active-text': '#F8FAFC',
+    '--app-nav-active-shadow': '0 18px 32px rgba(76,29,149,0.30)',
     '--operator-page-bg': 'linear-gradient(180deg,rgba(2,6,23,0.22),rgba(15,23,42,0.12))',
     '--operator-page-border': 'rgba(148,163,184,0.12)',
     '--operator-panel-bg': 'linear-gradient(180deg,rgba(15,23,42,0.94),rgba(8,15,29,0.9))',
@@ -99,7 +103,28 @@ const createColorThemeVariables = (mode: ColorThemeMode): CSSProperties => {
     '--operator-pre-bg': 'linear-gradient(180deg, rgba(2,6,23,0.96), rgba(15,23,42,0.84))',
     '--operator-pre-border': 'rgba(148,163,184,0.12)',
     '--operator-pre-text': '#DCE6EF',
-    '--button-secondary-text': '#0F172A',
+    '--focus-ring-shadow': '0 0 0 4px rgba(245,158,11,0.20)',
+    '--selection-bg': 'rgba(139,92,246,0.35)',
+    '--modal-backdrop-bg': 'rgba(2,6,23,0.70)',
+    '--modal-shadow': '0 24px 80px rgba(0,0,0,0.35)',
+    '--accent-shadow-outline': '0 0 0 1px rgba(139,92,246,0.25)',
+    '--color-on-cta': '#F8FAFC',
+    '--button-primary-bg': 'linear-gradient(135deg,#8B5CF6,#7C3AED)',
+    '--button-primary-border': 'rgba(167,139,250,0.68)',
+    '--button-primary-hover-bg': 'linear-gradient(135deg,#7C3AED,#6D28D9)',
+    '--button-primary-hover-border': 'rgba(196,181,253,0.82)',
+    '--button-primary-shadow': '0 16px 30px rgba(76,29,149,0.26)',
+    '--button-secondary-bg': 'linear-gradient(135deg,#F59E0B,#FBBF24)',
+    '--button-secondary-border': 'rgba(251,191,36,0.38)',
+    '--button-secondary-hover-bg': 'linear-gradient(135deg,#FBBF24,#FCD34D)',
+    '--button-secondary-hover-border': 'rgba(252,211,77,0.72)',
+    '--button-secondary-shadow': '0 14px 28px rgba(180,83,9,0.22)',
+    '--button-ghost-border': 'rgba(245,158,11,0.28)',
+    '--button-ghost-bg': 'rgba(255,255,255,0.04)',
+    '--button-ghost-text': '#F8FAFC',
+    '--button-ghost-hover-border': 'rgba(245,158,11,0.62)',
+    '--button-ghost-hover-bg': 'rgba(255,255,255,0.10)',
+    '--button-secondary-text': '#F8FAFC',
   };
 
   const lightTheme = {
@@ -123,6 +148,10 @@ const createColorThemeVariables = (mode: ColorThemeMode): CSSProperties => {
     '--app-nav-idle-bg': 'rgba(255,255,255,0.80)',
     '--app-nav-idle-border': 'rgba(148,163,184,0.22)',
     '--app-nav-idle-text': 'rgba(23,32,51,0.72)',
+    '--app-nav-active-bg': 'linear-gradient(135deg,#7C3AED,#6D28D9)',
+    '--app-nav-active-border': 'rgba(124,58,237,0.34)',
+    '--app-nav-active-text': '#F8FAFC',
+    '--app-nav-active-shadow': '0 18px 32px rgba(124,58,237,0.18)',
     '--operator-page-bg': 'linear-gradient(180deg,rgba(255,248,235,0.95),rgba(255,255,255,0.88))',
     '--operator-page-border': 'rgba(217,119,6,0.14)',
     '--operator-panel-bg': 'linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,248,235,0.96))',
@@ -158,6 +187,27 @@ const createColorThemeVariables = (mode: ColorThemeMode): CSSProperties => {
     '--operator-pre-bg': 'linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,248,235,0.88))',
     '--operator-pre-border': 'rgba(148,163,184,0.18)',
     '--operator-pre-text': '#243047',
+    '--focus-ring-shadow': '0 0 0 4px rgba(217,119,6,0.18)',
+    '--selection-bg': 'rgba(124,58,237,0.22)',
+    '--modal-backdrop-bg': 'rgba(255,244,228,0.68)',
+    '--modal-shadow': '0 24px 80px rgba(148,163,184,0.28)',
+    '--accent-shadow-outline': '0 0 0 1px rgba(124,58,237,0.18)',
+    '--color-on-cta': '#172033',
+    '--button-primary-bg': 'linear-gradient(135deg,#7C3AED,#6D28D9)',
+    '--button-primary-border': 'rgba(124,58,237,0.28)',
+    '--button-primary-hover-bg': 'linear-gradient(135deg,#6D28D9,#5B21B6)',
+    '--button-primary-hover-border': 'rgba(109,40,217,0.48)',
+    '--button-primary-shadow': '0 16px 30px rgba(124,58,237,0.18)',
+    '--button-secondary-bg': 'linear-gradient(135deg,#FFF2D6,#FDE7BF)',
+    '--button-secondary-border': 'rgba(217,119,6,0.20)',
+    '--button-secondary-hover-bg': 'linear-gradient(135deg,#FDE7BF,#FBD38D)',
+    '--button-secondary-hover-border': 'rgba(217,119,6,0.34)',
+    '--button-secondary-shadow': '0 14px 28px rgba(217,119,6,0.10)',
+    '--button-ghost-border': 'rgba(148,163,184,0.24)',
+    '--button-ghost-bg': 'rgba(255,255,255,0.72)',
+    '--button-ghost-text': '#172033',
+    '--button-ghost-hover-border': 'rgba(124,58,237,0.28)',
+    '--button-ghost-hover-bg': 'rgba(255,255,255,0.96)',
     '--button-secondary-text': '#172033',
   };
 
@@ -180,6 +230,30 @@ const readStoredEnvironmentMode = (): OperatorEnvironmentMode => {
 
   const storedMode = window.localStorage.getItem(operatorEnvironmentStorageKey);
   return storedMode === 'product' ? 'product' : 'local';
+};
+
+const applyColorThemeToDocument = (mode: ColorThemeMode): void => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  const themeVariables = createColorThemeVariables(mode);
+  const rootStyle = document.documentElement.style;
+
+  for (const [key, value] of Object.entries(themeVariables)) {
+    if (typeof value !== 'string') {
+      continue;
+    }
+
+    if (key === 'colorScheme') {
+      rootStyle.colorScheme = value;
+      continue;
+    }
+
+    rootStyle.setProperty(key, value);
+  }
+
+  document.documentElement.dataset.colorTheme = mode;
 };
 
 const SegmentedToggle = <T extends string>({
@@ -249,7 +323,7 @@ export function AppThemeProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(colorThemeStorageKey, colorTheme);
-      document.documentElement.style.colorScheme = colorTheme;
+      applyColorThemeToDocument(colorTheme);
     }
   }, [colorTheme]);
 
@@ -332,7 +406,6 @@ export function AppThemeFrame({
     <div
       className="min-h-screen bg-[var(--app-canvas-bg)] text-[var(--color-text)] transition-colors duration-200"
       data-color-theme={mode}
-      style={createColorThemeVariables(mode)}
     >
       {children}
     </div>
@@ -641,21 +714,22 @@ export function ActionButton(
     tone?: 'primary' | 'secondary' | 'ghost';
     disabled?: boolean;
     onClick?: () => void;
+    className?: string;
   }>,
 ) {
-  const { children, tone = 'secondary', ...buttonProps } = props;
+  const { children, tone = 'secondary', className = '', ...buttonProps } = props;
 
   const toneClassName =
     tone === 'primary'
-      ? 'border-[var(--color-cta)]/70 bg-[var(--color-cta)] text-white hover:border-[var(--color-cta)]/85 hover:brightness-110'
+      ? 'border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] text-[var(--color-on-cta)] shadow-[var(--button-primary-shadow)] hover:border-[var(--button-primary-hover-border)] hover:bg-[var(--button-primary-hover-bg)] hover:brightness-105'
       : tone === 'ghost'
-        ? 'border-[var(--color-primary)]/30 bg-[var(--operator-ghost-button-bg)] text-[var(--color-text)] hover:border-[var(--color-primary)]/70 hover:bg-[var(--operator-ghost-button-hover-bg)]'
-        : 'border-[var(--color-primary)]/35 bg-[var(--color-primary)] text-[var(--button-secondary-text)] hover:border-[var(--color-secondary)] hover:bg-[var(--color-secondary)]';
+        ? 'border-[var(--button-ghost-border)] bg-[var(--button-ghost-bg)] text-[var(--button-ghost-text)] hover:border-[var(--button-ghost-hover-border)] hover:bg-[var(--button-ghost-hover-bg)]'
+        : 'border-[var(--button-secondary-border)] bg-[var(--button-secondary-bg)] text-[var(--button-secondary-text)] shadow-[var(--button-secondary-shadow)] hover:border-[var(--button-secondary-hover-border)] hover:bg-[var(--button-secondary-hover-bg)]';
 
   return (
     <button
       {...buttonProps}
-      className={`inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border px-5 text-sm font-semibold transition duration-200 ${toneClassName} disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:brightness-100`}
+      className={`inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border px-5 text-sm font-semibold transition duration-200 ${toneClassName} disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:brightness-100 ${className}`.trim()}
     >
       {children}
     </button>
