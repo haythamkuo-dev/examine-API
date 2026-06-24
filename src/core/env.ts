@@ -221,13 +221,13 @@ const buildCliEnv = (params: {
     co_bank: params.env.PAYOUT_URL_BANK || '/s2s/v1/payout/orders/co/bank-transfer',
     co_wallet: params.env.PAYOUT_URL_CO_WALLET || '/s2s/v1/payout/orders/co/mobile-money',
     imps: params.env.PAYOUT_URL_IMPS || '/s2s/v1/payout/orders/in/imps',
-    bd_wallet: params.env.PAYOUT_URL_BD_WALLET || '/s2s/v1/payout/orders/bd/msobile-wallet',
+    bd_wallet: params.env.PAYOUT_URL_BD_WALLET || '/s2s/v1/payout/orders/bd/mobile-wallet',
   },
   payoutProductNos: {
     co_bank: params.env.PAYOUT_CO_BANK || 'PAY-FUTUREPAY_COLLECT-BANKTRANSFERCO-COP',
     co_wallet: params.env.PAYOUT_CO_WALLET || 'PAY-FUTUREPAY_COLLECT-MOBILEMONEY-COP',
     imps: params.env.PAYOUT_IMPS || 'PAY-EC-IMPS-INR',
-    bd_wallet: params.env.PAYOUT_BD_WALLET || 'PAY-FUTUREPAY_COLLECT-BD-MSOBILE-WALLET-COP',
+    bd_wallet: params.env.PAYOUT_BD_WALLET || 'PAY-FUTUREPAY_COLLECT-BD-MOBILE-WALLET-COP',
   },
   depositSouthAfricaCardsProductNo: params.env.DEPOSIT_SOUTHAFICA_CARDS || 'TEST_PRODUCT_123',
 });
