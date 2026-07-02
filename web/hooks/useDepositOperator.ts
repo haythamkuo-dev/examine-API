@@ -1,30 +1,27 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
 import type {
   DepositDefaultsResponse,
-  DepositDefaultsSavedResponse,
   DepositFieldMap,
   DepositFormValues,
   DepositPreviewResponse,
-  DepositRequestValues,
 } from '../../src/deposit/web';
 import {
   createDepositRequest,
   fetchDepositDefaults,
   generateDepositMerchantRef,
   previewDepositRequest,
-  saveDepositDefaults,
 } from '../pages/helper/operatorApi';
 import {
   extractMerchantReferenceValue,
   buildApiLogContext,
   buildFailureResult,
   getNumericStatus,
-  showApiKeyResetToast,
   type ApiResultView,
   type OperatorEnvironmentMode,
   updatePathValue,
 } from '../pages/helper/operatorShared';
 import type { RequestBuilderFieldOverride } from '../pages/requestBuilder';
+import { clearSessionDraft, readSessionDraft, writeSessionDraft } from './sessionDraft';
 import { usePersistentApiKey } from './usePersistentApiKey';
 
 const defaultsEndpoint = '/api/deposit/defaults';
@@ -58,18 +55,43 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
   const [channels, setChannels] = useState<string[]>([]);
   const [preview, setPreview] = useState<DepositPreviewResponse | null>(null);
   const [apiResult, setApiResult] = useState<ApiResultView | null>(null);
-  const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'generate' | 'save' | null>('defaults');
+  const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'generate' | null>('defaults');
   const [error, setError] = useState<string | null>(null);
-  const [persistedMerchantRef, setPersistedMerchantRef] = useState<string | null>(null);
   const defaultsLogContext = buildApiLogContext(defaultsEndpoint, mode);
   const previewLogContext = buildApiLogContext(previewEndpoint, mode);
   const createLogContext = buildApiLogContext(createEndpoint, mode);
   const generateLogContext = buildApiLogContext(merchantRefEndpoint, mode);
 
+  const buildDraftScope = (channel: DepositFormValues['channel']) => ({
+    domain: 'deposit' as const,
+    channel,
+    targetEnvironment: mode,
+  });
+
+  const commitForm = (nextForm: DepositFormValues) => {
+    setForm(nextForm);
+    writeSessionDraft(buildDraftScope(nextForm.channel), nextForm);
+  };
+
+  const updateForm = (updater: (current: DepositFormValues) => DepositFormValues) => {
+    setForm((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const nextForm = updater(current);
+      writeSessionDraft(buildDraftScope(nextForm.channel), nextForm);
+      return nextForm;
+    });
+  };
+
   const applyBundle = (
-    response: DepositDefaultsResponse | DepositDefaultsSavedResponse,
-    options?: { preserveMerchantRef?: string | null; preserveApiKey?: boolean },
+    response: DepositDefaultsResponse,
+    options?: { preserveApiKey?: boolean },
   ) => {
+    const draft = readSessionDraft<DepositFormValues>(buildDraftScope(response.form.channel));
+    const nextForm = draft || response.form;
+
     setChannels(response.availableChannels);
     if (options?.preserveApiKey) {
       apiKeyRef.current = apiKeyRef.current || response.apiKey;
@@ -79,24 +101,21 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
     }
     setCommonSchema(response.commonSchema);
     setChannelSchema(response.channelSchema);
-    setPersistedMerchantRef(response.form.commonValues.merchantRef);
-    setForm({
-      ...response.form,
-      commonValues: {
-        ...response.form.commonValues,
-        merchantRef: options?.preserveMerchantRef ?? response.form.commonValues.merchantRef,
-      },
-    });
+    setForm(nextForm);
   };
 
   const loadDefaults = async (
     channel?: string,
-    options?: { preserveMerchantRef?: string | null; preserveApiKey?: boolean },
+    options?: { clearDraft?: boolean; preserveApiKey?: boolean },
   ) => {
     setLoading('defaults');
     setError(null);
     setPreview(null);
     setApiResult(null);
+
+    if (channel && options?.clearDraft) {
+      clearSessionDraft(buildDraftScope(channel as DepositFormValues['channel']));
+    }
 
     try {
       const response = await fetchDepositDefaults(mode, channel);
@@ -112,44 +131,28 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
   };
 
   useEffect(() => {
-    void loadDefaults(form?.channel, { preserveMerchantRef: form?.commonValues.merchantRef ?? null });
+    void loadDefaults(form?.channel);
   }, [mode]);
 
   useEffect(() => {
     apiKeyRef.current = apiKey;
   }, [apiKey]);
 
-  const createSavePayload = (values: DepositFormValues): DepositFormValues => ({
-    ...values,
-    commonValues: {
-      ...values.commonValues,
-      merchantRef: persistedMerchantRef ?? values.commonValues.merchantRef,
-    },
-  });
-
   const updateCommonValue = (key: string, value: string) => {
-    setForm((current) =>
-      current
-        ? {
-            ...current,
-            commonValues: {
-              ...current.commonValues,
-              [key]: value,
-            },
-          }
-        : current,
-    );
+    updateForm((current) => ({
+        ...current,
+        commonValues: {
+          ...current.commonValues,
+          [key]: value,
+        },
+      }));
   };
 
   const updateChannelValue = (path: Array<string | number>, nextValue: unknown) => {
-    setForm((current) =>
-      current
-        ? {
-            ...current,
-            channelValues: updatePathValue(current.channelValues, path, nextValue),
-          }
-        : current,
-    );
+    updateForm((current) => ({
+        ...current,
+        channelValues: updatePathValue(current.channelValues, path, nextValue),
+      }));
   };
 
   const submitPreview = async () => {
@@ -168,17 +171,13 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
       );
 
       if (merchantRef) {
-        setForm((current) =>
-          current
-            ? {
-                ...current,
-                commonValues: {
-                  ...current.commonValues,
-                  merchantRef,
-                },
-              }
-            : current,
-        );
+        updateForm((current) => ({
+            ...current,
+            commonValues: {
+              ...current.commonValues,
+              merchantRef,
+            },
+          }));
       }
 
       setPreview(response);
@@ -240,18 +239,13 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
 
     try {
       const response = await generateDepositMerchantRef(mode);
-
-      setForm((current) =>
-        current
-          ? {
-              ...current,
-              commonValues: {
-                ...current.commonValues,
-                merchantRef: response.merchantRef,
-              },
-            }
-          : current,
-      );
+      updateForm((current) => ({
+        ...current,
+        commonValues: {
+          ...current.commonValues,
+          merchantRef: response.merchantRef,
+        },
+      }));
       setApiResult({
         ok: true,
         action: 'generate',
@@ -267,41 +261,6 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
       });
     } catch (caught) {
       setApiResult(buildFailureResult('generate', caught, generateLogContext));
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const saveDefaults = async () => {
-    if (!form) return;
-
-    setLoading('save');
-
-    try {
-      const response = await saveDepositDefaults(
-        mode,
-        form.channel,
-        createSavePayload(form),
-      );
-      apiKeyRef.current = response.apiKey;
-      setApiKey(response.apiKey);
-      setPersistedMerchantRef(response.form.commonValues.merchantRef);
-      showApiKeyResetToast();
-      setApiResult({
-        ok: true,
-        action: 'save',
-        status: getNumericStatus(response),
-        message: `Saved defaults for ${response.channel}.`,
-        logContext: defaultsLogContext,
-        raw: {
-          ok: true,
-          action: 'save',
-          status: getNumericStatus(response),
-          data: response,
-        },
-      });
-    } catch (caught) {
-      setApiResult(buildFailureResult('save', caught, defaultsLogContext));
     } finally {
       setLoading(null);
     }
@@ -342,23 +301,33 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
     },
     updateCommonValue,
     updateChannelValue,
-    onChannelChange: (channel: string) =>
+    onChannelChange: (channel: string) => {
+      setForm((current) =>
+        current
+          ? {
+              ...current,
+              channel: channel as DepositFormValues['channel'],
+            }
+          : current,
+      );
       void loadDefaults(channel, {
-        preserveMerchantRef: form?.commonValues.merchantRef ?? null,
         preserveApiKey: shouldPreserveDepositApiKey(form?.channel, channel),
-      }),
+      });
+    },
     actions: form
       ? [
           {
             label: 'Reload defaults',
             tone: 'ghost' as const,
-            onClick: () =>
-              void loadDefaults(form.channel, { preserveMerchantRef: form.commonValues.merchantRef }),
+            onClick: () => void loadDefaults(form.channel, { preserveApiKey: true }),
           },
-          { label: 'New draft', tone: 'ghost' as const, onClick: () => void loadDefaults(form.channel) },
+          {
+            label: 'New draft',
+            tone: 'ghost' as const,
+            onClick: () => void loadDefaults(form.channel, { clearDraft: true, preserveApiKey: true }),
+          },
           { label: 'Preview request', tone: 'secondary' as const, onClick: () => void submitPreview() },
           { label: 'Send request', tone: 'primary' as const, onClick: () => void submitCreate() },
-          { label: 'Save defaults', tone: 'ghost' as const, onClick: () => void saveDefaults() },
         ]
       : [],
   };

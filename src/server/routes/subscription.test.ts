@@ -1,6 +1,4 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 import { getCliEnvRegistry } from '../../core/env';
 import { startApiTestServer, type ApiTestServerContext } from '../../../tests/server-setup';
 
@@ -366,61 +364,4 @@ describe('subscription API routes', () => {
     }
   });
 
-  test('PUT /api/subscription/defaults persists subscription defaults into the isolated fixture copy', async () => {
-    const requestBody = {
-      apiKey: 'manual-subscription-token',
-      channel: 'default',
-      commonValues: {
-        merchantRef: 'TEST_SUB_OVERRIDDEN',
-        returnUrl: 'https://merchant.example.com/subscription/updated',
-      },
-      channelValues: {
-        amount: { amount: '111.00', currency_code: 'USD' },
-        interval_unit: 'day',
-        interval_count: 1,
-        times: 6,
-        product_detail: '測試訂閱商品描述加簽',
-        product_name: 'Updated subscription product',
-        consumer_id: 'user_999',
-        consumer_profile: {
-          name: '王小明',
-          phone: '0912345678',
-          email: 'test@example.com',
-          country_code: 'ZA',
-        },
-        origin: 'https://www.amazon.com/',
-        payment_instrument: {
-          os_type: 'WEB',
-          terminal_type: 'WEB',
-        },
-      },
-    };
-
-    const updateResponse = await context.requestApi('/api/subscription/defaults?channel=default', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-    });
-
-    expect(updateResponse.status).toBe(200);
-
-    const updatedDefaultsResponse = await context.requestApi('/api/subscription/defaults?channel=default');
-    const updatedDefaults = (await updatedDefaultsResponse.json()) as Record<string, unknown>;
-    const form = updatedDefaults.form as Record<string, unknown>;
-    const commonValues = form.commonValues as Record<string, unknown>;
-    const channelValues = form.channelValues as Record<string, unknown>;
-
-    expect(commonValues.merchantRef).toBe('TEST_SUB_OVERRIDDEN');
-    expect(commonValues.returnUrl).toBe('https://merchant.example.com/subscription/updated');
-    expect(channelValues.product_name).toBe('Updated subscription product');
-    expect(updatedDefaults.apiKey).toBe('payout-token');
-
-    const savedCommon = await readFile(join(context.subscriptionPresetDirPath, 'common.json'), 'utf8');
-    const savedChannel = await readFile(join(context.subscriptionPresetDirPath, 'channels', 'default.json'), 'utf8');
-
-    expect(savedCommon).toContain('"merchant_ref": "TEST_SUB_OVERRIDDEN"');
-    expect(savedCommon).toContain('"return_url": "https://merchant.example.com/subscription/updated"');
-    expect(savedChannel).toContain('"product_name": "Updated subscription product"');
-    expect(savedChannel).not.toContain('subs_plan_id');
-  });
 });

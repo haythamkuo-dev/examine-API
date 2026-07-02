@@ -16,7 +16,6 @@ import type {
   PayoutRequestValues,
 } from '../../src/payout/web';
 import { normalizeCreateResult, PayoutPage, shouldHidePayoutField } from './PayoutPage';
-import { apiKeyResetToastMessage } from './helper/operatorShared';
 import { AppThemeProvider } from './pageChrome';
 import { ModalProvider } from './utils/modal';
 
@@ -231,6 +230,7 @@ beforeEach(() => {
   fetchRecords.length = 0;
   routeHandlers = new Map<string, MockRouteHandler>();
   localStorage.clear();
+  sessionStorage.clear();
 
   setRouteHandler(defaultsEndpoint, () => jsonResponse(createDefaultsResponse(primaryChannel)));
 
@@ -360,7 +360,7 @@ describe('PayoutPage', () => {
     });
   });
 
-  test('preserves the generated merchant reference across channel switches and reloads', async () => {
+  test('restores the channel-specific merchant reference draft when returning to a previous channel', async () => {
     setRouteHandler(merchantReferenceEndpoint, () =>
       jsonResponse(createMerchantReferenceResponse('GENERATED-PAYOUT-002')),
     );
@@ -435,12 +435,22 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-002');
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-secondary-server');
       expect(view.getByLabelText('Product number *')).toHaveValue('product-secondary-server');
     });
 
     expect(view.getByText('typed-payout-key')).toBeInTheDocument();
     expect(view.queryByText(`api-key-${secondaryChannel}`)).toBeNull();
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Channel'), {
+        target: { value: primaryChannel },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-002');
+    });
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
@@ -574,16 +584,11 @@ describe('PayoutPage', () => {
     expect(previewCall?.body?.apiKey).toBe(`api-key-${primaryChannel}`);
   });
 
-  test('new draft resets the generated merchant reference and save strips it from the payload', async () => {
+  test('new draft resets the generated merchant reference to backend defaults', async () => {
     setRouteHandler(merchantReferenceEndpoint, () =>
       jsonResponse(createMerchantReferenceResponse('GENERATED-PAYOUT-003')),
     );
-    setRouteHandler(defaultsEndpoint, ({ url, method, body }) => {
-      if (method === 'PUT') {
-        expect(body?.commonValues.merchantReference).toBe(`merchant-${primaryChannel}`);
-        return jsonResponse(createSavedDefaultsResponse(primaryChannel, 'product-saved'));
-      }
-
+    setRouteHandler(defaultsEndpoint, ({ url }) => {
       const parsedUrl = new URL(url, 'http://localhost');
 
       if (parsedUrl.searchParams.get('channel') === primaryChannel) {
@@ -615,16 +620,6 @@ describe('PayoutPage', () => {
 
     await waitFor(() => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-003');
-    });
-
-    await act(async () => {
-      fireEvent.click(view.getByRole('button', { name: 'Save defaults' }));
-    });
-
-    await waitFor(() => {
-      expect(view.getByText(`Saved defaults for ${primaryChannel}.`)).toBeInTheDocument();
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-003');
-      expect(view.getByLabelText('Product number *')).toHaveValue(`product-${primaryChannel}`);
     });
 
     await act(async () => {
@@ -813,36 +808,6 @@ describe('PayoutPage', () => {
     );
 
     expect(productDefaultsCall).toBeDefined();
-  });
-
-  test('save defaults resets api key to the backend default', async () => {
-    setRouteHandler(defaultsEndpoint, ({ method, body }) => {
-      if (method === 'PUT') {
-        expect(body?.apiKey).toBeUndefined();
-        return jsonResponse(createSavedDefaultsResponse(primaryChannel, 'product-saved'));
-      }
-
-      return jsonResponse(createDefaultsResponse(primaryChannel));
-    });
-
-    const view = renderPayoutPage();
-
-    await waitFor(() => {
-      expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
-    });
-
-    await updateApiKeyFromModal(view, 'typed-payout-key');
-
-    await act(async () => {
-      fireEvent.click(view.getByRole('button', { name: 'Save defaults' }));
-    });
-
-    await waitFor(() => {
-      expect(view.getByText(`Saved defaults for ${primaryChannel}.`)).toBeInTheDocument();
-      expect(view.getByLabelText('Product number *')).toHaveValue(`product-${primaryChannel}`);
-      expect(view.getByText(`saved-api-key-${primaryChannel}`)).toBeInTheDocument();
-      expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();
-    });
   });
 
   test('cancels api key edits without applying the draft value', async () => {

@@ -1,11 +1,11 @@
 import type { PayoutServiceDeps } from '../../payout/service';
 import { createPayoutService, getRequestedPayoutChannel } from '../../payout/service';
 import { validatePayoutForm } from '../../payout/validation';
-import type { PayoutFormValues, PayoutRequestValues } from '../../payout/web';
+import type { PayoutRequestValues } from '../../payout/web';
 import { handlePresetBackedRoute } from './_shared';
 
 /**
- * Handles payout API routes for defaults, preview, create, and preset persistence.
+ * Handles payout API routes for defaults, preview, and create requests.
  *
  * @param options Route invocation options.
  * @param options.request Incoming HTTP request.
@@ -30,7 +30,6 @@ export const handlePayoutRoute = async ({
     unknown,
     ReturnType<typeof createPayoutService>,
     Awaited<ReturnType<ReturnType<typeof createPayoutService>['getDefaultsForTarget']>>,
-    PayoutFormValues,
     Awaited<ReturnType<ReturnType<typeof createPayoutService>['execute']>>
   >({
     request,
@@ -43,8 +42,6 @@ export const handlePayoutRoute = async ({
     resolveChannel: getRequestedPayoutChannel,
     resolveChannelFromValues: (values) => values.channel,
     getDefaults: (service, channel, targetEnvironment) => service.getDefaultsForTarget(channel, targetEnvironment),
-    saveDefaults: (service, channel, values, targetEnvironment) =>
-      service.saveDefaultsForTarget(channel, values, targetEnvironment),
     generateMerchantRef: (service) => service.generateMerchantReference(),
     preview: (service, values, targetEnvironment) => service.preview(values, targetEnvironment),
     execute: (service, values, targetEnvironment) => service.execute(values, targetEnvironment),

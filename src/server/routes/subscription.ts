@@ -7,7 +7,6 @@ import {
 import { validateSubscriptionForm } from '../../subscription/validation';
 import {
   missingSubscriptionPlanCode,
-  type SubscriptionFormValues,
   type SubscriptionRequestValues,
 } from '../../subscription/web';
 import { badRequest, json } from '../http';
@@ -17,7 +16,7 @@ const subscriptionPlanBadRequest = (message: string): Response =>
   json({ ok: false, code: missingSubscriptionPlanCode, message }, { status: 400 });
 
 /**
- * Handles subscription API routes for defaults, preview, create, and preset persistence.
+ * Handles subscription API routes for defaults, preview, and create requests.
  *
  * @param options Route invocation options.
  * @param options.request Incoming HTTP request.
@@ -42,7 +41,6 @@ export const handleSubscriptionRoute = async ({
     unknown,
     ReturnType<typeof createSubscriptionService>,
     Awaited<ReturnType<ReturnType<typeof createSubscriptionService>['getDefaultsForTarget']>>,
-    SubscriptionFormValues,
     Awaited<ReturnType<ReturnType<typeof createSubscriptionService>['execute']>>,
     Response
   >({
@@ -56,8 +54,6 @@ export const handleSubscriptionRoute = async ({
     resolveChannel: getRequestedSubscriptionChannel,
     resolveChannelFromValues: (values) => values.channel,
     getDefaults: (service, channel, targetEnvironment) => service.getDefaultsForTarget(channel, targetEnvironment),
-    saveDefaults: (service, channel, values, targetEnvironment) =>
-      service.saveDefaultsForTarget(channel, values, targetEnvironment),
     generateMerchantRef: (service) => service.generateMerchantRef(),
     preview: (service, values, targetEnvironment) => service.preview(values, targetEnvironment),
     execute: (service, values, targetEnvironment) => service.execute(values, targetEnvironment),

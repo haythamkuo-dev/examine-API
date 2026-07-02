@@ -48,25 +48,6 @@ export const postOperatorJson = <T>(
   });
 
 /**
- * Sends a JSON PUT request to an operator API endpoint.
- *
- * @param path Absolute operator API path starting with `/`.
- * @param mode Operator environment selected in the frontend UI.
- * @param body JSON-serializable request body.
- * @returns Parsed JSON response payload.
- * @throws {ApiRequestError} When the API response is non-OK, empty, non-JSON, or malformed.
- */
-export const putOperatorJson = <T>(
-  path: string,
-  mode: OperatorEnvironmentMode,
-  body: unknown,
-): Promise<T> =>
-  fetchOperatorJson<T>(path, mode, {
-    method: 'PUT',
-    body: JSON.stringify(body),
-  });
-
-/**
  * Sends a raw operator request for flows that normalize the response later.
  *
  * @param path Absolute operator API path starting with `/`.

@@ -1,11 +1,9 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
 import type {
   SubscriptionDefaultsResponse,
-  SubscriptionDefaultsSavedResponse,
   SubscriptionFieldMap,
   SubscriptionFormValues,
   SubscriptionPreviewResponse,
-  SubscriptionRequestValues,
 } from '../../src/subscription/web';
 import { missingSubscriptionPlanCode } from '../../src/subscription/web';
 import {
@@ -13,7 +11,6 @@ import {
   fetchSubscriptionDefaults,
   generateSubscriptionMerchantRef,
   previewSubscriptionRequest,
-  saveSubscriptionDefaults,
 } from '../pages/helper/operatorApi';
 import {
   ApiRequestError,
@@ -21,12 +18,12 @@ import {
   buildApiLogContext,
   buildFailureResult,
   getNumericStatus,
-  showApiKeyResetToast,
   type ApiResultView,
   type OperatorEnvironmentMode,
   updatePathValue,
 } from '../pages/helper/operatorShared';
 import type { RequestBuilderFieldOverride } from '../pages/requestBuilder';
+import { clearSessionDraft, readSessionDraft, writeSessionDraft } from './sessionDraft';
 import { usePersistentApiKey } from './usePersistentApiKey';
 
 const defaultsEndpoint = '/api/subscription/defaults';
@@ -34,7 +31,6 @@ const previewEndpoint = '/api/subscription/preview';
 const createEndpoint = '/api/subscription/create';
 const merchantRefEndpoint = '/api/subscription/merchant-ref';
 const merchantRefFieldKey = 'merchantRef';
-const subscriptionDraftPlanIdKey = 'subs_plan_id';
 const isBlankMerchantRef = (value: string): boolean => !value.trim();
 const missingPlanMessageFallback = 'Subscription plan configuration is missing for the selected channel.';
 
@@ -130,9 +126,8 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
   const [resolvedPlanId, setResolvedPlanId] = useState('');
   const [preview, setPreview] = useState<SubscriptionPreviewResponse | null>(null);
   const [apiResult, setApiResult] = useState<ApiResultView | null>(null);
-  const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'generate' | 'save' | null>('defaults');
+  const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'generate' | null>('defaults');
   const [error, setError] = useState<string | null>(null);
-  const [persistedMerchantRef, setPersistedMerchantRef] = useState<string | null>(null);
   const [hasMissingPlanConfig, setHasMissingPlanConfig] = useState(false);
   const apiKeyRef = useRef(apiKey);
   const latestDefaultsRequestIdRef = useRef(0);
@@ -141,10 +136,36 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
   const createLogContext = buildApiLogContext(createEndpoint, mode);
   const generateLogContext = buildApiLogContext(merchantRefEndpoint, mode);
 
+  const buildDraftScope = (channel: SubscriptionFormValues['channel']) => ({
+    domain: 'subscription' as const,
+    channel,
+    targetEnvironment: mode,
+  });
+
+  const commitForm = (nextForm: SubscriptionFormValues) => {
+    setForm(nextForm);
+    writeSessionDraft(buildDraftScope(nextForm.channel), nextForm);
+  };
+
+  const updateForm = (updater: (current: SubscriptionFormValues) => SubscriptionFormValues) => {
+    setForm((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const nextForm = updater(current);
+      writeSessionDraft(buildDraftScope(nextForm.channel), nextForm);
+      return nextForm;
+    });
+  };
+
   const applyBundle = (
-    response: SubscriptionDefaultsResponse | SubscriptionDefaultsSavedResponse,
-    options?: { preserveMerchantRef?: string | null; preserveApiKey?: boolean },
+    response: SubscriptionDefaultsResponse,
+    options?: { preserveApiKey?: boolean },
   ) => {
+    const draft = readSessionDraft<SubscriptionFormValues>(buildDraftScope(response.form.channel));
+    const nextForm = draft || response.form;
+
     setChannels(response.availableChannels);
     if (options?.preserveApiKey) {
       apiKeyRef.current = apiKeyRef.current || response.apiKey;
@@ -155,19 +176,12 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     setCommonSchema(response.commonSchema);
     setChannelSchema(response.channelSchema);
     setResolvedPlanId(response.resolvedPlanId);
-    setPersistedMerchantRef(response.form.commonValues.merchantRef);
-    setForm({
-      ...response.form,
-      commonValues: {
-        ...response.form.commonValues,
-        merchantRef: options?.preserveMerchantRef ?? response.form.commonValues.merchantRef,
-      },
-    });
+    setForm(nextForm);
   };
 
   const loadDefaults = async (
     channel?: string,
-    options?: { preserveMerchantRef?: string | null; preserveApiKey?: boolean },
+    options?: { clearDraft?: boolean; preserveApiKey?: boolean },
   ) => {
     const requestId = latestDefaultsRequestIdRef.current + 1;
     latestDefaultsRequestIdRef.current = requestId;
@@ -176,6 +190,10 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     setHasMissingPlanConfig(false);
     setPreview(null);
     setApiResult(null);
+
+    if (channel && options?.clearDraft) {
+      clearSessionDraft(buildDraftScope(channel as SubscriptionFormValues['channel']));
+    }
 
     try {
       const response = await fetchSubscriptionDefaults(mode, channel);
@@ -209,47 +227,28 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
   };
 
   useEffect(() => {
-    void loadDefaults(form?.channel, { preserveMerchantRef: form?.commonValues.merchantRef ?? null });
+    void loadDefaults(form?.channel);
   }, [mode]);
 
   useEffect(() => {
     apiKeyRef.current = apiKey;
   }, [apiKey]);
 
-  const createSavePayload = (values: SubscriptionFormValues): SubscriptionFormValues => ({
-    ...values,
-    commonValues: {
-      ...values.commonValues,
-      merchantRef: persistedMerchantRef ?? values.commonValues.merchantRef,
-    },
-    channelValues: Object.fromEntries(
-      Object.entries(values.channelValues).filter(([key]) => key !== subscriptionDraftPlanIdKey),
-    ),
-  });
-
   const updateCommonValue = (key: string, value: string) => {
-    setForm((current) =>
-      current
-        ? {
-            ...current,
-            commonValues: {
-              ...current.commonValues,
-              [key]: value,
-            },
-          }
-        : current,
-    );
+    updateForm((current) => ({
+        ...current,
+        commonValues: {
+          ...current.commonValues,
+          [key]: value,
+        },
+      }));
   };
 
   const updateChannelValue = (path: Array<string | number>, nextValue: unknown) => {
-    setForm((current) =>
-      current
-        ? {
-            ...current,
-            channelValues: updatePathValue(current.channelValues, path, nextValue),
-          }
-        : current,
-    );
+    updateForm((current) => ({
+        ...current,
+        channelValues: updatePathValue(current.channelValues, path, nextValue),
+      }));
   };
 
   const ensureMerchantRef = async (
@@ -268,17 +267,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
       },
     };
 
-    setForm((current) =>
-      current
-        ? {
-            ...current,
-            commonValues: {
-              ...current.commonValues,
-              merchantRef: response.merchantRef,
-            },
-          }
-        : current,
-    );
+    commitForm(nextValues);
 
     return nextValues;
   };
@@ -299,17 +288,13 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
       );
 
       if (merchantRef) {
-        setForm((current) =>
-          current
-            ? {
-                ...current,
-                commonValues: {
-                  ...current.commonValues,
-                  merchantRef,
-                },
-              }
-            : current,
-        );
+        updateForm((current) => ({
+            ...current,
+            commonValues: {
+              ...current.commonValues,
+              merchantRef,
+            },
+          }));
       }
 
       setPreview(response);
@@ -363,17 +348,13 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
 
     try {
       const response = await generateSubscriptionMerchantRef(mode);
-      setForm((current) =>
-        current
-          ? {
-              ...current,
-              commonValues: {
-                ...current.commonValues,
-                merchantRef: response.merchantRef,
-              },
-            }
-          : current,
-      );
+      updateForm((current) => ({
+        ...current,
+        commonValues: {
+          ...current.commonValues,
+          merchantRef: response.merchantRef,
+        },
+      }));
       setApiResult({
         ok: true,
         action: 'generate',
@@ -389,42 +370,6 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
       });
     } catch (caught) {
       setApiResult(buildFailureResult('generate', caught, generateLogContext));
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const saveDefaults = async () => {
-    if (!form) return;
-
-    setLoading('save');
-
-    try {
-      const response = await saveSubscriptionDefaults(
-        mode,
-        form.channel,
-        createSavePayload(form),
-      );
-      apiKeyRef.current = response.apiKey;
-      setApiKey(response.apiKey);
-      setResolvedPlanId(response.resolvedPlanId);
-      setPersistedMerchantRef(response.form.commonValues.merchantRef);
-      showApiKeyResetToast();
-      setApiResult({
-        ok: true,
-        action: 'save',
-        status: getNumericStatus(response),
-        message: `Saved defaults for ${response.channel}.`,
-        logContext: defaultsLogContext,
-        raw: {
-          ok: true,
-          action: 'save',
-          status: getNumericStatus(response),
-          data: response,
-        },
-      });
-    } catch (caught) {
-      setApiResult(buildFailureResult('save', caught, defaultsLogContext));
     } finally {
       setLoading(null);
     }
@@ -477,7 +422,6 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
           : current,
       );
       void loadDefaults(channel, {
-        preserveMerchantRef: form?.commonValues.merchantRef ?? null,
         preserveApiKey: true,
       });
     },
@@ -486,15 +430,17 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
           {
             label: 'Reload defaults',
             tone: 'ghost' as const,
-            onClick: () =>
-              void loadDefaults(form.channel, { preserveMerchantRef: form.commonValues.merchantRef }),
+            onClick: () => void loadDefaults(form.channel, { preserveApiKey: true }),
           },
-          { label: 'New draft', tone: 'ghost' as const, onClick: () => void loadDefaults(form.channel) },
+          {
+            label: 'New draft',
+            tone: 'ghost' as const,
+            onClick: () => void loadDefaults(form.channel, { clearDraft: true, preserveApiKey: true }),
+          },
           ...(canSubmit
             ? [
                 { label: 'Preview request', tone: 'secondary' as const, onClick: () => void submitPreview() },
                 { label: 'Send request', tone: 'primary' as const, onClick: () => void submitCreate() },
-                { label: 'Save defaults', tone: 'ghost' as const, onClick: () => void saveDefaults() },
               ]
             : []),
         ]

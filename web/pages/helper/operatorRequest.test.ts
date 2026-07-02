@@ -7,7 +7,6 @@ import {
   buildChannelQuery,
   fetchOperatorJson,
   postOperatorJson,
-  putOperatorJson,
   sendOperatorRequest,
 } from './operatorRequest';
 
@@ -76,25 +75,6 @@ describe('operatorRequest', () => {
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     await expect(postOperatorJson<{ ok: boolean }>('/api/deposit/preview', 'local', { channel: 'alpha' })).resolves.toEqual({
-      ok: true,
-    });
-  });
-
-  test('putOperatorJson sends a JSON body with PUT', async () => {
-    const fetchMock = mock(async (input: string | URL | Request, init?: RequestInit) => {
-      expect(input).toBe('/api/deposit/defaults?channel=alpha');
-      expect(init?.method).toBe('PUT');
-      expect(init?.body).toBe(JSON.stringify({ channel: 'alpha' }));
-
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    });
-
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
-
-    await expect(putOperatorJson<{ ok: boolean }>('/api/deposit/defaults?channel=alpha', 'local', { channel: 'alpha' })).resolves.toEqual({
       ok: true,
     });
   });

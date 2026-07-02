@@ -2,23 +2,19 @@ import { startTransition, useEffect, useRef, useState } from 'react';
 import type {
   PayoutCreateResponse,
   PayoutDefaultsResponse,
-  PayoutDefaultsSavedResponse,
   PayoutFieldMap,
   PayoutFormValues,
   PayoutPreviewResponse,
-  PayoutRequestValues,
 } from '../../src/payout/web';
 import {
   createPayoutRequest,
   fetchPayoutDefaults,
   generatePayoutMerchantReference,
   previewPayoutRequest,
-  savePayoutDefaults,
 } from '../pages/helper/operatorApi';
 import {
   extractMerchantReferenceValue,
   buildApiLogContext,
-  showApiKeyResetToast,
   type ApiResultView,
   type OperatorEnvironmentMode,
   updatePathValue,
@@ -28,6 +24,7 @@ import type {
   RequestBuilderFieldOverride,
   SharedFieldSchema,
 } from '../pages/requestBuilder';
+import { clearSessionDraft, readSessionDraft, writeSessionDraft } from './sessionDraft';
 import { usePersistentApiKey } from './usePersistentApiKey';
 
 const optionalFieldMarker = '非必填';
@@ -198,19 +195,43 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
   const [channels, setChannels] = useState<string[]>([]);
   const [preview, setPreview] = useState<PayoutPreviewResponse | null>(null);
   const [result, setResult] = useState<ApiResultView | null>(null);
-  const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'generate' | 'save' | null>('defaults');
+  const [loading, setLoading] = useState<'defaults' | 'preview' | 'create' | 'generate' | null>('defaults');
   const [error, setError] = useState<string | null>(null);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [persistedMerchantReference, setPersistedMerchantReference] = useState<string | null>(null);
   const defaultsLogContext = buildApiLogContext(defaultsEndpoint, mode);
   const previewLogContext = buildApiLogContext(previewEndpoint, mode);
   const createLogContext = buildApiLogContext(createEndpoint, mode);
   const generateLogContext = buildApiLogContext(merchantReferenceEndpoint, mode);
 
+  const buildDraftScope = (channel: PayoutFormValues['channel']) => ({
+    domain: 'payout' as const,
+    channel,
+    targetEnvironment: mode,
+  });
+
+  const commitForm = (nextForm: PayoutFormValues) => {
+    setForm(nextForm);
+    writeSessionDraft(buildDraftScope(nextForm.channel), nextForm);
+  };
+
+  const updateForm = (updater: (current: PayoutFormValues) => PayoutFormValues) => {
+    setForm((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const nextForm = updater(current);
+      writeSessionDraft(buildDraftScope(nextForm.channel), nextForm);
+      return nextForm;
+    });
+  };
+
   const applyBundle = (
-    response: PayoutDefaultsResponse | PayoutDefaultsSavedResponse,
-    options?: { preserveMerchantReference?: string | null; preserveApiKey?: boolean },
+    response: PayoutDefaultsResponse,
+    options?: { preserveApiKey?: boolean },
   ) => {
+    const draft = readSessionDraft<PayoutFormValues>(buildDraftScope(response.form.channel));
+    const nextForm = draft || response.form;
+
     setChannels(response.availableChannels);
     if (options?.preserveApiKey) {
       apiKeyRef.current = apiKeyRef.current || response.apiKey;
@@ -220,26 +241,21 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     }
     setCommonSchema(response.commonSchema);
     setChannelSchema(response.channelSchema);
-    setPersistedMerchantReference(response.form.commonValues.merchantReference);
-    setForm({
-      ...response.form,
-      commonValues: {
-        ...response.form.commonValues,
-        merchantReference:
-          options?.preserveMerchantReference ?? response.form.commonValues.merchantReference,
-      },
-    });
+    setForm(nextForm);
   };
 
   const loadDefaults = async (
     channel?: string,
-    options?: { preserveMerchantReference?: string | null; preserveApiKey?: boolean },
+    options?: { clearDraft?: boolean; preserveApiKey?: boolean },
   ) => {
     setLoading('defaults');
     setError(null);
-    setSaveMessage(null);
     setPreview(null);
     setResult(null);
+
+    if (channel && options?.clearDraft) {
+      clearSessionDraft(buildDraftScope(channel as PayoutFormValues['channel']));
+    }
 
     try {
       const response = await fetchPayoutDefaults(mode, channel);
@@ -255,47 +271,28 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
   };
 
   useEffect(() => {
-    void loadDefaults(form?.channel, {
-      preserveMerchantReference: form?.commonValues.merchantReference ?? null,
-    });
+    void loadDefaults(form?.channel);
   }, [mode]);
 
   useEffect(() => {
     apiKeyRef.current = apiKey;
   }, [apiKey]);
 
-  const createSavePayload = (values: PayoutFormValues): PayoutFormValues => ({
-    ...values,
-    commonValues: {
-      ...values.commonValues,
-      merchantReference:
-        persistedMerchantReference ?? values.commonValues.merchantReference,
-    },
-  });
-
   const updateCommonValue = (key: string, value: string) => {
-    setForm((current) =>
-      current
-        ? {
-            ...current,
-            commonValues: {
-              ...current.commonValues,
-              [key]: value,
-            },
-          }
-        : current,
-    );
+    updateForm((current) => ({
+        ...current,
+        commonValues: {
+          ...current.commonValues,
+          [key]: value,
+        },
+      }));
   };
 
   const updateChannelValue = (path: Array<string | number>, nextValue: unknown) => {
-    setForm((current) =>
-      current
-        ? {
-            ...current,
-            channelValues: updatePathValue(current.channelValues, path, nextValue),
-          }
-        : current,
-    );
+    updateForm((current) => ({
+        ...current,
+        channelValues: updatePathValue(current.channelValues, path, nextValue),
+      }));
   };
 
   const ensureMerchantReference = async (
@@ -314,17 +311,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
       },
     };
 
-    setForm((current) =>
-      current
-        ? {
-            ...current,
-            commonValues: {
-              ...current.commonValues,
-              merchantReference: response.merchantReference,
-            },
-          }
-        : current,
-    );
+    commitForm(nextValues);
 
     return nextValues;
   };
@@ -334,7 +321,6 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
     setLoading('preview');
     setError(null);
-    setSaveMessage(null);
 
     try {
       const response = await previewPayoutRequest(mode, {
@@ -347,17 +333,13 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
       );
 
       if (merchantReference) {
-        setForm((current) =>
-          current
-            ? {
-                ...current,
-                commonValues: {
-                  ...current.commonValues,
-                  merchantReference,
-                },
-              }
-            : current,
-        );
+        updateForm((current) => ({
+            ...current,
+            commonValues: {
+              ...current.commonValues,
+              merchantReference,
+            },
+          }));
       }
 
       setPreview(response);
@@ -374,7 +356,6 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
     setLoading('create');
     setError(null);
-    setSaveMessage(null);
 
     try {
       const nextForm = await ensureMerchantReference(form);
@@ -412,22 +393,16 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
     setLoading('generate');
     setError(null);
-    setSaveMessage(null);
 
     try {
       const response = await generatePayoutMerchantReference(mode);
-
-      setForm((current) =>
-        current
-          ? {
-              ...current,
-              commonValues: {
-                ...current.commonValues,
-                merchantReference: response.merchantReference,
-              },
-            }
-          : current,
-      );
+      updateForm((current) => ({
+        ...current,
+        commonValues: {
+          ...current.commonValues,
+          merchantReference: response.merchantReference,
+        },
+      }));
       setResult({
         ok: true,
         action: 'generate',
@@ -462,31 +437,6 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     }
   };
 
-  const saveDefaults = async () => {
-    if (!form) return;
-
-    setLoading('save');
-    setError(null);
-    setSaveMessage(null);
-
-    try {
-      const response = await savePayoutDefaults(
-        mode,
-        form.channel,
-        createSavePayload(form),
-      );
-      apiKeyRef.current = response.apiKey;
-      setApiKey(response.apiKey);
-      setPersistedMerchantReference(response.form.commonValues.merchantReference);
-      showApiKeyResetToast();
-      setSaveMessage(`Saved defaults for ${response.channel}.`);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setLoading(null);
-    }
-  };
-
   const commonFieldOverrides: Record<string, RequestBuilderFieldOverride> = {
     [merchantReferenceFieldKey]: {
       readOnly: true,
@@ -508,7 +458,6 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     result,
     loading,
     error,
-    saveMessage,
     defaultsLogContext,
     previewLogContext,
     createLogContext,
@@ -520,25 +469,33 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     },
     updateCommonValue,
     updateChannelValue,
-    onChannelChange: (channel: string) =>
+    onChannelChange: (channel: string) => {
+      setForm((current) =>
+        current
+          ? {
+              ...current,
+              channel: channel as PayoutFormValues['channel'],
+            }
+          : current,
+      );
       void loadDefaults(channel, {
-        preserveMerchantReference: form?.commonValues.merchantReference ?? null,
         preserveApiKey: shouldPreservePayoutApiKey(form?.channel, channel),
-      }),
+      });
+    },
     actions: form
       ? [
           {
             label: 'Reload defaults',
             tone: 'ghost' as const,
-            onClick: () =>
-              void loadDefaults(form.channel, {
-                preserveMerchantReference: form.commonValues.merchantReference,
-              }),
+            onClick: () => void loadDefaults(form.channel, { preserveApiKey: true }),
           },
-          { label: 'New draft', tone: 'ghost' as const, onClick: () => void loadDefaults(form.channel) },
+          {
+            label: 'New draft',
+            tone: 'ghost' as const,
+            onClick: () => void loadDefaults(form.channel, { clearDraft: true, preserveApiKey: true }),
+          },
           { label: 'Preview request', tone: 'secondary' as const, onClick: () => void submitPreview() },
           { label: 'Send request', tone: 'primary' as const, onClick: () => void submitCreate() },
-          { label: 'Save defaults', tone: 'ghost' as const, onClick: () => void saveDefaults() },
         ]
       : [],
   };

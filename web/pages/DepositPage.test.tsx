@@ -17,7 +17,6 @@ import type {
   DepositRequestValues,
 } from '../../src/deposit/web';
 import { DepositPage } from './DepositPage';
-import { apiKeyResetToastMessage } from './helper/operatorShared';
 import { AppThemeProvider } from './pageChrome';
 import { ModalProvider } from './utils/modal';
 
@@ -291,6 +290,7 @@ beforeEach(() => {
   fetchRecords.length = 0;
   routeHandlers = new Map();
   localStorage.clear();
+  sessionStorage.clear();
 
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -402,9 +402,11 @@ describe('DepositPage', () => {
     expect(view.getAllByText(new RegExp(`"merchant_ref": "PREVIEW-${primaryChannel}"`))).toHaveLength(2);
   });
 
-  test('reloads channel defaults when the selected channel changes', async () => {
+  test('loads channel-specific defaults and restores prior channel drafts when switching channels', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      [`GET /api/deposit/defaults?channel=${primaryChannel}`]: async () =>
+        jsonResponse(createDefaultsResponse(primaryChannel)),
       'POST /api/deposit/preview': async () =>
         jsonResponse(createPreviewResponse(`SWITCH-${primaryChannel}`)),
       'POST /api/deposit/merchant-ref': async () => jsonResponse(createMerchantRefResponse('GENERATED-001')),
@@ -441,12 +443,22 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-001');
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('MERCHANT-SECONDARY');
     });
 
     expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue('PROD-SECONDARY');
     expect(view.getByText('typed-deposit-key')).toBeInTheDocument();
     expect(view.queryByText(`api-key-${secondaryChannel}`)).toBeNull();
+
+    await act(async () => {
+      fireEvent.change(view.getByLabelText('Channel'), {
+        target: { value: primaryChannel },
+      });
+    });
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-001');
+    });
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
@@ -622,7 +634,7 @@ describe('DepositPage', () => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-003');
     });
 
-    expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue('PROD-RELOADED');
+    expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue(`PROD-${primaryChannel}`);
   });
 
   test('resets the api key to the backend default when the environment changes', async () => {
@@ -696,34 +708,6 @@ describe('DepositPage', () => {
 
     await waitFor(() => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('MERCHANT-NEW-DRAFT');
-    });
-  });
-
-  test('save defaults strips merchant reference but resets api key to backend default', async () => {
-    setRouteHandlers({
-      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
-      [`PUT /api/deposit/defaults?channel=${primaryChannel}`]: async (request) => {
-        expect(request.body?.apiKey).toBeUndefined();
-        expect(request.body?.commonValues.merchantRef).toBe(`MERCHANT-${primaryChannel}`);
-        return jsonResponse(createSavedDefaultsResponse(primaryChannel, 'PROD-SAVED'));
-      },
-    });
-
-    const view = renderDepositPage();
-
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
-
-    await updateApiKeyFromModal(view, 'typed-deposit-key');
-
-    await act(async () => {
-      fireEvent.click(view.getByRole('button', { name: 'Save defaults' }));
-    });
-
-    await waitFor(() => {
-      expect(view.getByText(`Saved defaults for ${primaryChannel}.`)).toBeInTheDocument();
-      expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue(`PROD-${primaryChannel}`);
-      expect(view.getByText(`saved-api-key-${primaryChannel}`)).toBeInTheDocument();
-      expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();
     });
   });
 
@@ -815,17 +799,26 @@ describe('DepositPage', () => {
     expect(secondView.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
   });
 
-  test('saves defaults without replacing the current form bundle', async () => {
+  test('new draft resets the current merchant reference without affecting the local api key draft', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
       'POST /api/deposit/merchant-ref': async () => jsonResponse(createMerchantRefResponse('GENERATED-SAVE')),
-      [`PUT /api/deposit/defaults?channel=${primaryChannel}`]: async () =>
-        jsonResponse(createSavedDefaultsResponse(primaryChannel, 'PROD-SAVED')),
+      [`GET /api/deposit/defaults?channel=${primaryChannel}`]: async () =>
+        jsonResponse(
+          createDefaultsResponse(primaryChannel, {
+            form: createForm(primaryChannel, {
+              commonValues: {
+                merchantRef: 'MERCHANT-RESET-SERVER',
+              },
+            }),
+          }),
+        ),
     });
 
     const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await updateApiKeyFromModal(view, 'typed-deposit-key');
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
@@ -836,18 +829,13 @@ describe('DepositPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(view.getByRole('button', { name: 'Save defaults' }));
+      fireEvent.click(view.getByRole('button', { name: 'New draft' }));
     });
 
-    await view.findByText(`Saved defaults for ${primaryChannel}.`);
-    expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue(`PROD-${primaryChannel}`);
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SAVE');
-    expect(view.getByText(`saved-api-key-${primaryChannel}`)).toBeInTheDocument();
-
-    const saveCall = fetchRecords.find(
-      (record) => record.method === 'PUT' && record.url === `${defaultsEndpoint}?channel=${primaryChannel}`,
-    );
-    expect(saveCall?.body?.commonValues.merchantRef).toBe(`MERCHANT-${primaryChannel}`);
+    await waitFor(() => {
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('MERCHANT-RESET-SERVER');
+    });
+    expect(view.getByText('typed-deposit-key')).toBeInTheDocument();
   });
 
   test('cancels api key edits without applying the draft value', async () => {

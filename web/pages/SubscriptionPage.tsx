@@ -16,6 +16,8 @@ const moduleName = 'Subscription Module';
 const pageTitle = 'Subscription Operator Console';
 const previewEmptyState = 'Run a preview to inspect the exact subscription request body, URL, and masked headers.';
 const resultEmptyState = 'Send a subscription request to capture the raw response, status code, and diagnostics.';
+const draftNotice =
+  'Temporary session draft. Changes stay in this tab session and reset when you start a new draft.';
 
 /**
  * Renders the subscription operator page for editing defaults, previewing payloads, and sending test requests.
@@ -119,15 +121,18 @@ export function SubscriptionPage() {
             disabled={loading !== null}
             actions={actions}
             footer={
-              error && hasMissingPlanConfig ? (
-                <div
-                  className="rounded-[18px] border border-[var(--status-danger-border)] bg-[var(--status-danger-bg)] px-4 py-3 text-sm text-[var(--status-danger-text)]"
-                  role="alert"
-                >
-                  {error}
-                  {!canSubmit ? ' Switch to a configured channel or fix the backend env before previewing or sending requests.' : ''}
-                </div>
-              ) : null
+              <>
+                <p className="text-sm text-[color:var(--color-text-muted)]">{draftNotice}</p>
+                {error && hasMissingPlanConfig ? (
+                  <div
+                    className="rounded-[18px] border border-[var(--status-danger-border)] bg-[var(--status-danger-bg)] px-4 py-3 text-sm text-[var(--status-danger-text)]"
+                    role="alert"
+                  >
+                    {error}
+                    {!canSubmit ? ' Switch to a configured channel or fix the backend env before previewing or sending requests.' : ''}
+                  </div>
+                ) : null}
+              </>
             }
           />
         </form>

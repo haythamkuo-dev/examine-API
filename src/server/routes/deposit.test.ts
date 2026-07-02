@@ -1,6 +1,4 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 import { DEPOSIT_CHANNELS } from '../../core/env';
 import { targetEnvironmentHeaderName } from '../../core/targetEnvironment';
 import {
@@ -293,52 +291,4 @@ describe('deposit API routes', () => {
     expect(body.message).toBe('Unsupported target environment: staging');
   });
 
-  test('PUT /api/deposit/defaults persists deposit defaults into the isolated fixture copy', async () => {
-    const requestBody = createValidBody();
-    requestBody.apiKey = 'manual-deposit-token';
-    requestBody.commonValues.productNo = 'DEP-CUSTOM-TEST-001';
-    requestBody.commonValues.merchantRef = 'TEST_DEPOSIT_OVERRIDDEN';
-    requestBody.channelValues = {
-      payment_order: {
-        collect: {
-          country_code: 'US',
-          product_detail: 'Collect order for %s',
-          product_name: 'Updated deposit product',
-          shopper_reference: 'CUSTOMER_001',
-          origin: 'https://www.amazon.com/',
-        },
-      },
-    };
-
-    const updateResponse = await context.requestApi('/api/deposit/defaults?channel=southafrica_cards', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-    });
-
-    expect(updateResponse.status).toBe(200);
-
-    const updatedDefaultsResponse = await context.requestApi('/api/deposit/defaults?channel=southafrica_cards');
-    const updatedDefaults = (await updatedDefaultsResponse.json()) as Record<string, unknown>;
-    const form = updatedDefaults.form as Record<string, unknown>;
-    const commonValues = form.commonValues as Record<string, unknown>;
-    const channelValues = form.channelValues as Record<string, unknown>;
-    const paymentOrder = channelValues.payment_order as Record<string, unknown>;
-    const collect = paymentOrder.collect as Record<string, unknown>;
-
-    expect(commonValues.productNo).toBe('DEP-CUSTOM-TEST-001');
-    expect(commonValues.merchantRef).toBe('TEST_DEPOSIT_OVERRIDDEN');
-    expect(collect.product_name).toBe('Updated deposit product');
-    expect(updatedDefaults.apiKey).toBe('payout-token');
-
-    const savedCommon = await readFile(join(context.depositPresetDirPath, 'common.json'), 'utf8');
-    const savedChannel = await readFile(
-      join(context.depositPresetDirPath, 'channels', 'southafrica_cards.json'),
-      'utf8',
-    );
-
-    expect(savedCommon).toContain('"merchantRef": "TEST_DEPOSIT_OVERRIDDEN"');
-    expect(savedChannel).toContain('"productNo": "DEP-CUSTOM-TEST-001"');
-    expect(savedChannel).toContain('"product_name": "Updated deposit product"');
-  });
 });

@@ -1,24 +1,18 @@
 import type {
   DepositCreateResponse,
   DepositDefaultsResponse,
-  DepositDefaultsSavedResponse,
-  DepositFormValues,
   DepositMerchantRefResponse,
   DepositPreviewResponse,
   DepositRequestValues,
 } from '../../../src/deposit/web';
 import type {
   PayoutDefaultsResponse,
-  PayoutDefaultsSavedResponse,
-  PayoutFormValues,
   PayoutMerchantReferenceResponse,
   PayoutPreviewResponse,
   PayoutRequestValues,
 } from '../../../src/payout/web';
 import type {
   SubscriptionDefaultsResponse,
-  SubscriptionDefaultsSavedResponse,
-  SubscriptionFormValues,
   SubscriptionMerchantRefResponse,
   SubscriptionPreviewResponse,
   SubscriptionRequestValues,
@@ -28,7 +22,6 @@ import {
   buildChannelQuery,
   fetchOperatorJson,
   postOperatorJson,
-  putOperatorJson,
   sendOperatorRequest,
 } from './operatorRequest';
 
@@ -102,26 +95,6 @@ export const generateDepositMerchantRef = (
   postOperatorJson<DepositMerchantRefResponse>(depositMerchantRefEndpoint, mode, {});
 
 /**
- * Saves deposit defaults for the active channel.
- *
- * @param mode Operator environment selected in the frontend UI.
- * @param channel Deposit channel being saved.
- * @param form Deposit form payload to persist.
- * @returns Saved deposit defaults payload from the API.
- * @throws {ApiRequestError} When the API response is non-OK, empty, non-JSON, or malformed.
- */
-export const saveDepositDefaults = (
-  mode: OperatorEnvironmentMode,
-  channel: string,
-  form: DepositFormValues,
-): Promise<DepositDefaultsSavedResponse> =>
-  putOperatorJson<DepositDefaultsSavedResponse>(
-    `${depositDefaultsEndpoint}${buildChannelQuery(channel)}`,
-    mode,
-    form,
-  );
-
-/**
  * Requests payout default form data for the selected channel.
  *
  * @param mode Operator environment selected in the frontend UI.
@@ -174,26 +147,6 @@ export const generatePayoutMerchantReference = (
   mode: OperatorEnvironmentMode,
 ): Promise<PayoutMerchantReferenceResponse> =>
   postOperatorJson<PayoutMerchantReferenceResponse>(payoutMerchantReferenceEndpoint, mode, {});
-
-/**
- * Saves payout defaults for the active channel.
- *
- * @param mode Operator environment selected in the frontend UI.
- * @param channel Payout channel being saved.
- * @param form Payout form payload to persist.
- * @returns Saved payout defaults payload from the API.
- * @throws {ApiRequestError} When the API response is non-OK, empty, non-JSON, or malformed.
- */
-export const savePayoutDefaults = (
-  mode: OperatorEnvironmentMode,
-  channel: string,
-  form: PayoutFormValues,
-): Promise<PayoutDefaultsSavedResponse> =>
-  putOperatorJson<PayoutDefaultsSavedResponse>(
-    `${payoutDefaultsEndpoint}${buildChannelQuery(channel)}`,
-    mode,
-    form,
-  );
 
 /**
  * Requests subscription default form data for the selected channel.
@@ -251,23 +204,3 @@ export const generateSubscriptionMerchantRef = (
   mode: OperatorEnvironmentMode,
 ): Promise<SubscriptionMerchantRefResponse> =>
   postOperatorJson<SubscriptionMerchantRefResponse>(subscriptionMerchantRefEndpoint, mode, {});
-
-/**
- * Saves subscription defaults for the active channel.
- *
- * @param mode Operator environment selected in the frontend UI.
- * @param channel Subscription channel being saved.
- * @param form Subscription form payload to persist.
- * @returns Saved subscription defaults payload from the API.
- * @throws {ApiRequestError} When the API response is non-OK, empty, non-JSON, or malformed.
- */
-export const saveSubscriptionDefaults = (
-  mode: OperatorEnvironmentMode,
-  channel: string,
-  form: SubscriptionFormValues,
-): Promise<SubscriptionDefaultsSavedResponse> =>
-  putOperatorJson<SubscriptionDefaultsSavedResponse>(
-    `${subscriptionDefaultsEndpoint}${buildChannelQuery(channel)}`,
-    mode,
-    form,
-  );

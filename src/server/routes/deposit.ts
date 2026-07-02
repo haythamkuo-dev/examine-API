@@ -1,7 +1,7 @@
 import type { DepositServiceDeps } from '../../deposit/service';
 import { createDepositService, getRequestedDepositChannel } from '../../deposit/service';
 import { validateDepositForm } from '../../deposit/validation';
-import type { DepositFormValues, DepositRequestValues } from '../../deposit/web';
+import type { DepositRequestValues } from '../../deposit/web';
 import { handlePresetBackedRoute } from './_shared';
 
 export const handleDepositRoute = async ({
@@ -20,7 +20,6 @@ export const handleDepositRoute = async ({
     unknown,
     ReturnType<typeof createDepositService>,
     Awaited<ReturnType<ReturnType<typeof createDepositService>['getDefaultsForTarget']>>,
-    DepositFormValues,
     Awaited<ReturnType<ReturnType<typeof createDepositService>['execute']>>
   >({
     request,
@@ -33,8 +32,6 @@ export const handleDepositRoute = async ({
     resolveChannel: getRequestedDepositChannel,
     resolveChannelFromValues: (values) => values.channel,
     getDefaults: (service, channel, targetEnvironment) => service.getDefaultsForTarget(channel, targetEnvironment),
-    saveDefaults: (service, channel, values, targetEnvironment) =>
-      service.saveDefaultsForTarget(channel, values, targetEnvironment),
     generateMerchantRef: (service) => service.generateMerchantRef(),
     preview: (service, values, targetEnvironment) => service.preview(values, targetEnvironment),
     execute: (service, values, targetEnvironment) => service.execute(values, targetEnvironment),

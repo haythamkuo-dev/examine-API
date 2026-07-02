@@ -1,6 +1,4 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 import { startApiTestServer, type ApiTestServerContext } from '../../../tests/server-setup';
 
 type PayoutApiRequestBody = {
@@ -137,22 +135,6 @@ describe('payout API routes', () => {
     expect(body.message).toBe('payout_info.beneficiary.name is required');
   });
 
-  test('PUT /api/payout/defaults returns 400 when product_no looks like a token instead of a payout product code', async () => {
-    const requestBody = createValidBody();
-    requestBody.channelValues.product_no = 'mk_general_01ksse4ja1th.ksqLSyDPzAQbdZu_DOAvvfPlZythxXGj';
-
-    const response = await context.requestApi('/api/payout/defaults?channel=co_bank', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-    });
-
-    expect(response.status).toBe(400);
-
-    const body = (await response.json()) as Record<string, unknown>;
-    expect(body.message).toBe('product_no must be a valid payout product code');
-  });
-
   test('POST /api/payout/preview returns masked preview payload for valid payout form', async () => {
     const response = await context.requestApi('/api/payout/preview', {
       method: 'POST',
@@ -252,56 +234,4 @@ describe('payout API routes', () => {
     expect(capturedUpstreamBody.payout_info?.remitter).toBeUndefined();
   });
 
-  test('PUT /api/payout/defaults persists payout defaults into the isolated fixture copy', async () => {
-    const requestBody = {
-      apiKey: 'manual-payout-token',
-      channel: 'co_wallet',
-      commonValues: {
-        merchantReference: 'TEST_ORDER_OVERRIDDEN',
-      },
-      channelValues: {
-        product_no: 'PAY-FUTUREPAY_COLLECT-MOBILEMONEY-COP',
-        amount: { amount: '10.00', currency_code: 'COP' },
-        payout_info: {
-          account_type: 'individual',
-          narration: 'Updated payout narration',
-          client_ip: '127.0.0.1',
-          beneficiary: {
-            name: 'E2E Payout Beneficiary',
-            identification_type: 'CC',
-            id_number: '1020806281',
-            account_number: '03179596864',
-            bank_account_type: 'dp',
-            bank_code: '1007',
-            bank_name: 'NEQUI',
-          },
-        },
-      },
-    };
-
-    const updateResponse = await context.requestApi('/api/payout/defaults?channel=co_wallet', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-    });
-
-    expect(updateResponse.status).toBe(200);
-
-    const updatedDefaultsResponse = await context.requestApi('/api/payout/defaults?channel=co_wallet');
-    const updatedDefaults = (await updatedDefaultsResponse.json()) as Record<string, unknown>;
-    const form = updatedDefaults.form as Record<string, unknown>;
-    const commonValues = form.commonValues as Record<string, unknown>;
-    const channelValues = form.channelValues as Record<string, unknown>;
-    const payoutInfo = channelValues.payout_info as Record<string, unknown>;
-
-    expect(commonValues.merchantReference).toBe('TEST_ORDER_OVERRIDDEN');
-    expect(payoutInfo.narration).toBe('Updated payout narration');
-    expect(updatedDefaults.apiKey).toBe('payout-token');
-
-    const savedCommon = await readFile(join(context.payoutPresetDirPath, 'common.json'), 'utf8');
-    const savedChannel = await readFile(join(context.payoutPresetDirPath, 'channels', 'co_wallet.json'), 'utf8');
-
-    expect(savedCommon).toContain('"merchant_reference": "TEST_ORDER_OVERRIDDEN"');
-    expect(savedChannel).toContain('"narration": "Updated payout narration"');
-  });
 });

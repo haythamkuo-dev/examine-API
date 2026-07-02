@@ -15,6 +15,8 @@ const pageTitle = 'Deposit Operator Console';
 const moduleName = 'Deposit Module';
 const previewEmptyState = 'Run a preview to inspect the exact request body, URL, and masked headers.';
 const resultEmptyState = 'Send a request to capture the raw response, status code, and any diagnostic hint.';
+const draftNotice =
+  'Temporary session draft. Changes stay in this tab session and reset when you start a new draft.';
 
 /**
  * Renders the deposit operator page for editing defaults, previewing payloads, and sending test requests.
@@ -100,6 +102,7 @@ export function DepositPage() {
             loadingLabel={loading ? loadingLabels[loading] : 'Form ready'}
             disabled={loading !== null}
             actions={actions}
+            footer={<p className="text-sm text-[color:var(--color-text-muted)]">{draftNotice}</p>}
           />
         </form>
 

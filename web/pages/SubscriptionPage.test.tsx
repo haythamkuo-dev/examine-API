@@ -14,7 +14,6 @@ import type {
   SubscriptionRequestValues,
 } from '../../src/subscription/web';
 import { normalizeCreateResult, SubscriptionPage } from './SubscriptionPage';
-import { apiKeyResetToastMessage } from './helper/operatorShared';
 import { AppThemeProvider } from './pageChrome';
 import { ModalProvider } from './utils/modal';
 
@@ -187,6 +186,7 @@ beforeEach(() => {
   fetchRecords.length = 0;
   routeHandlers = new Map();
   localStorage.clear();
+  sessionStorage.clear();
 
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -283,7 +283,7 @@ describe('SubscriptionPage', () => {
     });
   });
 
-  test('keeps the generated merchant reference during environment switches and resets on new draft', async () => {
+  test('uses environment-scoped drafts and resets to backend defaults on new draft', async () => {
     setRouteHandlers({
       'GET /api/subscription/defaults': async () => jsonResponse(createDefaultsResponse()),
       [`GET /api/subscription/defaults?channel=${channel}`]: async () =>
@@ -320,14 +320,14 @@ describe('SubscriptionPage', () => {
       expect(view.getByText('環境: 產品')).toBeInTheDocument();
     });
 
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-002');
+    expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-reset-server');
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Reload defaults' }));
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-002');
+      expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-reset-server');
     });
 
     await act(async () => {
@@ -339,7 +339,7 @@ describe('SubscriptionPage', () => {
     });
   });
 
-  test('save defaults strips the generated merchant reference and generation failures keep the old value', async () => {
+  test('generation failures keep the previous merchant reference', async () => {
     let generateCalls = 0;
 
     setRouteHandlers({
@@ -356,11 +356,6 @@ describe('SubscriptionPage', () => {
           statusText: 'Internal Server Error',
         });
       },
-      [`PUT /api/subscription/defaults?channel=${channel}`]: async (request) => {
-        expect(request.body?.commonValues.merchantRef).toBe('merchant-sub-default');
-        expect(request.body?.channelValues.subs_plan_id).toBeUndefined();
-        return jsonResponse(createSavedDefaultsResponse('Saved subscription product'));
-      },
     });
 
     const view = renderSubscriptionPage();
@@ -373,24 +368,6 @@ describe('SubscriptionPage', () => {
 
     await waitFor(() => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-003');
-    });
-
-    await updatePlanIdFromModal(view, 'plan-save-draft-only');
-
-    await waitFor(() => {
-      expect(view.getByText('plan-save-draft-only')).toBeInTheDocument();
-    });
-
-    await act(async () => {
-      fireEvent.click(view.getByRole('button', { name: 'Save defaults' }));
-    });
-
-    await waitFor(() => {
-      expect(view.getByText(`Saved defaults for ${channel}.`)).toBeInTheDocument();
-      expect(view.getByLabelText('Product name *')).toHaveValue('Subscription product');
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-003');
-      expect(view.getByText('subscription-saved-key')).toBeInTheDocument();
-      expect(view.getByText(apiKeyResetToastMessage)).toBeInTheDocument();
     });
 
     await act(async () => {

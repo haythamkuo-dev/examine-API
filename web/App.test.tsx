@@ -58,6 +58,7 @@ const createDepositDefaultsResponse = (): DepositDefaultsResponse => ({
 
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
 });
 
 describe('web app routing', () => {

@@ -10,7 +10,6 @@ export type PresetBackedRouteConfig<
   ChannelSchema,
   Service,
   DefaultsResponse,
-  FormValues,
   CreateResponse,
   RouteError = never,
 > = {
@@ -31,12 +30,6 @@ export type PresetBackedRouteConfig<
     commonSchema: CommonSchema;
     channelSchema: ChannelSchema;
   } & DefaultsResponse>;
-  saveDefaults: (
-    service: Service,
-    channel: Channel,
-    values: FormValues,
-    targetEnvironment: TargetEnvironment,
-  ) => Promise<DefaultsResponse & { ok: true }>;
   generateMerchantRef: (service: Service) => unknown;
   preview: (service: Service, values: RequestValues, targetEnvironment: TargetEnvironment) => unknown;
   execute: (service: Service, values: RequestValues, targetEnvironment: TargetEnvironment) => Promise<CreateResponse>;
@@ -68,7 +61,7 @@ const handleRouteError = async (
  * @param options Route configuration and domain-specific callbacks.
  * @param options.request Incoming HTTP request.
  * @param options.url Parsed request URL.
- * @param options.defaultsPath GET/PUT path for loading and saving defaults.
+ * @param options.defaultsPath GET path for loading defaults.
  * @param options.previewPath POST path for preview requests.
  * @param options.createPath POST path for create requests.
  * @param options.merchantRefPath Optional POST path for merchant reference generation.
@@ -76,7 +69,6 @@ const handleRouteError = async (
  * @param options.resolveChannel Resolver for the channel query parameter.
  * @param options.resolveChannelFromValues Resolver for the request body channel.
  * @param options.getDefaults Loads the defaults bundle for a channel and target environment.
- * @param options.saveDefaults Persists defaults for a channel and returns the refreshed bundle.
  * @param options.generateMerchantRef Builds a new merchant reference response payload.
  * @param options.preview Builds a preview response for the request body.
  * @param options.execute Executes the upstream request for the request body.
@@ -92,7 +84,6 @@ export const handlePresetBackedRoute = async <
   ChannelSchema,
   Service,
   DefaultsResponse,
-  FormValues,
   CreateResponse,
   RouteError = never,
 >({
@@ -106,7 +97,6 @@ export const handlePresetBackedRoute = async <
   resolveChannel,
   resolveChannelFromValues,
   getDefaults,
-  saveDefaults,
   generateMerchantRef,
   preview,
   execute,
@@ -119,7 +109,6 @@ export const handlePresetBackedRoute = async <
   ChannelSchema,
   Service,
   DefaultsResponse,
-  FormValues,
   CreateResponse,
   RouteError
 >): Promise<RouteResponse> => {
@@ -135,20 +124,6 @@ export const handlePresetBackedRoute = async <
   if (request.method === 'GET' && url.pathname === defaultsPath) {
     try {
       return json(await getDefaults(service, resolveChannel(url), targetEnvironment));
-    } catch (error) {
-      return handleRouteError(error, onRouteError);
-    }
-  }
-
-  if (request.method === 'PUT' && url.pathname === defaultsPath) {
-    const channel = resolveChannel(url);
-    const values = await readJson<RequestValues>(request);
-
-    try {
-      const bundle = await getDefaults(service, channel, targetEnvironment);
-      const error = validate(values, bundle);
-      if (error) return badRequest(error);
-      return json(await saveDefaults(service, channel, values as FormValues, targetEnvironment));
     } catch (error) {
       return handleRouteError(error, onRouteError);
     }
