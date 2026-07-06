@@ -47,6 +47,25 @@ describe('request builders', () => {
     });
   });
 
+  test('builds international credit cards deposit request', () => {
+    const request = createDepositRequest(env, 'international_credit_cards', makeId);
+
+    expect(request.payload).toMatchObject({
+      product_no: 'DEP-FUTUREPAY_COLLECT-COLLECT-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '99.99', currency_code: 'USD' },
+      payment_order: {
+        collect: {
+          country_code: 'US',
+          product_detail: 'Collect order for %s',
+          product_name: 'Collect Checkout',
+          shopper_reference: 'CUSTOMER_001',
+          origin: 'merchant.example.com',
+        },
+      },
+    });
+  });
+
   test('builds deposit request from manual CLI-style overrides', () => {
     const request = createDepositRequest(env, 'linepay', makeId, {
       apiKey: 'manual-deposit-token',

@@ -256,6 +256,20 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  international_credit_cards: {
+    product_no: 'DEP-FUTUREPAY_COLLECT-COLLECT-USD',
+    amount: { amount: '99.99', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        country_code: 'US',
+        product_detail: 'Collect order for %s',
+        product_name: 'Collect Checkout',
+        shopper_reference: 'CUSTOMER_001',
+        origin: 'merchant.example.com',
+      },
+    },
+  },
 });
 
 export const createDepositPayload = (

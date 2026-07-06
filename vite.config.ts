@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite'
 
-const apiPort = Number(process.env.API_SERVER_PORT || 3000);
+const apiPort = +(process.env.API_SERVER_PORT || 3000);
 const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1];
 const isGitHubPagesBuild = process.env.GITHUB_ACTIONS === 'true';
 const base = isGitHubPagesBuild && repositoryName ? `/${repositoryName}/` : '/';

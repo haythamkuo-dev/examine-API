@@ -36,6 +36,20 @@ describe('deposit web helpers', () => {
     const result = createSeedDepositPresets(env, makeId);
 
     expect(result.channels.southafrica_cards.commonValues.productNo).toBe('DEP-BOUND-USD');
+    expect(result.channels.international_credit_cards.commonValues.productNo).toBe(
+      'DEP-FUTUREPAY_COLLECT-COLLECT-USD',
+    );
+    expect(result.channels.international_credit_cards.values).toMatchObject({
+      payment_order: {
+        collect: {
+          country_code: 'US',
+          product_detail: 'Collect order for %s',
+          product_name: 'Collect Checkout',
+          shopper_reference: 'CUSTOMER_001',
+          origin: 'merchant.example.com',
+        },
+      },
+    });
     expect(result.common.values.merchantRef).toBe('TEST_ORDER_fixed-id');
     expect(result.common.values.returnUrl).toBe('https://merchant.example.com/deposit');
   });
@@ -209,6 +223,9 @@ describe('deposit web helpers', () => {
         .product_name,
     ).toBe('Custom Product');
     expect(normalized.channels.linepay.commonValues.productNo).toBe('DEP-LINEPAY_ONLINE-ONLINE-TWD');
+    expect(normalized.channels.international_credit_cards.commonValues.productNo).toBe(
+      'DEP-FUTUREPAY_COLLECT-COLLECT-USD',
+    );
   });
 
   test('updates and writes preset file by channel', async () => {

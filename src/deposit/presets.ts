@@ -531,6 +531,25 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       },
     },
   },
+  international_credit_cards: {
+    commonValues: {
+      productNo: 'DEP-FUTUREPAY_COLLECT-COLLECT-USD',
+      amount: '99.99',
+      currencyCode: 'USD',
+    },
+    schema: clone(SOUTH_AFRICA_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          country_code: 'US',
+          product_detail: 'Collect order for %s',
+          product_name: 'Collect Checkout',
+          shopper_reference: 'CUSTOMER_001',
+          origin: 'merchant.example.com',
+        },
+      },
+    },
+  },
 });
 
 export const createSeedDepositPresets = (

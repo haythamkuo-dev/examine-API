@@ -15,6 +15,7 @@ export const DEPOSIT_CHANNELS = [
   'co_pse',
   'th_rabbit_linepay',
   'my_tng',
+  'international_credit_cards',
 ] as const;
 
 export const PAYOUT_CHANNELS = ['co_bank', 'co_wallet', 'imps', 'bd_wallet'] as const;
@@ -63,6 +64,7 @@ const DEPOSIT_CHANNEL_TOKEN_KEYS: Record<DepositChannel, MerchantTokenKey> = {
   co_pse: MerchantTokenKey.Normal,
   th_rabbit_linepay: MerchantTokenKey.Normal,
   my_tng: MerchantTokenKey.Normal,
+  international_credit_cards: MerchantTokenKey.Normal,
 };
 
 const PAYOUT_CHANNEL_TOKEN_KEYS: Record<PayoutChannel, MerchantTokenKey> = {
