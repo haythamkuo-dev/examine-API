@@ -89,6 +89,23 @@ describe('deposit web helpers', () => {
     });
   });
 
+  test('builds the temporary cmoney intercard request from its preset', () => {
+    const defaults = toDepositDefaultsResponse(
+      'cmoney-intercard',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+    const amount = payload.amount as { amount: string; currency_code: string };
+
+    expect(payload.product_no).toBe('DEP-CMONEY-INTERCARD-USD');
+    expect(amount).toEqual({ amount: '100.00', currency_code: 'USD' });
+    expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
+    expect(payload.return_url).toBe('https://merchant.example.com/deposit');
+    expect(payload.payment_order).toBeUndefined();
+  });
+
   test('builds masked preview response', () => {
     const defaults = toDepositDefaultsResponse(
       'southafrica_cards',

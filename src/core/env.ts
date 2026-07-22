@@ -24,6 +24,7 @@ export const DEPOSIT_CHANNELS = [
   'ALIPAY-8000',
   'ALIPAY-6014',
   'WECHAT-6016',
+  'cmoney-intercard',
 ] as const;
 
 export const PAYOUT_CHANNELS = ['co_bank', 'co_wallet', 'imps', 'bd_wallet'] as const;
@@ -81,6 +82,7 @@ const DEPOSIT_CHANNEL_TOKEN_KEYS: Record<DepositChannel, MerchantTokenKey> = {
   'ALIPAY-8000': MerchantTokenKey.Normal,
   'ALIPAY-6014': MerchantTokenKey.Normal,
   'WECHAT-6016': MerchantTokenKey.Normal,
+  'cmoney-intercard': MerchantTokenKey.Normal,
 };
 
 const PAYOUT_CHANNEL_TOKEN_KEYS: Record<PayoutChannel, MerchantTokenKey> = {

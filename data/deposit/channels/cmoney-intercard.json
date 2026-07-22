@@ -1,0 +1,9 @@
+{
+  "commonValues": {
+    "productNo": "DEP-CMONEY-INTERCARD-USD",
+    "amount": "100.00",
+    "currencyCode": "USD"
+  },
+  "schema": {},
+  "values": {}
+}
