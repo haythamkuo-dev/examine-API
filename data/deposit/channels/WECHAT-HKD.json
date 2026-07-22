@@ -1,0 +1,5 @@
+{
+  "commonValues": { "productNo": "DEP-FUTUREPAY_COLLECT-HKWECHATPAYST-HKD", "amount": "188.00", "currencyCode": "HKD" },
+  "schema": { "payment_order": { "kind": "object", "label": "Payment order", "fields": { "collect": { "kind": "object", "label": "Collect payload", "fields": { "country_code": { "kind": "text", "label": "Country code", "required": true }, "product_detail": { "kind": "textarea", "label": "Product detail", "required": true }, "product_name": { "kind": "text", "label": "Product name", "required": true } } } } } },
+  "values": { "payment_order": { "collect": { "country_code": "HK", "product_detail": "Collect order for %s", "product_name": "wechat for HKD" } } }
+}

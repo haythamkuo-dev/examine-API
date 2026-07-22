@@ -97,6 +97,18 @@ const SOUTH_AFRICA_SCHEMA: DepositFieldMap = {
   }),
 };
 
+const JCB_SCHEMA = SOUTH_AFRICA_SCHEMA;
+
+const SIMPLE_COLLECT_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {
+      country_code: textField('Country code', true),
+      product_detail: textareaField('Product detail', true),
+      product_name: textField('Product name', true),
+    }),
+  }),
+};
+
 const LINEPAY_PACKAGE_SCHEMA: DepositFieldMap = {
   id: textField('Package ID', true),
   name: textField('Package name', true),
@@ -550,6 +562,34 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       },
     },
   },
+  'JCB-USD': {
+    commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-GENERALJCBCOLLECT-USD', amount: '99.99', currencyCode: 'USD' },
+    schema: clone(JCB_SCHEMA),
+    values: { payment_order: { collect: { country_code: 'US', product_detail: 'Collect order for %s', product_name: 'JCB for USD', shopper_reference: 'CUSTOMER_001', origin: 'merchant.example.com' } } },
+  },
+  'JCB-JPY': {
+    commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-GENERALJCBCOLLECT-JPY', amount: '1000', currencyCode: 'JPY' },
+    schema: clone(JCB_SCHEMA),
+    values: { payment_order: { collect: { country_code: 'JP', product_detail: 'Collect order for %s', product_name: 'JCB for JPY', shopper_reference: 'CUSTOMER_001', origin: 'merchant.example.com' } } },
+  },
+  'ALIPAY-CNY': {
+    commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-ALIPAYCN-CNY', amount: '188.00', currencyCode: 'CNY' },
+    schema: clone(SIMPLE_COLLECT_SCHEMA),
+    values: { payment_order: { collect: { country_code: 'CN', product_detail: 'Collect order for %s', product_name: 'aliPay for CNY' } } },
+  },
+  'ALIPAY-HKD': {
+    commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-ALIPAYHK-HKD', amount: '188.00', currencyCode: 'HKD' },
+    schema: clone(SIMPLE_COLLECT_SCHEMA),
+    values: { payment_order: { collect: { country_code: 'HK', product_detail: 'Collect order for %s', product_name: 'aliPay for HKD' } } },
+  },
+  'WECHAT-HKD': {
+    commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-HKWECHATPAYST-HKD', amount: '188.00', currencyCode: 'HKD' },
+    schema: clone(SIMPLE_COLLECT_SCHEMA),
+    values: { payment_order: { collect: { country_code: 'HK', product_detail: 'Collect order for %s', product_name: 'wechat for HKD' } } },
+  },
+  'ALIPAY-8000': { commonValues: { productNo: 'DEP-HONGYUNPAY-ALIPAY8000-CNY', amount: '100.00', currencyCode: 'CNY' }, schema: {}, values: {} },
+  'ALIPAY-6014': { commonValues: { productNo: 'DEP-HONGYUNPAY-ALIPAY6014-CNY', amount: '120.00', currencyCode: 'CNY' }, schema: {}, values: {} },
+  'WECHAT-6016': { commonValues: { productNo: 'DEP-HONGYUNPAY-WECHAT6016-CNY', amount: '150.00', currencyCode: 'CNY' }, schema: {}, values: {} },
 });
 
 export const createSeedDepositPresets = (

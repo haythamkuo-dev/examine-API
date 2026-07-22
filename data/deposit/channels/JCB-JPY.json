@@ -1,0 +1,5 @@
+{
+  "commonValues": { "productNo": "DEP-FUTUREPAY_COLLECT-GENERALJCBCOLLECT-JPY", "amount": "1000", "currencyCode": "JPY" },
+  "schema": { "payment_order": { "kind": "object", "label": "Payment order", "fields": { "collect": { "kind": "object", "label": "Collect payload", "fields": { "country_code": { "kind": "text", "label": "Country code", "required": true }, "product_detail": { "kind": "textarea", "label": "Product detail", "required": true }, "product_name": { "kind": "text", "label": "Product name", "required": true }, "shopper_reference": { "kind": "text", "label": "Shopper reference", "required": true }, "origin": { "kind": "text", "label": "Origin", "required": true } } } } },
+  "values": { "payment_order": { "collect": { "country_code": "JP", "product_detail": "Collect order for %s", "product_name": "JCB for JPY", "shopper_reference": "CUSTOMER_001", "origin": "merchant.example.com" } } }
+}

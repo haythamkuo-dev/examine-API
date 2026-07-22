@@ -54,6 +54,41 @@ describe('deposit web helpers', () => {
     expect(result.common.values.returnUrl).toBe('https://merchant.example.com/deposit');
   });
 
+  test('includes the new deposit channel presets', () => {
+    const result = createSeedDepositPresets(env, makeId);
+
+    expect(result.channels['JCB-USD'].commonValues).toEqual({
+      productNo: 'DEP-FUTUREPAY_COLLECT-GENERALJCBCOLLECT-USD',
+      amount: '99.99',
+      currencyCode: 'USD',
+    });
+    expect(result.channels['JCB-JPY'].values).toMatchObject({
+      payment_order: { collect: { country_code: 'JP', product_name: 'JCB for JPY' } },
+    });
+    expect(result.channels['ALIPAY-CNY'].values).toMatchObject({
+      payment_order: { collect: { country_code: 'CN', product_name: 'aliPay for CNY' } },
+    });
+    expect(result.channels['ALIPAY-8000'].values).toEqual({});
+  });
+
+  test('builds requests for a new deposit channel with a generated merchant reference', () => {
+    const defaults = toDepositDefaultsResponse(
+      'JCB-USD',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload.product_no).toBe('DEP-FUTUREPAY_COLLECT-GENERALJCBCOLLECT-USD');
+    expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
+    expect(payload.return_url).toBe('https://merchant.example.com/deposit');
+    expect(payload.payment_order).toMatchObject({
+      collect: { country_code: 'US', product_name: 'JCB for USD' },
+    });
+  });
+
   test('builds masked preview response', () => {
     const defaults = toDepositDefaultsResponse(
       'southafrica_cards',

@@ -16,6 +16,14 @@ export const DEPOSIT_CHANNELS = [
   'th_rabbit_linepay',
   'my_tng',
   'international_credit_cards',
+  'JCB-USD',
+  'JCB-JPY',
+  'ALIPAY-CNY',
+  'ALIPAY-HKD',
+  'WECHAT-HKD',
+  'ALIPAY-8000',
+  'ALIPAY-6014',
+  'WECHAT-6016',
 ] as const;
 
 export const PAYOUT_CHANNELS = ['co_bank', 'co_wallet', 'imps', 'bd_wallet'] as const;
@@ -65,6 +73,14 @@ const DEPOSIT_CHANNEL_TOKEN_KEYS: Record<DepositChannel, MerchantTokenKey> = {
   th_rabbit_linepay: MerchantTokenKey.Normal,
   my_tng: MerchantTokenKey.Normal,
   international_credit_cards: MerchantTokenKey.Normal,
+  'JCB-USD': MerchantTokenKey.Normal,
+  'JCB-JPY': MerchantTokenKey.Normal,
+  'ALIPAY-CNY': MerchantTokenKey.Normal,
+  'ALIPAY-HKD': MerchantTokenKey.Normal,
+  'WECHAT-HKD': MerchantTokenKey.Normal,
+  'ALIPAY-8000': MerchantTokenKey.Normal,
+  'ALIPAY-6014': MerchantTokenKey.Normal,
+  'WECHAT-6016': MerchantTokenKey.Normal,
 };
 
 const PAYOUT_CHANNEL_TOKEN_KEYS: Record<PayoutChannel, MerchantTokenKey> = {
