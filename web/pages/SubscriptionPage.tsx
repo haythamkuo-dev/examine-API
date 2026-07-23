@@ -133,7 +133,12 @@ export function SubscriptionPage() {
         </form>
 
         <section className="grid min-w-0 content-start gap-6">
-          <JsonPanel title="Request preview" body={preview} emptyState={previewEmptyState} logContext={previewLogContext} />
+          <JsonPanel
+            title="Request preview"
+            body={preview ? { payload: preview.request.payload } : null}
+            emptyState={previewEmptyState}
+            logContext={previewLogContext}
+          />
           <ResultPanel
             statusLabel={apiResult ? `${apiResult.action.toUpperCase()}${apiResult.status !== null ? ` Status ${apiResult.status}` : ''}` : null}
             message={apiResult?.message ?? null}

@@ -446,6 +446,8 @@ describe('SubscriptionPage', () => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('preview-generated-subscription-preview-start');
     });
     expect(view.queryByText('Preview completed.')).toBeNull();
+    expect(view.queryByText('subscription:preview:test')).toBeNull();
+    expect(view.queryByText('https://gateway.example.test/subscription')).toBeNull();
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Send request' }));

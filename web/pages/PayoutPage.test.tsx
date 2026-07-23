@@ -755,7 +755,9 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('preview-generated-merchant-preview-start');
+    expect(view.getByLabelText('Merchant reference *')).toHaveValue('preview-generated-merchant-preview-start');
+    expect(view.queryByText('payout:preview:test')).toBeNull();
+    expect(view.queryByText('https://gateway.example.test/payout')).toBeNull();
     });
 
     await act(async () => {

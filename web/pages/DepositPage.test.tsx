@@ -403,6 +403,8 @@ describe('DepositPage', () => {
     expect(channelValues.collects[0]?.enabled).toBe(false);
     expect(view.getByLabelText('Merchant reference *')).toHaveValue(`PREVIEW-${primaryChannel}`);
     expect(view.getAllByText(new RegExp(`"merchant_ref": "PREVIEW-${primaryChannel}"`))).toHaveLength(1);
+    expect(view.queryByText('deposit:preview:test')).toBeNull();
+    expect(view.queryByText('https://gateway.example.test/deposit')).toBeNull();
   });
 
   test('loads channel-specific defaults and restores prior channel drafts when switching channels', async () => {
