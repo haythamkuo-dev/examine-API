@@ -116,13 +116,15 @@ export function SubscriptionPage() {
             footer={
               <>
                 <p className="text-sm text-[color:var(--color-text-muted)]">{draftNotice}</p>
-                {error && hasMissingPlanConfig ? (
+                {error ? (
                   <div
                     className="rounded-[18px] border border-[var(--status-danger-border)] bg-[var(--status-danger-bg)] px-4 py-3 text-sm text-[var(--status-danger-text)]"
                     role="alert"
                   >
                     {error}
-                    {!canSubmit ? ' Switch to a configured channel or fix the backend env before previewing or sending requests.' : ''}
+                    {hasMissingPlanConfig && !canSubmit
+                      ? ' Switch to a configured channel or fix the backend env before previewing or sending requests.'
+                      : ''}
                   </div>
                 ) : null}
               </>

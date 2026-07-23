@@ -159,6 +159,7 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
     if (!form) return;
 
     setLoading('preview');
+    setError(null);
 
     try {
       const response = await previewDepositRequest(mode, {
@@ -181,22 +182,9 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
       }
 
       setPreview(response);
-      setApiResult({
-        ok: true,
-        action: 'preview',
-        status: getNumericStatus(response),
-        message: 'Preview completed.',
-        logContext: previewLogContext,
-        raw: {
-          ok: true,
-          action: 'preview',
-          status: getNumericStatus(response),
-          data: response,
-        },
-      });
     } catch (caught) {
       setPreview(null);
-      setApiResult(buildFailureResult('preview', caught, previewLogContext));
+      setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setLoading(null);
     }

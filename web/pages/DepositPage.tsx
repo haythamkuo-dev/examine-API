@@ -95,7 +95,12 @@ export function DepositPage() {
             loadingLabel={loading ? loadingLabels[loading] : 'Form ready'}
             disabled={loading !== null}
             actions={actions}
-            footer={<p className="text-sm text-[color:var(--color-text-muted)]">{draftNotice}</p>}
+            footer={
+              <>
+                <p className="text-sm text-[color:var(--color-text-muted)]">{draftNotice}</p>
+                {error ? <p className="text-sm text-[color:var(--color-text-muted)]">{error}</p> : null}
+              </>
+            }
           />
         </form>
 

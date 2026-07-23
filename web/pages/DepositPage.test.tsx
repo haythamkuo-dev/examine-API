@@ -385,7 +385,9 @@ describe('DepositPage', () => {
       fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
     });
 
-    await view.findByText('Preview completed.');
+    await waitFor(() => {
+      expect(view.queryByText('Preview completed.')).toBeNull();
+    });
 
     const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
     expect(previewCall?.body?.apiKey).toBe('typed-deposit-key');
@@ -400,7 +402,7 @@ describe('DepositPage', () => {
     expect(channelValues.approvalRequired).toBe(true);
     expect(channelValues.collects[0]?.enabled).toBe(false);
     expect(view.getByLabelText('Merchant reference *')).toHaveValue(`PREVIEW-${primaryChannel}`);
-    expect(view.getAllByText(new RegExp(`"merchant_ref": "PREVIEW-${primaryChannel}"`))).toHaveLength(2);
+    expect(view.getAllByText(new RegExp(`"merchant_ref": "PREVIEW-${primaryChannel}"`))).toHaveLength(1);
   });
 
   test('loads channel-specific defaults and restores prior channel drafts when switching channels', async () => {
@@ -859,7 +861,9 @@ describe('DepositPage', () => {
       fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
     });
 
-    await view.findByText('Preview completed.');
+    await waitFor(() => {
+      expect(view.queryByText('Preview completed.')).toBeNull();
+    });
 
     const previewCall = fetchRecords.find((record) => record.method === 'POST' && record.url === previewEndpoint);
     expect(previewCall?.body?.apiKey).toBe(`api-key-${primaryChannel}`);
@@ -900,6 +904,5 @@ describe('DepositPage', () => {
     });
 
     await view.findByText('API 400 from /api/deposit/preview: commonValues.productNo is required');
-    expect(view.getByText('commonValues.productNo is required')).toBeInTheDocument();
   });
 });

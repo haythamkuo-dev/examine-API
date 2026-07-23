@@ -445,6 +445,7 @@ describe('SubscriptionPage', () => {
     await waitFor(() => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('preview-generated-subscription-preview-start');
     });
+    expect(view.queryByText('Preview completed.')).toBeNull();
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Send request' }));
