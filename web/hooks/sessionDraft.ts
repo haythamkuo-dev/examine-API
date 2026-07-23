@@ -1,7 +1,8 @@
 import type { OperatorEnvironmentMode } from '../pages/helper/operatorShared';
 
 const sessionDraftStoragePrefix = 'examine-api:draft';
-const sessionDraftVersion = 1;
+// Bump when persisted drafts are incompatible with the current schema/value types.
+const sessionDraftVersion = 2;
 
 type SessionDraftEnvelope<T> = {
   version: number;

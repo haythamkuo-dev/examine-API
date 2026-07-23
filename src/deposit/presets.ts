@@ -20,6 +20,12 @@ const textField = (label: string, required = false) => ({
   required,
 });
 
+const numberField = (label: string, required = false) => ({
+  kind: 'number' as const,
+  label,
+  required,
+});
+
 const textareaField = (label: string, required = false) => ({
   kind: 'textarea' as const,
   label,
@@ -116,7 +122,7 @@ const LINEPAY_PACKAGE_SCHEMA: DepositFieldMap = {
   products: arrayField('Products', 'Product', {
     id: textField('Product ID', true),
     name: textField('Product name', true),
-    quantity: textField('Quantity', true),
+    quantity: numberField('Quantity', true),
     price: textField('Price', true),
   }),
 };
@@ -326,7 +332,7 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
               id: 'pkg-1',
               name: 'Default Package',
               amount: '100',
-              products: [{ id: 'SKU-001', name: 'Sample Item', quantity: '1', price: '100' }],
+              products: [{ id: 'SKU-001', name: 'Sample Item', quantity: 1, price: '100' }],
             },
           ],
         },
@@ -352,7 +358,7 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
               id: 'pkg-1',
               name: 'Default Package',
               amount: '120',
-              products: [{ id: 'SKU-001', name: 'Sample Item', quantity: '1', price: '120' }],
+              products: [{ id: 'SKU-001', name: 'Sample Item', quantity: 1, price: '120' }],
             },
           ],
         },

@@ -24,6 +24,21 @@ beforeEach(async () => {
 });
 
 describe('validateDepositForm', () => {
+  test('loads LINE Pay quantity as a numeric field and value', async () => {
+    const presets = await loadDepositPresets({ dirPath: presetDirPath, env, makeId });
+    const defaults = toDepositDefaultsResponse('linepay', env, presets);
+    const products = (
+      (defaults.form.channelValues.payment_order as Record<string, unknown>).linepay_online as Record<string, unknown>
+    ).packages as Array<Record<string, unknown>>;
+    const quantity = ((products[0]?.products as Array<Record<string, unknown>>)[0] as Record<string, unknown>).quantity;
+    const quantitySchema = (((defaults.channelSchema.payment_order as { fields: Record<string, unknown> }).fields
+      .linepay_online as { fields: Record<string, unknown> }).fields.packages as { itemSchema: { fields: Record<string, unknown> } })
+      .itemSchema.fields.products as { itemSchema: { fields: Record<string, { kind: string }> } };
+
+    expect(quantity).toBe(1);
+    expect(quantitySchema.itemSchema.fields.quantity.kind).toBe('number');
+  });
+
   test('accepts valid deposit defaults for the selected channel', async () => {
     const presets = await loadDepositPresets({ dirPath: presetDirPath, env, makeId });
     const defaults = toDepositDefaultsResponse('southafrica_cards', env, presets);

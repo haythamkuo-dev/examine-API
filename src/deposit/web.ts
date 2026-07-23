@@ -27,6 +27,11 @@ export type DepositTextFieldSchema = DepositFieldSchemaBase & {
   placeholder?: string;
 };
 
+export type DepositNumberFieldSchema = DepositFieldSchemaBase & {
+  kind: 'number';
+  placeholder?: string;
+};
+
 export type DepositSelectFieldSchema = DepositFieldSchemaBase & {
   kind: 'select';
   options: DepositFieldOption[];
@@ -49,6 +54,7 @@ export type DepositArrayFieldSchema = DepositFieldSchemaBase & {
 
 export type DepositFieldSchema =
   | DepositTextFieldSchema
+  | DepositNumberFieldSchema
   | DepositSelectFieldSchema
   | DepositBooleanFieldSchema
   | DepositObjectFieldSchema
