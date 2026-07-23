@@ -302,14 +302,7 @@ describe('normalizeCreateResult', () => {
     expect(result.ok).toBe(true);
     expect(result.status).toBe(200);
     expect(result.message).toBe('Request sent successfully.');
-    expect(result.raw).toEqual({
-      requestName: 'payout:create:co_bank',
-      ok: true,
-      status: 200,
-      request: { method: 'POST', url: 'https://example.test', payload: { value: 1 } },
-      response: { ok: true },
-      durationMs: 10,
-    });
+    expect(result.raw).toEqual({ response: { ok: true } });
   });
 
   test('builds fallback failure details for non-JSON responses', async () => {

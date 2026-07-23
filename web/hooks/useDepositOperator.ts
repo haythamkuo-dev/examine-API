@@ -207,10 +207,7 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
         message: 'Request sent successfully.',
         logContext: createLogContext,
         raw: {
-          ok: true,
-          action: 'create',
-          status: getNumericStatus(response),
-          data: response,
+          response: response.response ?? null,
         },
       });
     } catch (caught) {

@@ -33,6 +33,8 @@ const merchantRefEndpoint = '/api/subscription/merchant-ref';
 const merchantRefFieldKey = 'merchantRef';
 const isBlankMerchantRef = (value: string): boolean => !value.trim();
 const missingPlanMessageFallback = 'Subscription plan configuration is missing for the selected channel.';
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 type OperatorApiErrorBody = {
   code?: string;
@@ -87,10 +89,7 @@ export const normalizeCreateResult = async (response: Response): Promise<ApiResu
       status: response.status,
       message: 'Request sent successfully.',
       raw: {
-        ok: true,
-        action: 'create',
-        status: response.status,
-        data: parsedBody,
+        response: isPlainObject(parsedBody) ? parsedBody.response ?? null : null,
       },
     };
   }

@@ -730,7 +730,8 @@ describe('DepositPage', () => {
     });
 
     await view.findByText('Request sent successfully.');
-    expect(view.getByText(/"requestName": "deposit:create:test"/)).toBeInTheDocument();
+    expect(view.getByText(/"response":/)).toBeInTheDocument();
+    expect(view.queryByText(/"requestName": "deposit:create:test"/)).toBeNull();
     expect(view.getAllByText('模式 沙盒 · 目標 沙盒代理').length).toBeGreaterThan(0);
     expect(view.getByText('/api/deposit/create')).toBeInTheDocument();
   });

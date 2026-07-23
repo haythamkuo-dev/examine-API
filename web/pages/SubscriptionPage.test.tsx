@@ -231,7 +231,7 @@ describe('normalizeCreateResult', () => {
     expect(result.ok).toBe(true);
     expect(result.status).toBe(200);
     expect(result.message).toBe('Request sent successfully.');
-    expect((result.raw as { data: { requestName: string } }).data.requestName).toBe('subscription:create:default');
+    expect(result.raw).toEqual({ response: { ok: true } });
   });
 
   test('builds fallback error result for non-JSON failure response', async () => {

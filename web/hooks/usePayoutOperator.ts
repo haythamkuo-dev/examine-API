@@ -114,7 +114,7 @@ export const normalizeCreateResult = async (response: Response): Promise<ApiResu
       status,
       message,
       details: ok ? undefined : extractCreateDetails(parsedBody, message),
-      raw: parsedBody,
+      raw: ok ? { response: record.response ?? null } : parsedBody,
     };
   }
 
