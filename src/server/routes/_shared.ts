@@ -1,5 +1,6 @@
-import { badRequest, json, readJson } from '../http';
+import { badRequest, errorResponse, json, readJson } from '../http';
 import { resolveTargetEnvironment, type TargetEnvironment } from '../../core/targetEnvironment';
+import { AppError, normalizeRouteError } from '../errors';
 
 type RouteResponse = Response | null;
 
@@ -50,6 +51,9 @@ const handleRouteError = async (
   const handled = await onRouteError(error);
   if (handled instanceof Response) {
     return handled;
+  }
+  if (handled instanceof AppError) {
+    return errorResponse(handled.status, handled.message, handled.code);
   }
 
   throw error;
@@ -154,6 +158,12 @@ export const handlePresetBackedRoute = async <
       const error = validate(values, bundle);
       if (error) return badRequest(error);
       const result = await execute(service, values, targetEnvironment);
+      const normalizedError = normalizeRouteError(result);
+      if (normalizedError) {
+        return json(normalizedError, {
+          status: normalizedError.response.status,
+        });
+      }
       return json(result, {
         status: (result as { ok?: boolean; status?: number }).ok ? 200 : (result as { status?: number }).status || 500,
       });

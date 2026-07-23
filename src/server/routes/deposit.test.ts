@@ -130,8 +130,14 @@ describe('deposit API routes', () => {
 
     expect(response.status).toBe(400);
 
-    const body = (await response.json()) as Record<string, unknown>;
-    expect(body.message).toBe('payment_order.collect.product_name is required');
+    const body = (await response.json()) as {
+      response: { status: number; code: string; message: string };
+    };
+    expect(body.response).toEqual({
+      status: 400,
+      code: 'UNKNOWN_ERROR',
+      message: 'payment_order.collect.product_name is required',
+    });
   });
 
   test('POST /api/deposit/preview returns 400 when productNo looks like a token instead of a deposit product code', async () => {
@@ -146,8 +152,14 @@ describe('deposit API routes', () => {
 
     expect(response.status).toBe(400);
 
-    const body = (await response.json()) as Record<string, unknown>;
-    expect(body.message).toBe('commonValues.productNo must be a valid deposit product code');
+    const body = (await response.json()) as {
+      response: { status: number; code: string; message: string };
+    };
+    expect(body.response).toEqual({
+      status: 400,
+      code: 'UNKNOWN_ERROR',
+      message: 'commonValues.productNo must be a valid deposit product code',
+    });
   });
 
   test('POST /api/deposit/preview returns masked preview payload for valid deposit form', async () => {
@@ -219,6 +231,37 @@ describe('deposit API routes', () => {
     expect(capturedUpstreamBody.merchant_ref).toBe('TEST_DEPOSIT_ORDER_125');
   });
 
+  test('POST /api/deposit/create returns only the normalized upstream error envelope', async () => {
+    globalThis.fetch = mock(async () =>
+      new Response(
+        JSON.stringify({
+          code: 'binding_missing',
+          message: 'Binding missing; token=deposit-secret; context remains',
+          raw_payload: { should_not: 'escape' },
+        }),
+        {
+          status: 422,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    ) as unknown as typeof fetch;
+
+    const response = await context.requestApi('/api/deposit/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(createValidBody()),
+    });
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      response: {
+        status: 422,
+        code: 'binding_missing',
+        message: 'Binding missing; token=[REDACTED]; context remains',
+      },
+    });
+  });
+
   test('POST /api/deposit/create switches to the product env when requested', async () => {
     let upstreamUrl = '';
     let upstreamAuthorization = '';
@@ -287,8 +330,14 @@ describe('deposit API routes', () => {
 
     expect(response.status).toBe(400);
 
-    const body = (await response.json()) as Record<string, unknown>;
-    expect(body.message).toBe('Unsupported target environment: staging');
+    const body = (await response.json()) as {
+      response: { status: number; code: string; message: string };
+    };
+    expect(body.response).toEqual({
+      status: 400,
+      code: 'UNKNOWN_ERROR',
+      message: 'Unsupported target environment: staging',
+    });
   });
 
 });

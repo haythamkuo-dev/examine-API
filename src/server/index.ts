@@ -7,7 +7,9 @@ import {
   type CliEnvRegistry,
 } from '../core/env';
 import { keepAlive } from '../utils';
+import type { Logger } from '../runner';
 import { corsHeaders, json, notFound } from './http';
+import { buildErrorEnvelope, unknownErrorMessage } from './errors';
 import { handleDepositRoute } from './routes/deposit';
 import { handlePayoutRoute } from './routes/payout';
 import { handleSubscriptionRoute } from './routes/subscription';
@@ -23,29 +25,25 @@ export type ApiServerOptions = {
   depositPresetDirPath: string;
   payoutPresetDirPath: string;
   subscriptionPresetDirPath: string;
-  logger: Console;
+  logger: Logger;
   makeId: (prefix: string) => string;
   port?: number;
 };
 
 /**
- * Creates the Bun HTTP server for deposit, payout, and subscription APIs.
+ * Creates the request handler shared by the Bun server and isolated API tests.
  *
- * @param options Runtime dependencies for environment, preset storage, and logging.
- * @param options.envRegistry Application environments keyed by target environment.
- * @param options.depositPresetDirPath Directory containing deposit preset fixtures.
- * @param options.payoutPresetDirPath Directory containing payout preset fixtures.
- * @param options.subscriptionPresetDirPath Directory containing subscription preset fixtures.
- * @param options.logger Logger used by the underlying runner and startup output.
- * @param options.makeId Factory for merchant reference identifiers.
- * @param options.port Port to bind. Uses `API_SERVER_PORT` or `3000` when omitted.
- * @returns The started Bun server instance.
- * @throws {Error} When Bun fails to bind the requested port.
+ * Expected route failures must be normalized inside their route handlers. This
+ * boundary only catches exceptions that escape route-level handling.
+ *
+ * @param options Runtime dependencies for routing and upstream services.
+ * @returns Request handler that always converts unhandled exceptions to a generic 500 envelope.
  */
-export const createApiServer = (options: ApiServerOptions) =>
-  Bun.serve({
-    port: options.port ?? DEFAULT_PORT,
-    async fetch(request: Request) {
+export const createApiRequestHandler = (
+  options: ApiServerOptions,
+): ((request: Request) => Promise<Response>) =>
+  async (request: Request): Promise<Response> => {
+    try {
       const url = new URL(request.url);
 
       if (request.method === 'OPTIONS') {
@@ -99,8 +97,30 @@ export const createApiServer = (options: ApiServerOptions) =>
       }
 
       return notFound();
-    },
+    } catch (error) {
+      options.logger.error('Unhandled API request error', error);
+      return json(buildErrorEnvelope(500, unknownErrorMessage), { status: 500 });
+    }
+  };
+
+/**
+ * Creates the Bun HTTP server for deposit, payout, and subscription APIs.
+ *
+ * @param options Runtime dependencies for environment, preset storage, and logging.
+ * @returns The started Bun server instance.
+ * @throws {Error} When Bun fails to bind the requested port.
+ */
+export const createApiServer = (options: ApiServerOptions) => {
+  const handleRequest = createApiRequestHandler(options);
+
+  return Bun.serve({
+    port: options.port ?? DEFAULT_PORT,
+    fetch: handleRequest,
   });
+};
+
+// #todo Define a structured server-side error log schema, retention policy, and access controls.
+// #todo Design an authorized, masked, and audited debug mode.
 
 if (import.meta.main) {
   const server = createApiServer({

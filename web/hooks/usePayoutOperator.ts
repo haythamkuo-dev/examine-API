@@ -1,6 +1,5 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
 import type {
-  PayoutCreateResponse,
   PayoutDefaultsResponse,
   PayoutFieldMap,
   PayoutFormValues,
@@ -15,10 +14,12 @@ import {
 import {
   extractMerchantReferenceValue,
   buildApiLogContext,
+  buildFailureResult,
   type ApiResultView,
   type OperatorEnvironmentMode,
   updatePathValue,
 } from '../pages/helper/operatorShared';
+import { normalizeOperatorError } from '../pages/helper/operatorError';
 import type {
   FieldVisibilityResolver,
   RequestBuilderFieldOverride,
@@ -41,36 +42,6 @@ const shouldPreservePayoutApiKey = (
 ): boolean =>
   !specialPayoutChannels.has(nextChannel as PayoutFormValues['channel']) &&
   (!currentChannel || !specialPayoutChannels.has(currentChannel));
-
-const extractCreateMessage = (statusText: string, body: unknown): string => {
-  if (body && typeof body === 'object') {
-    const record = body as Record<string, unknown>;
-    if (typeof record.message === 'string' && record.message.trim()) {
-      return record.message;
-    }
-    if (typeof record.error === 'string' && record.error.trim()) {
-      return record.error;
-    }
-  }
-
-  return statusText || 'Request failed';
-};
-
-const extractCreateDetails = (body: unknown, message: string): string | undefined => {
-  if (typeof body === 'string') {
-    const summary = body.trim();
-    return summary && summary !== message ? summary : undefined;
-  }
-
-  if (body && typeof body === 'object') {
-    const record = body as Record<string, unknown>;
-    if (typeof record.error === 'string' && record.error.trim() && record.error !== message) {
-      return record.error;
-    }
-  }
-
-  return undefined;
-};
 
 const isBlankMerchantReference = (value: string): boolean => !value.trim();
 
@@ -97,42 +68,32 @@ export const normalizeCreateResult = async (response: Response): Promise<ApiResu
     }
   }
 
-  if (parsedBody && typeof parsedBody === 'object') {
-    const record = parsedBody as PayoutCreateResponse;
-    const ok = typeof record.ok === 'boolean' ? record.ok : response.ok;
-    const status = typeof record.status === 'number' ? record.status : response.status;
-    const message =
-      ok
-        ? typeof record.message === 'string' && record.message.trim()
-          ? record.message
-          : 'Request sent successfully.'
-        : extractCreateMessage(response.statusText, parsedBody);
-
+  const record = isPlainObject(parsedBody) ? parsedBody : null;
+  const ok = typeof record?.ok === 'boolean' ? record.ok : response.ok;
+  if (!ok) {
+    const envelope = normalizeOperatorError(
+      parsedBody,
+      response.status,
+      response.statusText,
+    );
     return {
-      ok,
+      ok: false,
       action: 'create',
-      status,
-      message,
-      details: ok ? undefined : extractCreateDetails(parsedBody, message),
-      raw: ok ? { response: record.response ?? null } : parsedBody,
+      status: envelope.response.status,
+      message: envelope.response.message,
+      raw: envelope,
     };
   }
 
-  const message = response.ok ? 'Request sent successfully.' : extractCreateMessage(response.statusText, parsedBody);
-
   return {
-    ok: response.ok,
+    ok: true,
     action: 'create',
-    status: response.status,
-    message,
-    details: response.ok ? undefined : extractCreateDetails(parsedBody, message),
-    raw: {
-      ok: response.ok,
-      action: 'create',
-      status: response.status,
-      contentType: contentType || 'unknown',
-      body: parsedBody,
-    },
+    status: typeof record?.status === 'number' ? record.status : response.status,
+    message:
+      typeof record?.message === 'string' && record.message.trim()
+        ? record.message
+        : 'Request sent successfully.',
+    raw: { response: record?.response ?? parsedBody },
   };
 };
 
@@ -368,21 +329,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
         logContext: createLogContext,
       });
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : String(caught);
-
-      setResult({
-        ok: false,
-        action: 'create',
-        status: null,
-        message,
-        logContext: createLogContext,
-        raw: {
-          ok: false,
-          action: 'create',
-          status: null,
-          message,
-        },
-      });
+      setResult(buildFailureResult('create', caught, createLogContext));
     } finally {
       setLoading(null);
     }
@@ -417,21 +364,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
         },
       });
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : String(caught);
-
-      setResult({
-        ok: false,
-        action: 'generate',
-        status: null,
-        message,
-        logContext: generateLogContext,
-        raw: {
-          ok: false,
-          action: 'generate',
-          status: null,
-          message,
-        },
-      });
+      setResult(buildFailureResult('generate', caught, generateLogContext));
     } finally {
       setLoading(null);
     }

@@ -598,7 +598,7 @@ describe('DepositPage', () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
     });
 
-    await view.findByText('API 500 from /api/deposit/merchant-ref: generator unavailable');
+    await view.findByText('generator unavailable');
     expect(view.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
   });
 

@@ -245,7 +245,14 @@ describe('normalizeCreateResult', () => {
     expect(result.ok).toBe(false);
     expect(result.status).toBe(502);
     expect(result.message).toBe('gateway failed');
-    expect((result.raw as { body: string }).body).toBe('gateway failed');
+    expect(result.details).toBeUndefined();
+    expect(result.raw).toEqual({
+      response: {
+        status: 502,
+        code: 'UNKNOWN_ERROR',
+        message: 'gateway failed',
+      },
+    });
   });
 });
 
@@ -375,7 +382,7 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByText('API 500 from /api/subscription/merchant-ref: generator unavailable')).toBeInTheDocument();
+      expect(view.getByText('generator unavailable')).toBeInTheDocument();
     });
 
     expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-003');

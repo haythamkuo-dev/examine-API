@@ -23,6 +23,10 @@ import {
   updatePathValue,
 } from '../pages/helper/operatorShared';
 import type { RequestBuilderFieldOverride } from '../pages/requestBuilder';
+import {
+  normalizeOperatorError,
+  parseOperatorError,
+} from '../pages/helper/operatorError';
 import { clearSessionDraft, readSessionDraft, writeSessionDraft } from './sessionDraft';
 import { usePersistentApiKey } from './usePersistentApiKey';
 
@@ -35,29 +39,6 @@ const isBlankMerchantRef = (value: string): boolean => !value.trim();
 const missingPlanMessageFallback = 'Subscription plan configuration is missing for the selected channel.';
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
-
-type OperatorApiErrorBody = {
-  code?: string;
-  message?: string;
-};
-
-const parseOperatorApiErrorBody = (rawBody: string): OperatorApiErrorBody | null => {
-  const trimmedBody = rawBody.trim();
-  if (!trimmedBody) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(trimmedBody) as unknown;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return null;
-    }
-
-    return parsed as OperatorApiErrorBody;
-  } catch {
-    return null;
-  }
-};
 
 /**
  * Normalizes subscription create API responses into a panel-friendly result object.
@@ -82,31 +63,29 @@ export const normalizeCreateResult = async (response: Response): Promise<ApiResu
     }
   }
 
-  if (response.ok && parsedBody && typeof parsedBody === 'object') {
+  const record = isPlainObject(parsedBody) ? parsedBody : null;
+  const ok = typeof record?.ok === 'boolean' ? record.ok : response.ok;
+  if (!ok) {
+    const envelope = normalizeOperatorError(
+      parsedBody,
+      response.status,
+      response.statusText,
+    );
     return {
-      ok: true,
+      ok: false,
       action: 'create',
-      status: response.status,
-      message: 'Request sent successfully.',
-      raw: {
-        response: isPlainObject(parsedBody) ? parsedBody.response ?? null : null,
-      },
+      status: envelope.response.status,
+      message: envelope.response.message,
+      raw: envelope,
     };
   }
 
   return {
-    ok: response.ok,
+    ok: true,
     action: 'create',
-    status: response.status,
-    message: rawBody.trim() || response.statusText || 'Request failed',
-    details: rawBody.trim() || undefined,
-    raw: {
-      ok: response.ok,
-      action: 'create',
-      status: response.status,
-      contentType: contentType || 'unknown',
-      body: parsedBody,
-    },
+    status: typeof record?.status === 'number' ? record.status : response.status,
+    message: 'Request sent successfully.',
+    raw: { response: record?.response ?? parsedBody },
   };
 };
 
@@ -211,11 +190,11 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
 
       setError(caught instanceof Error ? caught.message : String(caught));
       if (caught instanceof ApiRequestError) {
-        const errorBody = parseOperatorApiErrorBody(caught.rawBody);
-        if (errorBody?.code === missingSubscriptionPlanCode) {
+        const errorEnvelope = parseOperatorError(caught.rawBody, caught.status);
+        if (errorEnvelope.response.code === missingSubscriptionPlanCode) {
           setHasMissingPlanConfig(true);
           setResolvedPlanId('');
-          setError(errorBody.message || missingPlanMessageFallback);
+          setError(errorEnvelope.response.message || missingPlanMessageFallback);
           setLoading(null);
           return;
         }

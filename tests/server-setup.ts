@@ -3,14 +3,12 @@ import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import {
   getCliEnv,
-  getCliEnvForTarget,
   getCliEnvRegistry,
   type CliEnv,
   type CliEnvRegistry,
 } from '../src/core/env';
-import { handleDepositRoute } from '../src/server/routes/deposit';
-import { handlePayoutRoute } from '../src/server/routes/payout';
-import { handleSubscriptionRoute } from '../src/server/routes/subscription';
+import { createApiRequestHandler } from '../src/server';
+import type { Logger } from '../src/runner';
 
 const dataRootDirPath = resolve(process.cwd(), 'data');
 const depositSourceDirPath = join(dataRootDirPath, 'deposit');
@@ -55,6 +53,7 @@ export const createTestCliEnv = (): CliEnv => getCliEnv(process.env);
  */
 export const startApiTestServer = async (options?: {
   envRegistry?: CliEnvRegistry;
+  logger?: Logger;
   makeId?: (prefix: string) => string;
 }): Promise<ApiTestServerContext> => {
   const tempRootDirPath = await mkdtemp(join(tmpdir(), 'api-server-test-'));
@@ -83,53 +82,18 @@ export const startApiTestServer = async (options?: {
   await resetPayoutFixtures();
   await resetSubscriptionFixtures();
 
+  const handleRequest = createApiRequestHandler({
+    envRegistry,
+    depositPresetDirPath,
+    payoutPresetDirPath,
+    subscriptionPresetDirPath,
+    logger: options?.logger || console,
+    makeId: currentMakeId,
+  });
+
   const requestApi = async (path: string, init?: RequestInit): Promise<Response> => {
     const request = new Request(new URL(path, 'http://127.0.0.1').toString(), init);
-    const url = new URL(request.url);
-
-    const depositResponse = await handleDepositRoute({
-      request,
-      url,
-      deps: {
-        getEnvForTarget: (target) => getCliEnvForTarget(envRegistry, target),
-        presetDirPath: depositPresetDirPath,
-        makeId: currentMakeId,
-        logger: console,
-      },
-    });
-    if (depositResponse) {
-      return depositResponse;
-    }
-
-    const payoutResponse = await handlePayoutRoute({
-      request,
-      url,
-      deps: {
-        getEnvForTarget: (target) => getCliEnvForTarget(envRegistry, target),
-        presetDirPath: payoutPresetDirPath,
-        makeId: currentMakeId,
-        logger: console,
-      },
-    });
-    if (payoutResponse) {
-      return payoutResponse;
-    }
-
-    const subscriptionResponse = await handleSubscriptionRoute({
-      request,
-      url,
-      deps: {
-        getEnvForTarget: (target) => getCliEnvForTarget(envRegistry, target),
-        presetDirPath: subscriptionPresetDirPath,
-        makeId: currentMakeId,
-        logger: console,
-      },
-    });
-    if (subscriptionResponse) {
-      return subscriptionResponse;
-    }
-
-    return new Response(null, { status: 404 });
+    return handleRequest(request);
   };
 
   return {

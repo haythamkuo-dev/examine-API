@@ -9,11 +9,15 @@ import {
   missingSubscriptionPlanCode,
   type SubscriptionRequestValues,
 } from '../../subscription/web';
-import { badRequest, json } from '../http';
+import { AppError } from '../errors';
 import { handlePresetBackedRoute } from './_shared';
 
-const subscriptionPlanBadRequest = (message: string): Response =>
-  json({ ok: false, code: missingSubscriptionPlanCode, message }, { status: 400 });
+const subscriptionPlanError = (message: string): AppError =>
+  new AppError({
+    status: 400,
+    code: missingSubscriptionPlanCode,
+    message,
+  });
 
 /**
  * Handles subscription API routes for defaults, preview, and create requests.
@@ -42,7 +46,7 @@ export const handleSubscriptionRoute = async ({
     ReturnType<typeof createSubscriptionService>,
     Awaited<ReturnType<ReturnType<typeof createSubscriptionService>['getDefaultsForTarget']>>,
     Awaited<ReturnType<ReturnType<typeof createSubscriptionService>['execute']>>,
-    Response
+    AppError
   >({
     request,
     url,
@@ -65,7 +69,7 @@ export const handleSubscriptionRoute = async ({
       ),
     onRouteError: (error) => {
       if (error instanceof SubscriptionPlanConfigError) {
-        return subscriptionPlanBadRequest(error.message);
+        return subscriptionPlanError(error.message);
       }
 
       throw error;

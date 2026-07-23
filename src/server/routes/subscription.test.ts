@@ -141,8 +141,14 @@ describe('subscription API routes', () => {
 
     expect(response.status).toBe(400);
 
-    const body = (await response.json()) as Record<string, unknown>;
-    expect(body.message).toBe('product_name is required');
+    const body = (await response.json()) as {
+      response: { status: number; code: string; message: string };
+    };
+    expect(body.response).toEqual({
+      status: 400,
+      code: 'UNKNOWN_ERROR',
+      message: 'product_name is required',
+    });
   });
 
   test('POST /api/subscription/preview returns masked preview payload for valid subscription form', async () => {
@@ -253,6 +259,30 @@ describe('subscription API routes', () => {
     expect(capturedUpstreamBody.subs_plan_id).toBe('PLAN-STAGE-DEFAULT');
   });
 
+  test('POST /api/subscription/create normalizes a plain-text upstream failure', async () => {
+    globalThis.fetch = mock(async () =>
+      new Response('subscription gateway unavailable', {
+        status: 503,
+        headers: { 'Content-Type': 'text/plain' },
+      }),
+    ) as unknown as typeof fetch;
+
+    const response = await context.requestApi('/api/subscription/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(createValidBody()),
+    });
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      response: {
+        status: 503,
+        code: 'UNKNOWN_ERROR',
+        message: 'subscription gateway unavailable',
+      },
+    });
+  });
+
   test('POST /api/subscription/create uses a manually provided api key override', async () => {
     let upstreamAuthorization = '';
 
@@ -329,11 +359,15 @@ describe('subscription API routes', () => {
 
       expect(response.status).toBe(400);
 
-      const body = (await response.json()) as Record<string, unknown>;
-      expect(body.code).toBe('MISSING_SUBSCRIPTION_PLAN');
-      expect(body.message).toBe(
-        'Missing subscription plan configuration for "rabbitLinePay". Expected env var: SUBSCRIPTION_PLAN_LINEPAY',
-      );
+      const body = (await response.json()) as {
+        response: { status: number; code: string; message: string };
+      };
+      expect(body.response).toEqual({
+        status: 400,
+        code: 'MISSING_SUBSCRIPTION_PLAN',
+        message:
+          'Missing subscription plan configuration for "rabbitLinePay". Expected env var: SUBSCRIPTION_PLAN_LINEPAY',
+      });
     } finally {
       await missingPlanContext.stop();
     }
@@ -354,11 +388,15 @@ describe('subscription API routes', () => {
 
       expect(response.status).toBe(400);
 
-      const body = (await response.json()) as Record<string, unknown>;
-      expect(body.code).toBe('MISSING_SUBSCRIPTION_PLAN');
-      expect(body.message).toBe(
-        'Missing subscription plan configuration for "rabbitLinePay". Expected env var: SUBSCRIPTION_PLAN_LINEPAY',
-      );
+      const body = (await response.json()) as {
+        response: { status: number; code: string; message: string };
+      };
+      expect(body.response).toEqual({
+        status: 400,
+        code: 'MISSING_SUBSCRIPTION_PLAN',
+        message:
+          'Missing subscription plan configuration for "rabbitLinePay". Expected env var: SUBSCRIPTION_PLAN_LINEPAY',
+      });
     } finally {
       await missingPlanContext.stop();
     }

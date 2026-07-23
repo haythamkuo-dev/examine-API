@@ -3,6 +3,10 @@ import {
   targetEnvironmentHeaderName,
   type TargetEnvironment,
 } from '../../../src/core/targetEnvironment';
+import {
+  getOperatorErrorSummary,
+  parseOperatorError,
+} from './operatorError';
 
 const jsonContentTypeHeader = 'Content-Type';
 const jsonContentTypeValue = 'application/json';
@@ -104,7 +108,9 @@ export const fetchJson = async <T,>(url: string, init?: RequestInit): Promise<T>
   const contentType = response.headers.get('content-type') || '';
 
   if (!response.ok) {
-    const summary = rawBody.trim() || response.statusText || 'Empty response body';
+    const summary = getOperatorErrorSummary(
+      parseOperatorError(rawBody, response.status, response.statusText),
+    );
     throw new ApiRequestError({
       message: `API ${response.status} from ${requestUrl}: ${summary}`,
       status: response.status,

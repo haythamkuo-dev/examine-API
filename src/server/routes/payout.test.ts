@@ -131,8 +131,14 @@ describe('payout API routes', () => {
 
     expect(response.status).toBe(400);
 
-    const body = (await response.json()) as Record<string, unknown>;
-    expect(body.message).toBe('payout_info.beneficiary.name is required');
+    const body = (await response.json()) as {
+      response: { status: number; code: string; message: string };
+    };
+    expect(body.response).toEqual({
+      status: 400,
+      code: 'UNKNOWN_ERROR',
+      message: 'payout_info.beneficiary.name is required',
+    });
   });
 
   test('POST /api/payout/preview returns masked preview payload for valid payout form', async () => {
@@ -232,6 +238,36 @@ describe('payout API routes', () => {
     const capturedUpstreamBody = upstreamBody as unknown as PayoutUpstreamBody;
     expect(capturedUpstreamBody.merchant_reference).toBe('TEST_BD_001');
     expect(capturedUpstreamBody.payout_info?.remitter).toBeUndefined();
+  });
+
+  test('POST /api/payout/create normalizes an upstream error field without leaking metadata', async () => {
+    globalThis.fetch = mock(async () =>
+      new Response(
+        JSON.stringify({
+          error: 'Beneficiary rejected',
+          diagnostic: { internal: true },
+        }),
+        {
+          status: 422,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    ) as unknown as typeof fetch;
+
+    const response = await context.requestApi('/api/payout/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(createValidBody()),
+    });
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      response: {
+        status: 422,
+        code: 'UNKNOWN_ERROR',
+        message: 'Beneficiary rejected',
+      },
+    });
   });
 
 });

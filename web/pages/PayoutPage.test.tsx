@@ -305,7 +305,7 @@ describe('normalizeCreateResult', () => {
     expect(result.raw).toEqual({ response: { ok: true } });
   });
 
-  test('builds fallback failure details for non-JSON responses', async () => {
+  test('builds a single normalized failure envelope for non-JSON responses', async () => {
     const response = new Response('gateway failed', {
       status: 502,
       statusText: 'Bad Gateway',
@@ -315,14 +315,14 @@ describe('normalizeCreateResult', () => {
     const result = await normalizeCreateResult(response);
     expect(result.ok).toBe(false);
     expect(result.status).toBe(502);
-    expect(result.message).toBe('Bad Gateway');
-    expect(result.details).toBe('gateway failed');
+    expect(result.message).toBe('gateway failed');
+    expect(result.details).toBeUndefined();
     expect(result.raw).toEqual({
-      ok: false,
-      action: 'create',
-      status: 502,
-      contentType: 'text/plain',
-      body: 'gateway failed',
+      response: {
+        status: 502,
+        code: 'UNKNOWN_ERROR',
+        message: 'gateway failed',
+      },
     });
   });
 });
@@ -643,7 +643,7 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByText('API 500 from /api/payout/merchant-reference: generator unavailable')).toBeInTheDocument();
+      expect(view.getByText('generator unavailable')).toBeInTheDocument();
     });
 
     expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-co_bank');
@@ -859,7 +859,6 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByText('Bad Gateway')).toBeInTheDocument();
       expect(view.getByText('gateway failed')).toBeInTheDocument();
       expect(view.getByText('CREATE Status 502')).toBeInTheDocument();
       expect(view.getAllByText('模式 沙盒 · 目標 沙盒代理').length).toBeGreaterThan(0);

@@ -5,12 +5,15 @@ import {
   resolveApiUrl,
   type OperatorEnvironmentMode,
 } from './operatorTransport';
+import {
+  normalizeOperatorError,
+  parseOperatorError,
+} from './operatorError';
 import { toast } from 'react-toastify';
 
 export { ApiRequestError, buildOperatorHeaders, fetchJson, resolveApiUrl };
 export type { OperatorEnvironmentMode } from './operatorTransport';
 
-const unknownContentTypeLabel = 'unknown';
 const localEnvironmentLabel = '沙盒';
 const productEnvironmentLabel = '產品';
 const localTargetLabel = '沙盒代理';
@@ -123,38 +126,27 @@ export const buildFailureResult = (
   logContext?: ApiLogContext,
 ): ApiResultView => {
   if (caught instanceof ApiRequestError) {
+    const envelope = parseOperatorError(caught.rawBody, caught.status);
+
     return {
       ok: false,
       action,
-      status: caught.status,
-      message: caught.message,
-      details: caught.rawBody.trim() || undefined,
+      status: envelope.response.status,
+      message: envelope.response.message,
       logContext,
-      raw: {
-        ok: false,
-        action,
-        status: caught.status,
-        url: caught.url,
-        message: caught.message,
-        contentType: caught.contentType || unknownContentTypeLabel,
-        body: caught.rawBody,
-      },
+      raw: envelope,
     };
   }
 
   const message = caught instanceof Error ? caught.message : String(caught);
+  const envelope = normalizeOperatorError(message, 500);
   return {
     ok: false,
     action,
-    status: null,
-    message,
+    status: envelope.response.status,
+    message: envelope.response.message,
     logContext,
-    raw: {
-      ok: false,
-      action,
-      status: null,
-      message,
-    },
+    raw: envelope,
   };
 };
 

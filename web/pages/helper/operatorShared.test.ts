@@ -3,7 +3,9 @@
 import '../../../tests/web-setup';
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 import {
+  ApiRequestError,
   buildOperatorHeaders,
+  buildFailureResult,
   extractMerchantReferenceValue,
   fetchJson,
   getOperatorEnvironmentLabel,
@@ -65,6 +67,57 @@ describe('operatorShared', () => {
         },
       }),
     ).resolves.toEqual({ ok: true });
+  });
+
+  test('fetchJson keeps raw compatibility data without embedding JSON in its message', async () => {
+    const rawBody = JSON.stringify({
+      response: {
+        status: 400,
+        code: 'binding_missing',
+        message: 'product_no is required',
+      },
+    });
+    globalThis.fetch = mock(async () =>
+      new Response(rawBody, {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    ) as unknown as typeof fetch;
+
+    try {
+      await fetchJson('/api/test');
+      throw new Error('Expected fetchJson to reject');
+    } catch (caught) {
+      expect(caught).toBeInstanceOf(ApiRequestError);
+      const error = caught as ApiRequestError;
+      expect(error.message).toBe('API 400 from /api/test: product_no is required');
+      expect(error.message).not.toContain(rawBody);
+      expect(error.rawBody).toBe(rawBody);
+    }
+  });
+
+  test('buildFailureResult exposes one normalized response without details', () => {
+    const error = new ApiRequestError({
+      message: 'transport summary',
+      status: 400,
+      url: '/api/test',
+      rawBody: JSON.stringify({ ok: false, message: 'product_no is required' }),
+      contentType: 'application/json',
+    });
+
+    expect(buildFailureResult('preview', error)).toEqual({
+      ok: false,
+      action: 'preview',
+      status: 400,
+      message: 'product_no is required',
+      raw: {
+        response: {
+          status: 400,
+          code: 'UNKNOWN_ERROR',
+          message: 'product_no is required',
+        },
+      },
+    });
   });
 
   test('returns the localized label for the product environment', () => {
