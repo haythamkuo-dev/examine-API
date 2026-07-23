@@ -6,7 +6,6 @@ import {
   AppThemeFrame,
   AppThemeProvider,
   ColorThemeToggle,
-  EnvironmentModeToggle,
   StatusPill,
   useAppTheme,
 } from './pages/pageChrome';
@@ -61,15 +60,6 @@ const AppShell = () => {
                         UI mode
                       </span>
                       <ColorThemeToggle mode={theme.colorTheme} onChange={theme.setColorTheme} />
-                    </div>
-                    <div className="grid gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-primary)]">
-                        Execution target
-                      </span>
-                      <EnvironmentModeToggle
-                        mode={theme.environmentMode}
-                        onChange={theme.setEnvironmentMode}
-                      />
                     </div>
                   </div>
                 </div>

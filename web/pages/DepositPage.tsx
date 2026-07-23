@@ -64,9 +64,9 @@ export function DepositPage() {
       <PageHero
         title={pageTitle}
         scopeLabel="Deposit"
-        statusLabel={loading ? loadingLabels[loading] : 'Ready to test'}
         environmentLabel={theme.environmentLabel}
-        targetLabel={createLogContext.targetLabel}
+        environmentMode={theme.mode}
+        onEnvironmentChange={theme.setMode}
       />
 
       <section className="grid gap-6 lg:grid-cols-[minmax(320px,460px)_minmax(0,1fr)]">

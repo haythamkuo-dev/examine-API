@@ -17,7 +17,7 @@ import type {
   DepositRequestValues,
 } from '../../src/deposit/web';
 import { DepositPage } from './DepositPage';
-import { AppThemeProvider, EnvironmentModeToggle, useAppTheme } from './pageChrome';
+import { AppThemeProvider } from './pageChrome';
 import { ModalProvider } from './utils/modal';
 
 const defaultsEndpoint = '/api/deposit/defaults';
@@ -238,16 +238,10 @@ const textResponse = (body: string, init?: ResponseInit): Response =>
 const fetchRecords: FetchRequestRecord[] = [];
 let routeHandlers = new Map<string, MockRouteHandler>();
 
-const TestEnvironmentControl = () => {
-  const theme = useAppTheme();
-  return <EnvironmentModeToggle mode={theme.environmentMode} onChange={theme.setEnvironmentMode} />;
-};
-
 const renderDepositPage = () => {
   const view = render(
     <AppThemeProvider>
       <ModalProvider>
-        <TestEnvironmentControl />
         <DepositPage />
       </ModalProvider>
     </AppThemeProvider>,

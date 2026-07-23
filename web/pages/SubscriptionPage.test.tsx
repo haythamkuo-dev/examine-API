@@ -14,7 +14,7 @@ import type {
   SubscriptionRequestValues,
 } from '../../src/subscription/web';
 import { normalizeCreateResult, SubscriptionPage } from './SubscriptionPage';
-import { AppThemeProvider, EnvironmentModeToggle, useAppTheme } from './pageChrome';
+import { AppThemeProvider } from './pageChrome';
 import { ModalProvider } from './utils/modal';
 
 const channel = 'default';
@@ -114,16 +114,10 @@ const textResponse = (body: string, init?: ResponseInit): Response =>
 const fetchRecords: FetchRequestRecord[] = [];
 let routeHandlers = new Map<string, MockRouteHandler>();
 
-const TestEnvironmentControl = () => {
-  const theme = useAppTheme();
-  return <EnvironmentModeToggle mode={theme.environmentMode} onChange={theme.setEnvironmentMode} />;
-};
-
 const renderSubscriptionPage = () => {
   const view = render(
     <AppThemeProvider>
       <ModalProvider>
-        <TestEnvironmentControl />
         <SubscriptionPage />
       </ModalProvider>
     </AppThemeProvider>,

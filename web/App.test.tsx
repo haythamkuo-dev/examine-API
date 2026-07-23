@@ -73,7 +73,7 @@ describe('web app routing', () => {
     expect(html).toContain('Deposit');
     expect(html).toContain('Payout');
     expect(html).toContain('Subscription');
-    expect(html).toContain('Execution target');
+    expect(html).not.toContain('Execution target');
     expect(html).not.toContain('Open deposit request builder.');
     expect(html).not.toContain('Open payout request builder.');
     expect(html).not.toContain('Open subscription request builder.');
@@ -141,9 +141,8 @@ describe('web app routing', () => {
 
     const view = renderApp(['/deposit']);
 
-    expect(view.getAllByRole('button', { name: '產品' })).toHaveLength(1);
-
     await view.findByText('Request builder');
+    expect(view.getAllByRole('button', { name: '產品' })).toHaveLength(1);
 
     act(() => {
       fireEvent.click(view.getAllByRole('button', { name: '產品' })[0]!);

@@ -490,24 +490,24 @@ export function PageCard({
 }
 
 /**
- * Renders the shared hero block for operator pages, including security framing and live status.
+ * Renders the shared hero block for operator pages, including the environment control.
  *
- * @param props Business title, status labels, and environment metadata.
+ * @param props Business title, scope, environment metadata, and environment change handler.
  * @returns The shared page-intro section used across deposit, payout, and subscription pages.
  */
 export function PageHero(props: {
   title: string;
   scopeLabel: string;
-  statusLabel: string;
   environmentLabel: string;
-  targetLabel: string;
+  environmentMode: OperatorEnvironmentMode;
+  onEnvironmentChange: (mode: OperatorEnvironmentMode) => void;
 }) {
   const {
     title,
     scopeLabel,
-    statusLabel,
     environmentLabel,
-    targetLabel,
+    environmentMode,
+    onEnvironmentChange,
   } = props;
 
   return (
@@ -519,11 +519,9 @@ export function PageHero(props: {
         </h1>
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <StatusPill tone="neutral">Scope: {scopeLabel}</StatusPill>
-          <StatusPill tone="accent">{statusLabel}</StatusPill>
           <StatusPill tone="neutral">環境: {environmentLabel}</StatusPill>
-          <StatusPill tone="neutral">目標: {targetLabel}</StatusPill>
+          <EnvironmentModeToggle mode={environmentMode} onChange={onEnvironmentChange} />
         </div>
-
       </div>
     </PageCard>
   );
