@@ -6,6 +6,7 @@ import {
   AppThemeFrame,
   AppThemeProvider,
   ColorThemeToggle,
+  EnvironmentModeToggle,
   StatusPill,
   useAppTheme,
 } from './pages/pageChrome';
@@ -14,25 +15,7 @@ import { ModalProvider } from './pages/utils/modal';
 const navBaseClassName =
   'inline-flex min-w-[118px] cursor-pointer items-center justify-center rounded-full border px-4 py-3 text-sm font-semibold transition duration-200';
 
-const optionCardClassName =
-  'group flex min-h-[120px] cursor-pointer flex-col justify-between rounded-2xl border border-[var(--app-option-card-border)] bg-[var(--app-option-card-bg)] p-5 transition duration-200 hover:border-[var(--color-primary)]/70 hover:bg-[var(--app-option-card-hover-bg)]';
-
-const HomePage = () => (
-  <section className="grid gap-4 sm:grid-cols-3" aria-label="Choose flow">
-    <NavLink to="/deposit" className={optionCardClassName}>
-      <h2 className="text-lg font-semibold text-[var(--color-text)]">Deposit</h2>
-      <p className="text-sm text-[color:var(--color-text-muted)]">Open deposit request builder.</p>
-    </NavLink>
-    <NavLink to="/payout" className={optionCardClassName}>
-      <h2 className="text-lg font-semibold text-[var(--color-text)]">Payout</h2>
-      <p className="text-sm text-[color:var(--color-text-muted)]">Open payout request builder.</p>
-    </NavLink>
-    <NavLink to="/subscription" className={optionCardClassName}>
-      <h2 className="text-lg font-semibold text-[var(--color-text)]">Subscription</h2>
-      <p className="text-sm text-[color:var(--color-text-muted)]">Open subscription request builder.</p>
-    </NavLink>
-  </section>
-);
+const HomePage = () => null;
 
 const AppShell = () => {
   const theme = useAppTheme();
@@ -78,6 +61,15 @@ const AppShell = () => {
                         UI mode
                       </span>
                       <ColorThemeToggle mode={theme.colorTheme} onChange={theme.setColorTheme} />
+                    </div>
+                    <div className="grid gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-primary)]">
+                        Execution target
+                      </span>
+                      <EnvironmentModeToggle
+                        mode={theme.environmentMode}
+                        onChange={theme.setEnvironmentMode}
+                      />
                     </div>
                   </div>
                 </div>

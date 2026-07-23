@@ -12,8 +12,7 @@ import { RequestBuilderCard } from './requestBuilder';
 export { normalizeCreateResult } from '../hooks/useSubscriptionOperator';
 import { useSubscriptionOperator } from '../hooks/useSubscriptionOperator';
 
-const moduleName = 'Subscription Module';
-const pageTitle = 'Subscription Operator Console';
+const pageTitle = 'Subscription';
 const previewEmptyState = 'Run a preview to inspect the exact subscription request body, URL, and masked headers.';
 const resultEmptyState = 'Send a subscription request to capture the raw response, status code, and diagnostics.';
 const draftNotice =
@@ -56,11 +55,9 @@ export function SubscriptionPage() {
     return (
       <OperatorThemeFrame>
         <LoadingHero
-          eyebrow={moduleName}
           title={pageTitle}
           message={loading === 'defaults' ? 'Loading server-side defaults for the selected channel.' : error || 'Unable to load defaults.'}
-          environmentMode={theme.mode}
-          onEnvironmentChange={theme.setMode}
+          isLoading={loading === 'defaults'}
           environmentLabel={theme.environmentLabel}
           targetLabel={defaultsLogContext.targetLabel}
         />
@@ -71,13 +68,9 @@ export function SubscriptionPage() {
   return (
     <OperatorThemeFrame>
       <PageHero
-        eyebrow={moduleName}
         title={pageTitle}
-        description="Edit shared subscription fields, review the signed payload preview, and run the test flow through the active API target."
         scopeLabel="Subscription"
         statusLabel={loading ? loadingLabels[loading] : 'Ready to test'}
-        environmentMode={theme.mode}
-        onEnvironmentChange={theme.setMode}
         environmentLabel={theme.environmentLabel}
         targetLabel={createLogContext.targetLabel}
       />

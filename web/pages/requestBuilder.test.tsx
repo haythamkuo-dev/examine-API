@@ -198,6 +198,11 @@ describe('RequestBuilderCard', () => {
     expect(preview).toHaveBeenCalled();
     expect(view.getByText('Plan ID detail')).toBeTruthy();
     expect(view.getByText('Footer message')).toBeTruthy();
+    expect(view.getByTestId('request-builder-fields')).toHaveClass(
+      'rounded-2xl',
+      'border-[var(--operator-card-border)]',
+      'bg-[var(--operator-card-bg)]',
+    );
     expect(view.container.querySelectorAll('button')).toHaveLength(2);
   });
 

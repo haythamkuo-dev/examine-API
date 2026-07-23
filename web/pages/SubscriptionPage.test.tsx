@@ -14,7 +14,7 @@ import type {
   SubscriptionRequestValues,
 } from '../../src/subscription/web';
 import { normalizeCreateResult, SubscriptionPage } from './SubscriptionPage';
-import { AppThemeProvider } from './pageChrome';
+import { AppThemeProvider, EnvironmentModeToggle, useAppTheme } from './pageChrome';
 import { ModalProvider } from './utils/modal';
 
 const channel = 'default';
@@ -114,10 +114,16 @@ const textResponse = (body: string, init?: ResponseInit): Response =>
 const fetchRecords: FetchRequestRecord[] = [];
 let routeHandlers = new Map<string, MockRouteHandler>();
 
+const TestEnvironmentControl = () => {
+  const theme = useAppTheme();
+  return <EnvironmentModeToggle mode={theme.environmentMode} onChange={theme.setEnvironmentMode} />;
+};
+
 const renderSubscriptionPage = () => {
   const view = render(
     <AppThemeProvider>
       <ModalProvider>
+        <TestEnvironmentControl />
         <SubscriptionPage />
       </ModalProvider>
     </AppThemeProvider>,
@@ -259,7 +265,7 @@ describe('SubscriptionPage', () => {
 
     const view = renderSubscriptionPage();
 
-    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    await view.findByRole('heading', { name: 'Subscription' });
     await view.findByLabelText('Merchant reference *');
     expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
     expect(view.getByText('plan-default')).toBeInTheDocument();
@@ -302,7 +308,7 @@ describe('SubscriptionPage', () => {
 
     const view = renderSubscriptionPage();
 
-    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    await view.findByRole('heading', { name: 'Subscription' });
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
@@ -360,7 +366,7 @@ describe('SubscriptionPage', () => {
 
     const view = renderSubscriptionPage();
 
-    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    await view.findByRole('heading', { name: 'Subscription' });
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
@@ -425,7 +431,7 @@ describe('SubscriptionPage', () => {
 
     const view = renderSubscriptionPage();
 
-    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    await view.findByRole('heading', { name: 'Subscription' });
     await view.findByLabelText('Merchant reference *');
     expect(view.getByLabelText('Merchant reference *')).toHaveValue('subscription-preview-start');
 
@@ -481,7 +487,7 @@ describe('SubscriptionPage', () => {
 
     const view = renderSubscriptionPage();
 
-    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    await view.findByRole('heading', { name: 'Subscription' });
 
     await updateApiKeyFromModal(view, 'cancelled-subscription-key', 'Cancel');
 
@@ -534,7 +540,7 @@ describe('SubscriptionPage', () => {
 
     const view = renderSubscriptionPage();
 
-    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    await view.findByRole('heading', { name: 'Subscription' });
     expect(view.getByText('plan-default')).toBeInTheDocument();
 
     await updateApiKeyFromModal(view, 'typed-subscription-key');
@@ -585,7 +591,7 @@ describe('SubscriptionPage', () => {
 
     const view = renderSubscriptionPage();
 
-    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    await view.findByRole('heading', { name: 'Subscription' });
 
     await act(async () => {
       fireEvent.change(view.getByLabelText('Channel'), {
@@ -617,7 +623,7 @@ describe('SubscriptionPage', () => {
 
     const view = renderSubscriptionPage();
 
-    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    await view.findByRole('heading', { name: 'Subscription' });
     expect(view.getByText('plan-default')).toBeInTheDocument();
 
     await act(async () => {
@@ -663,7 +669,7 @@ describe('SubscriptionPage', () => {
 
     const view = renderSubscriptionPage();
 
-    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    await view.findByRole('heading', { name: 'Subscription' });
 
     await act(async () => {
       fireEvent.change(view.getByLabelText('Channel'), {
@@ -702,7 +708,7 @@ describe('SubscriptionPage', () => {
 
     const view = renderSubscriptionPage();
 
-    await view.findByRole('heading', { name: 'Subscription Operator Console' });
+    await view.findByRole('heading', { name: 'Subscription' });
 
     await updatePlanIdFromModal(view, 'cancelled-plan-id', 'Cancel');
 

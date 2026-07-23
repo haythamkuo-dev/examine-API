@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { ToastContainer } from 'react-toastify';
+import { FaSpinner } from 'react-icons/fa';
 import {
   getOperatorEnvironmentLabel,
   type ApiLogContext,
@@ -491,42 +492,31 @@ export function PageCard({
 /**
  * Renders the shared hero block for operator pages, including security framing and live status.
  *
- * @param props Page-specific copy, status labels, and environment controls.
+ * @param props Business title, status labels, and environment metadata.
  * @returns The shared page-intro section used across deposit, payout, and subscription pages.
  */
 export function PageHero(props: {
-  eyebrow: string;
   title: string;
-  description: string;
   scopeLabel: string;
   statusLabel: string;
-  environmentMode: OperatorEnvironmentMode;
-  onEnvironmentChange: (mode: OperatorEnvironmentMode) => void;
   environmentLabel: string;
   targetLabel: string;
 }) {
   const {
-    eyebrow,
     title,
-    description,
     scopeLabel,
     statusLabel,
-    environmentMode,
-    onEnvironmentChange,
     environmentLabel,
     targetLabel,
   } = props;
 
   return (
-    <PageCard className="mb-8 grid gap-6 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,0.9fr)]">
+    <PageCard className="mb-8 p-6 sm:p-8">
       <div className="relative">
         <div className="absolute inset-x-0 top-0 h-px bg-[var(--operator-hero-rail)]" />
-        <p className={`${headingClassName} mb-3 pt-4`}>{eyebrow}</p>
-        <h1 className="max-w-3xl text-[clamp(2.2rem,6vw,4.6rem)] font-semibold leading-[0.94] tracking-[-0.04em] text-[var(--color-text)]">
+        <h1 className="pt-4 text-[clamp(2.2rem,6vw,4.6rem)] font-semibold leading-[0.94] tracking-[-0.04em] text-[var(--color-text)]">
           {title}
         </h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-[color:var(--color-text-muted)]">{description}</p>
-
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <StatusPill tone="neutral">Scope: {scopeLabel}</StatusPill>
           <StatusPill tone="accent">{statusLabel}</StatusPill>
@@ -534,33 +524,6 @@ export function PageHero(props: {
           <StatusPill tone="neutral">目標: {targetLabel}</StatusPill>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <span className={headingClassName}>Execution target</span>
-          <EnvironmentModeToggle mode={environmentMode} onChange={onEnvironmentChange} />
-        </div>
-      </div>
-
-      <div className="grid gap-4 self-end">
-        <div className="rounded-[24px] border border-[var(--operator-card-border)] bg-[var(--operator-card-bg)] p-5">
-          <div className="flex items-center gap-3">
-            <IconShield className="h-6 w-6 text-[var(--color-primary)]" />
-            <h2 className="text-lg font-semibold text-[var(--color-text)]">Execution mode</h2>
-          </div>
-          <p className={`${proseClassName} mt-3`}>
-            Credentials remain on the API server. The browser only edits test inputs, previews signed payloads,
-            and reads proxied responses.
-          </p>
-        </div>
-        <div className="grid gap-3 rounded-[24px] border border-[var(--operator-accent-card-border)] bg-[var(--operator-accent-card-bg)] p-5">
-          <div className="flex items-center gap-3">
-            <IconPulse className="h-6 w-6 text-[var(--color-cta)]" />
-            <h2 className="text-lg font-semibold text-[var(--color-text)]">Operator safeguards</h2>
-          </div>
-          <p className={proseClassName}>
-            Review generated requests before dispatch, keep channel presets synchronized, and verify status codes
-            without exposing gateway secrets in the UI.
-          </p>
-        </div>
       </div>
     </PageCard>
   );
@@ -666,30 +629,22 @@ export function ResultPanel(props: {
  * @returns Pre-load hero card matching the operator page visual system.
  */
 export function LoadingHero(props: {
-  eyebrow: string;
   title: string;
   message: string;
-  environmentMode: OperatorEnvironmentMode;
-  onEnvironmentChange: (mode: OperatorEnvironmentMode) => void;
+  isLoading: boolean;
   environmentLabel: string;
   targetLabel: string;
 }) {
   const {
-    eyebrow,
     title,
     message,
-    environmentMode,
-    onEnvironmentChange,
+    isLoading,
     environmentLabel,
     targetLabel,
   } = props;
 
   return (
     <PageCard className="mb-8 p-6 sm:p-8">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className={headingClassName}>{eyebrow}</p>
-        <EnvironmentModeToggle mode={environmentMode} onChange={onEnvironmentChange} />
-      </div>
       <h1 className="text-[clamp(2rem,5vw,3.8rem)] font-semibold leading-[0.95] tracking-[-0.04em] text-[var(--color-text)]">
         {title}
       </h1>
@@ -697,7 +652,10 @@ export function LoadingHero(props: {
         <StatusPill tone="neutral">環境: {environmentLabel}</StatusPill>
         <StatusPill tone="neutral">目標: {targetLabel}</StatusPill>
       </div>
-      <p className="mt-4 max-w-2xl text-base leading-7 text-[color:var(--color-text-muted)]">{message}</p>
+      <p className="mt-4 flex max-w-2xl items-center gap-3 text-base leading-7 text-[color:var(--color-text-muted)]">
+        {isLoading ? <FaSpinner className="shrink-0 animate-spin text-[var(--color-primary)]" aria-hidden="true" /> : null}
+        <span>{message}</span>
+      </p>
     </PageCard>
   );
 }
@@ -757,25 +715,3 @@ export function StatusPill({
     </span>
   );
 }
-
-const IconShield = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden="true">
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M12 3 5.5 5.75v5.33c0 4.4 2.75 8.47 6.5 9.92 3.75-1.45 6.5-5.52 6.5-9.92V5.75L12 3Z"
-    />
-    <path strokeLinecap="round" strokeLinejoin="round" d="m9.5 12 1.6 1.6 3.4-3.7" />
-  </svg>
-);
-
-const IconPulse = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h4l2.2-4.5L13 17l2.25-5H21" />
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M12 21c4.5-2.7 7.5-6.5 7.5-10.5A4.5 4.5 0 0 0 12 6.75 4.5 4.5 0 0 0 4.5 10.5C4.5 14.5 7.5 18.3 12 21Z"
-    />
-  </svg>
-);

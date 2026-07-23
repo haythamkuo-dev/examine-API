@@ -380,7 +380,7 @@ export function RequestBuilderCard(props: {
       <SectionHeading title="Request builder" detail={loadingLabel} />
 
       <div
-        className="max-h-[32rem] min-w-0 overflow-y-auto pr-1 lg:max-h-[calc(100vh-18rem)]"
+        className="max-h-[32rem] min-w-0 overflow-y-auto rounded-2xl border border-[var(--operator-card-border)] bg-[var(--operator-card-bg)] p-4 shadow-[var(--operator-input-shadow)] lg:max-h-[calc(100vh-18rem)]"
         data-testid="request-builder-fields"
       >
         <label className={fieldLabelClassName}>

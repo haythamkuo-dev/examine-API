@@ -62,7 +62,7 @@ beforeEach(() => {
 });
 
 describe('web app routing', () => {
-  test('renders homepage with three flow options', () => {
+  test('renders homepage shell with primary navigation and global environment control', () => {
     const html = renderToString(
       <MemoryRouter initialEntries={['/']}>
         <App />
@@ -73,6 +73,10 @@ describe('web app routing', () => {
     expect(html).toContain('Deposit');
     expect(html).toContain('Payout');
     expect(html).toContain('Subscription');
+    expect(html).toContain('Execution target');
+    expect(html).not.toContain('Open deposit request builder.');
+    expect(html).not.toContain('Open payout request builder.');
+    expect(html).not.toContain('Open subscription request builder.');
   });
 
   test('renders the deposit workbench on the deposit route', () => {
@@ -83,7 +87,7 @@ describe('web app routing', () => {
     );
 
     expect(html).toContain('Payment Test Workbench');
-    expect(html).toContain('Deposit Operator Console');
+    expect(html).toContain('Deposit');
   });
 
   test('renders the payout workbench on the payout route', () => {
@@ -94,7 +98,7 @@ describe('web app routing', () => {
     );
 
     expect(html).toContain('Payment Test Workbench');
-    expect(html).toContain('Payout Operator Console');
+    expect(html).toContain('Payout');
     expect(html).toContain('Payout');
   });
 
@@ -106,7 +110,7 @@ describe('web app routing', () => {
     );
 
     expect(html).toContain('Payment Test Workbench');
-    expect(html).toContain('Subscription Operator Console');
+    expect(html).toContain('Subscription');
     expect(html).toContain('Subscription');
   });
 
@@ -136,6 +140,8 @@ describe('web app routing', () => {
     }) as typeof fetch;
 
     const view = renderApp(['/deposit']);
+
+    expect(view.getAllByRole('button', { name: '產品' })).toHaveLength(1);
 
     await view.findByText('Request builder');
 

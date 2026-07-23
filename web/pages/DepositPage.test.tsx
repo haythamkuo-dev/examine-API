@@ -17,7 +17,7 @@ import type {
   DepositRequestValues,
 } from '../../src/deposit/web';
 import { DepositPage } from './DepositPage';
-import { AppThemeProvider } from './pageChrome';
+import { AppThemeProvider, EnvironmentModeToggle, useAppTheme } from './pageChrome';
 import { ModalProvider } from './utils/modal';
 
 const defaultsEndpoint = '/api/deposit/defaults';
@@ -238,10 +238,16 @@ const textResponse = (body: string, init?: ResponseInit): Response =>
 const fetchRecords: FetchRequestRecord[] = [];
 let routeHandlers = new Map<string, MockRouteHandler>();
 
+const TestEnvironmentControl = () => {
+  const theme = useAppTheme();
+  return <EnvironmentModeToggle mode={theme.environmentMode} onChange={theme.setEnvironmentMode} />;
+};
+
 const renderDepositPage = () => {
   const view = render(
     <AppThemeProvider>
       <ModalProvider>
+        <TestEnvironmentControl />
         <DepositPage />
       </ModalProvider>
     </AppThemeProvider>,
@@ -322,8 +328,9 @@ describe('DepositPage', () => {
     const view = renderDepositPage();
 
     expect(view.getByText('Loading server-side defaults for the selected channel.')).toBeInTheDocument();
+    expect(view.container.querySelector('svg.animate-spin')).toBeInTheDocument();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
     await view.findByText('Request builder');
 
     expect(view.getByText('Request builder')).toBeInTheDocument();
@@ -341,7 +348,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
     await view.findByText('Request builder');
 
     const fieldsContainer = view.getByTestId('request-builder-fields');
@@ -361,7 +368,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
     await view.findByText('Request builder');
     await view.findByLabelText('Currency code *');
 
@@ -425,7 +432,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
     await view.findByRole('button', { name: 'Generate' });
 
     await updateApiKeyFromModal(view, 'typed-deposit-key');
@@ -479,7 +486,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
     await view.findByRole('button', { name: 'Edit API key' });
     await updateApiKeyFromModal(view, 'typed-deposit-key');
 
@@ -518,7 +525,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
 
     await act(async () => {
       fireEvent.change(view.getByLabelText('Channel'), {
@@ -560,7 +567,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
     await view.findByRole('button', { name: 'Generate' });
 
     await act(async () => {
@@ -587,7 +594,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
@@ -616,7 +623,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
@@ -650,7 +657,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
 
     await updateApiKeyFromModal(view, 'typed-deposit-key');
 
@@ -692,7 +699,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
@@ -719,7 +726,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Send request' }));
     });
@@ -743,7 +750,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
     expect(view.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
 
     await act(async () => {
@@ -769,7 +776,7 @@ describe('DepositPage', () => {
 
     const firstView = renderDepositPage();
 
-    await firstView.findByRole('heading', { name: 'Deposit Operator Console' });
+    await firstView.findByRole('heading', { name: 'Deposit' });
     expect(firstView.getByText('環境: 沙盒')).toBeInTheDocument();
 
     await act(async () => {
@@ -794,7 +801,7 @@ describe('DepositPage', () => {
 
     const secondView = renderDepositPage();
 
-    await secondView.findByRole('heading', { name: 'Deposit Operator Console' });
+    await secondView.findByRole('heading', { name: 'Deposit' });
     expect(secondView.getByText('環境: 產品')).toBeInTheDocument();
     expect(secondView.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
   });
@@ -817,7 +824,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
     await updateApiKeyFromModal(view, 'typed-deposit-key');
 
     await act(async () => {
@@ -846,7 +853,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
 
     await updateApiKeyFromModal(view, 'cancelled-deposit-key', 'Cancel');
 
@@ -873,6 +880,7 @@ describe('DepositPage', () => {
     const view = renderDepositPage();
 
     await view.findByText('API 503 from /api/deposit/defaults: defaults unavailable');
+    expect(view.container.querySelector('svg.animate-spin')).not.toBeInTheDocument();
     expect(view.queryByRole('heading', { name: 'Request builder' })).not.toBeInTheDocument();
   });
 
@@ -888,7 +896,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit Operator Console' });
+    await view.findByRole('heading', { name: 'Deposit' });
 
     await act(async () => {
       fireEvent.change(view.getByRole('textbox', { name: /Product number/ }), {

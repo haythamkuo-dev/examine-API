@@ -14,8 +14,7 @@ import {
 export { normalizeCreateResult, shouldHidePayoutField } from '../hooks/usePayoutOperator';
 import { usePayoutOperator } from '../hooks/usePayoutOperator';
 
-const moduleName = 'Payout Module';
-const pageTitle = 'Payout Operator Console';
+const pageTitle = 'Payout';
 const previewEmptyState = 'Run a preview to inspect the exact request body, URL, and masked headers.';
 const resultEmptyState = 'Send a request to capture the raw response, status code, and diagnostics.';
 const draftNotice =
@@ -54,11 +53,9 @@ export function PayoutPage() {
     return (
       <OperatorThemeFrame>
         <LoadingHero
-          eyebrow={moduleName}
           title={pageTitle}
           message={loading === 'defaults' ? 'Loading server-side defaults for the selected channel.' : error || 'Unable to load defaults.'}
-          environmentMode={theme.mode}
-          onEnvironmentChange={theme.setMode}
+          isLoading={loading === 'defaults'}
           environmentLabel={theme.environmentLabel}
           targetLabel={defaultsLogContext.targetLabel}
         />
@@ -69,13 +66,9 @@ export function PayoutPage() {
   return (
     <OperatorThemeFrame>
       <PageHero
-        eyebrow={moduleName}
         title={pageTitle}
-        description="Edit shared payout fields, switch channel-specific payload sections, preview the signed request, and run the test through the active API target."
         scopeLabel="Payout"
         statusLabel={loading ? loadingLabels[loading] : 'Ready to test'}
-        environmentMode={theme.mode}
-        onEnvironmentChange={theme.setMode}
         environmentLabel={theme.environmentLabel}
         targetLabel={createLogContext.targetLabel}
       />

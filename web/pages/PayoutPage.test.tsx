@@ -16,7 +16,7 @@ import type {
   PayoutRequestValues,
 } from '../../src/payout/web';
 import { normalizeCreateResult, PayoutPage, shouldHidePayoutField } from './PayoutPage';
-import { AppThemeProvider } from './pageChrome';
+import { AppThemeProvider, EnvironmentModeToggle, useAppTheme } from './pageChrome';
 import { ModalProvider } from './utils/modal';
 
 const defaultsEndpoint = '/api/payout/defaults';
@@ -186,10 +186,16 @@ const textResponse = (body: string, init?: ResponseInit): Response =>
 const fetchRecords: FetchRequestRecord[] = [];
 let routeHandlers = new Map<string, MockRouteHandler>();
 
+const TestEnvironmentControl = () => {
+  const theme = useAppTheme();
+  return <EnvironmentModeToggle mode={theme.environmentMode} onChange={theme.setEnvironmentMode} />;
+};
+
 const renderPayoutPage = () => {
   const view = render(
     <AppThemeProvider>
       <ModalProvider>
+        <TestEnvironmentControl />
         <PayoutPage />
       </ModalProvider>
     </AppThemeProvider>,
