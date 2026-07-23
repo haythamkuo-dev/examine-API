@@ -19,6 +19,7 @@ import type {
 import { DepositPage } from './DepositPage';
 import { AppThemeProvider } from './pageChrome';
 import { ModalProvider } from './utils/modal';
+import { getDepositChannelLabel } from './helper/depositChannelLabels';
 
 const defaultsEndpoint = '/api/deposit/defaults';
 const previewEndpoint = '/api/deposit/preview';
@@ -314,6 +315,21 @@ beforeEach(() => {
 });
 
 describe('DepositPage', () => {
+  test('translates deposit channel labels without changing channel values', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () =>
+        jsonResponse(createDefaultsResponse('southafrica_cards')),
+    });
+
+    const view = renderDepositPage();
+    await view.findByRole('heading', { name: 'Deposit' });
+    await view.findByText('Request builder');
+
+    const channelSelect = view.getByLabelText('Channel');
+    expect(within(channelSelect).getByRole('option', { name: '南非卡' })).toHaveValue('southafrica_cards');
+    expect(getDepositChannelLabel('unknown_channel')).toBe('unknown_channel');
+  });
+
   test('loads defaults and renders the request builder', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),

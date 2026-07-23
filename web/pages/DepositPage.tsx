@@ -8,6 +8,7 @@ import {
 } from './pageChrome';
 import { ApiKeyEditorTrigger } from './ApiKeyEditorTrigger';
 import { loadingLabels } from './helper/operatorShared';
+import { getDepositChannelLabel } from './helper/depositChannelLabels';
 import { RequestBuilderCard } from './requestBuilder';
 import { useDepositOperator } from '../hooks/useDepositOperator';
 
@@ -78,6 +79,7 @@ export function DepositPage() {
             channels={channels}
             selectedChannel={form.channel}
             onChannelChange={onChannelChange}
+            channelLabel={getDepositChannelLabel}
             channelDetail={(
               <ApiKeyEditorTrigger
                 apiKey={apiKey}

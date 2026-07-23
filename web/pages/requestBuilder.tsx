@@ -342,6 +342,7 @@ export function RequestBuilderCard(props: {
   channels: string[];
   selectedChannel: string;
   onChannelChange: (channel: string) => void;
+  channelLabel?: (channel: string) => string;
   channelDetail?: ReactNode;
   commonSchema: SharedFieldMap;
   commonValues: Record<string, unknown>;
@@ -360,6 +361,7 @@ export function RequestBuilderCard(props: {
     channels,
     selectedChannel,
     onChannelChange,
+    channelLabel = (channel) => channel,
     channelDetail,
     commonSchema,
     commonValues,
@@ -388,7 +390,7 @@ export function RequestBuilderCard(props: {
           <select className={inputClassName} value={selectedChannel} onChange={(event) => onChannelChange(event.target.value)}>
             {channels.map((channel) => (
               <option key={channel} value={channel}>
-                {channel}
+                {channelLabel(channel)}
               </option>
             ))}
           </select>
