@@ -8,6 +8,7 @@ import {
 } from './pageChrome';
 import { ApiKeyEditorTrigger } from './ApiKeyEditorTrigger';
 import { loadingLabels } from './helper/operatorShared';
+import { getPayoutChannelLabel } from './helper/payoutChannelLabels';
 import {
   RequestBuilderCard,
 } from './requestBuilder';
@@ -82,6 +83,7 @@ export function PayoutPage() {
             channels={channels}
             selectedChannel={form.channel}
             onChannelChange={onChannelChange}
+            channelLabel={getPayoutChannelLabel}
             channelDetail={(
               <ApiKeyEditorTrigger
                 apiKey={apiKey}

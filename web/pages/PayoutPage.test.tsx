@@ -18,6 +18,7 @@ import type {
 import { normalizeCreateResult, PayoutPage, shouldHidePayoutField } from './PayoutPage';
 import { AppThemeProvider } from './pageChrome';
 import { ModalProvider } from './utils/modal';
+import { getPayoutChannelLabel } from './helper/payoutChannelLabels';
 
 const defaultsEndpoint = '/api/payout/defaults';
 const previewEndpoint = '/api/payout/preview';
@@ -328,6 +329,18 @@ describe('normalizeCreateResult', () => {
 });
 
 describe('PayoutPage', () => {
+  test('translates payout channel labels without changing channel values', async () => {
+    setRouteHandler(defaultsEndpoint, () => jsonResponse(createDefaultsResponse('co_bank')));
+
+    const view = renderPayoutPage();
+    await view.findByRole('heading', { name: 'Payout' });
+    await view.findByText('Request builder');
+
+    const channelSelect = view.getByLabelText('Channel');
+    expect(within(channelSelect).getByRole('option', { name: '哥倫比亞銀行轉帳' })).toHaveValue('co_bank');
+    expect(getPayoutChannelLabel('unknown_channel')).toBe('unknown_channel');
+  });
+
   test('renders a read-only merchant reference field and updates it via generate', async () => {
     setRouteHandler(merchantReferenceEndpoint, () =>
       jsonResponse(createMerchantReferenceResponse('GENERATED-PAYOUT-001')),

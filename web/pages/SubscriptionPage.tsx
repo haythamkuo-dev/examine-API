@@ -8,6 +8,7 @@ import {
 } from './pageChrome';
 import { ApiKeyEditorTrigger, EditableSummaryFieldTrigger } from './ApiKeyEditorTrigger';
 import { loadingLabels } from './helper/operatorShared';
+import { getSubscriptionChannelLabel } from './helper/subscriptionChannelLabels';
 import { RequestBuilderCard } from './requestBuilder';
 export { normalizeCreateResult } from '../hooks/useSubscriptionOperator';
 import { useSubscriptionOperator } from '../hooks/useSubscriptionOperator';
@@ -84,6 +85,7 @@ export function SubscriptionPage() {
             channels={channels}
             selectedChannel={form.channel}
             onChannelChange={onChannelChange}
+            channelLabel={getSubscriptionChannelLabel}
             channelDetail={(
               <div className="grid gap-3">
                 <EditableSummaryFieldTrigger

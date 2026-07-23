@@ -16,6 +16,7 @@ import type {
 import { normalizeCreateResult, SubscriptionPage } from './SubscriptionPage';
 import { AppThemeProvider } from './pageChrome';
 import { ModalProvider } from './utils/modal';
+import { getSubscriptionChannelLabel } from './helper/subscriptionChannelLabels';
 
 const channel = 'default';
 
@@ -257,6 +258,21 @@ describe('normalizeCreateResult', () => {
 });
 
 describe('SubscriptionPage', () => {
+  test('translates subscription channel labels without changing channel values', async () => {
+    setRouteHandlers({
+      'GET /api/subscription/defaults': async () =>
+        jsonResponse(createDefaultsResponse('default')),
+    });
+
+    const view = renderSubscriptionPage();
+    await view.findByRole('heading', { name: 'Subscription' });
+    await view.findByText('Request builder');
+
+    const channelSelect = view.getByLabelText('Channel');
+    expect(within(channelSelect).getByRole('option', { name: '南非卡' })).toHaveValue('default');
+    expect(getSubscriptionChannelLabel('unknown_channel')).toBe('unknown_channel');
+  });
+
   test('renders an editable plan id field and updates merchant reference via generate', async () => {
     setRouteHandlers({
       'GET /api/subscription/defaults': async () => jsonResponse(createDefaultsResponse()),
