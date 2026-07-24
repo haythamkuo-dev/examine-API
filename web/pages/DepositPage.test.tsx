@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 
 import '../../tests/web-setup';
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
 import { DEPOSIT_CHANNELS } from '../../src/core/env';
@@ -237,6 +237,7 @@ const textResponse = (body: string, init?: ResponseInit): Response =>
   });
 
 const fetchRecords: FetchRequestRecord[] = [];
+const clipboardWriteText = mock(async (_value: string): Promise<void> => {});
 let routeHandlers = new Map<string, MockRouteHandler>();
 
 const renderDepositPage = () => {
@@ -289,6 +290,11 @@ const readPostedForm = (body: BodyInit | null | undefined): DepositRequestValues
 
 beforeEach(() => {
   fetchRecords.length = 0;
+  clipboardWriteText.mockClear();
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText: clipboardWriteText },
+  });
   routeHandlers = new Map();
   localStorage.clear();
   sessionStorage.clear();
@@ -781,6 +787,55 @@ describe('DepositPage', () => {
     });
 
     await view.findByText('Request sent successfully.');
+  });
+
+  test('copies the request preview JSON and shows the success icon', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      'POST /api/deposit/preview': async () => jsonResponse(createPreviewResponse('PREVIEW-COPY')),
+    });
+
+    const view = renderDepositPage();
+    await view.findByRole('heading', { name: 'Deposit' });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    await waitFor(() => {
+      expect(view.getAllByRole('button', { name: 'Copy JSON' }).length).toBe(2);
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getAllByRole('button', { name: 'Copy JSON' })[0]!);
+    });
+
+    expect(clipboardWriteText).toHaveBeenCalledWith(JSON.stringify({ payload: { merchant_ref: 'PREVIEW-COPY' } }, null, 2));
+    expect(view.getByRole('button', { name: 'Copied JSON' })).toBeInTheDocument();
+  });
+
+  test('copies the API result JSON', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      'POST /api/deposit/create': async () => jsonResponse(createResponseBody),
+    });
+
+    const view = renderDepositPage();
+    await view.findByRole('heading', { name: 'Deposit' });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Send request' }));
+    });
+
+    await view.findByText('Request sent successfully.');
+    await act(async () => {
+      const copyButton = view.getAllByRole('button', { name: 'Copy JSON' }).find((button) => !button.hasAttribute('disabled'));
+      expect(copyButton).toBeDefined();
+      fireEvent.click(copyButton!);
+    });
+
+    expect(clipboardWriteText).toHaveBeenCalledWith(JSON.stringify({ response: createResponseBody.response }, null, 2));
+    expect(view.getByRole('button', { name: 'Copied JSON' })).toBeInTheDocument();
   });
 
   test('toggles the operator environment mode and persists the selected target', async () => {

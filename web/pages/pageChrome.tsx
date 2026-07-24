@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { ToastContainer } from 'react-toastify';
 import { FaSpinner } from 'react-icons/fa';
+import { MdCheck, MdContentCopy } from 'react-icons/md';
 import {
   getOperatorEnvironmentLabel,
   type ApiLogContext,
@@ -546,10 +547,57 @@ export function SectionHeading({ title, detail }: { title: string; detail?: Reac
   );
 }
 
+function CopyJsonButton({ value }: { value: string | null }) {
+  const [copied, setCopied] = useState(false);
+  const [copyResetTimer, setCopyResetTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (copyResetTimer) {
+      clearTimeout(copyResetTimer);
+    }
+  }, [copyResetTimer]);
+
+  const copyValue = async () => {
+    if (!value) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+
+      if (copyResetTimer) {
+        clearTimeout(copyResetTimer);
+      }
+
+      setCopyResetTimer(setTimeout(() => {
+        setCopied(false);
+        setCopyResetTimer(null);
+      }, 2000));
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={copied ? 'Copied JSON' : 'Copy JSON'}
+      title={copied ? 'Copied JSON' : 'Copy JSON'}
+      disabled={!value}
+      onClick={copyValue}
+      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--operator-card-border)] bg-[var(--operator-ghost-button-bg)] text-[var(--color-text)] transition-colors duration-200 hover:bg-[var(--operator-ghost-button-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      {copied ? <MdCheck aria-hidden="true" className="h-4 w-4 text-[var(--status-success-text)]" /> : <MdContentCopy aria-hidden="true" className="h-4 w-4" />}
+    </button>
+  );
+}
+
 /**
  * Displays JSON data inside the shared operator panel treatment.
  *
- * @param props Panel title, body payload, and empty-state fallback text.
+ * @param props Panel title, body payload, empty-state fallback text, and optional copy action.
+ * @param props.copyable Whether to render a copy button for the JSON body.
  * @returns A card containing formatted JSON output.
  */
 export function JsonPanel({
@@ -557,17 +605,24 @@ export function JsonPanel({
   body,
   emptyState,
   logContext,
+  copyable = false,
 }: {
   title: string;
   body: unknown;
   emptyState: string;
   logContext?: ApiLogContext | null;
+  copyable?: boolean;
 }) {
+  const json = body ? JSON.stringify(body, null, 2) : null;
+
   return (
     <PageCard className="flex min-w-0 flex-col p-6">
-      <SectionHeading title={title} />
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[1.05rem] font-semibold tracking-[-0.02em] text-[var(--color-text)]">{title}</h2>
+        {copyable ? <CopyJsonButton value={json} /> : null}
+      </div>
       {logContext ? <LogContextSummary logContext={logContext} /> : null}
-      <pre className="operator-pre flex-1">{body ? JSON.stringify(body, null, 2) : emptyState}</pre>
+      <pre className="operator-pre flex-1">{json ?? emptyState}</pre>
     </PageCard>
   );
 }
@@ -575,7 +630,8 @@ export function JsonPanel({
 /**
  * Renders API result messaging plus the raw payload preview in the shared visual style.
  *
- * @param props Result summary data and fallback empty-state copy.
+ * @param props Result summary data, fallback empty-state copy, and optional copy action.
+ * @param props.copyable Whether to render a copy button for the raw JSON result.
  * @returns Shared API result card for operator pages.
  */
 export function ResultPanel(props: {
@@ -587,6 +643,7 @@ export function ResultPanel(props: {
   raw: unknown;
   emptyState: string;
   logContext?: ApiLogContext | null;
+  copyable?: boolean;
 }) {
   const {
     title = 'API result',
@@ -597,11 +654,23 @@ export function ResultPanel(props: {
     raw,
     emptyState,
     logContext,
+    copyable = false,
   } = props;
+  const json = raw ? JSON.stringify(raw, null, 2) : null;
 
   return (
     <PageCard className="flex min-w-0 flex-col p-6">
-      <SectionHeading title={title} detail={statusLabel} />
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <h2 className="text-[1.05rem] font-semibold tracking-[-0.02em] text-[var(--color-text)]">{title}</h2>
+          {statusLabel ? (
+            <div className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--color-primary)]">
+              {statusLabel}
+            </div>
+          ) : null}
+        </div>
+        {copyable ? <CopyJsonButton value={json} /> : null}
+      </div>
       {logContext ? <LogContextSummary logContext={logContext} /> : null}
       {message ? (
         <div
@@ -615,7 +684,7 @@ export function ResultPanel(props: {
           {details ? <p className="mt-2 whitespace-pre-wrap break-words text-xs opacity-90">{details}</p> : null}
         </div>
       ) : null}
-      <pre className="operator-pre flex-1">{raw ? JSON.stringify(raw, null, 2) : emptyState}</pre>
+      <pre className="operator-pre flex-1">{json ?? emptyState}</pre>
     </PageCard>
   );
 }
