@@ -279,7 +279,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
       setPreview(response);
     } catch (caught) {
       setPreview(null);
-      setError(caught instanceof Error ? caught.message : String(caught));
+      setApiResult(buildFailureResult('preview', caught, previewLogContext));
     } finally {
       setLoading(null);
     }

@@ -985,6 +985,15 @@ describe('DepositPage', () => {
       fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
     });
 
-    await view.findByText('API 400 from /api/deposit/preview: commonValues.productNo is required');
+    const errorMessage = 'commonValues.productNo is required';
+    await view.findByText(errorMessage);
+
+    const resultHeading = view.getByRole('heading', { name: 'API result' });
+    const resultCard = resultHeading.parentElement?.parentElement?.parentElement;
+    expect(resultCard).not.toBeNull();
+    expect(within(resultCard as HTMLElement).getByText(errorMessage)).toBeInTheDocument();
+    expect(view.getByText(/Temporary session draft/).parentElement).not.toContainElement(
+      view.getByText(errorMessage),
+    );
   });
 });

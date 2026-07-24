@@ -307,7 +307,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
       setPreview(response);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      setResult(buildFailureResult('preview', caught, previewLogContext));
       setPreview(null);
     } finally {
       setLoading(null);

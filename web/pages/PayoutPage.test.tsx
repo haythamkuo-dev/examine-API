@@ -366,6 +366,45 @@ describe('PayoutPage', () => {
     });
   });
 
+  test('renders preview API failures in the API result panel', async () => {
+    const previewErrorMessage = 'product_no is invalid';
+
+    setRouteHandler(defaultsEndpoint, () => jsonResponse(createDefaultsResponse(primaryChannel)));
+    setRouteHandler(previewEndpoint, () =>
+      jsonResponse(
+        {
+          ok: false,
+          message: previewErrorMessage,
+        },
+        { status: 400 },
+      ),
+    );
+
+    const view = renderPayoutPage();
+
+    await waitFor(() => {
+      expect(view.getByRole('button', { name: 'Preview request' })).toBeEnabled();
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    await waitFor(() => {
+      const resultHeading = view.getByRole('heading', { name: 'API result' });
+      const resultCard = resultHeading.parentElement?.parentElement?.parentElement;
+
+      expect(resultCard).not.toBeNull();
+      expect(within(resultCard as HTMLElement).getByText(previewErrorMessage)).toBeInTheDocument();
+      expect(within(resultCard as HTMLElement).getByText(/PREVIEW Status 400/)).toBeInTheDocument();
+      expect(view.getByText(/Temporary session draft/).parentElement).not.toContainElement(
+        view.getByText(previewErrorMessage),
+      );
+    });
+
+    expect(view.getByText(/Run a preview to inspect the exact request body/)).toBeInTheDocument();
+  });
+
   test('restores the channel-specific merchant reference draft when returning to a previous channel', async () => {
     setRouteHandler(merchantReferenceEndpoint, () =>
       jsonResponse(createMerchantReferenceResponse('GENERATED-PAYOUT-002')),

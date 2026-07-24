@@ -258,6 +258,44 @@ describe('normalizeCreateResult', () => {
 });
 
 describe('SubscriptionPage', () => {
+  test('renders preview API failures in the API result panel', async () => {
+    const errorMessage = 'product_name is invalid';
+
+    setRouteHandlers({
+      'GET /api/subscription/defaults': async () => jsonResponse(createDefaultsResponse()),
+      'POST /api/subscription/preview': async () =>
+        jsonResponse(
+          {
+            ok: false,
+            message: errorMessage,
+          },
+          { status: 400 },
+        ),
+    });
+
+    const view = renderSubscriptionPage();
+
+    await waitFor(() => {
+      expect(view.getByRole('button', { name: 'Preview request' })).toBeEnabled();
+    });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    await waitFor(() => {
+      const resultHeading = view.getByRole('heading', { name: 'API result' });
+      const resultCard = resultHeading.parentElement?.parentElement?.parentElement;
+
+      expect(resultCard).not.toBeNull();
+      expect(within(resultCard as HTMLElement).getByText(errorMessage)).toBeInTheDocument();
+      expect(within(resultCard as HTMLElement).getByText(/PREVIEW Status 400/)).toBeInTheDocument();
+      expect(view.getByText(/Temporary session draft/).parentElement).not.toContainElement(
+        view.getByText(errorMessage),
+      );
+    });
+  });
+
   test('translates subscription channel labels without changing channel values', async () => {
     setRouteHandlers({
       'GET /api/subscription/defaults': async () =>
