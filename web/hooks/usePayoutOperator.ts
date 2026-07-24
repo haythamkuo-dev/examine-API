@@ -34,6 +34,8 @@ const previewEndpoint = '/api/payout/preview';
 const createEndpoint = '/api/payout/create';
 const merchantReferenceEndpoint = '/api/payout/merchant-reference';
 const merchantReferenceFieldKey = 'merchantReference';
+const productNoFieldKey = 'product_no';
+const readOnlyBadgeLabel = 'ReadOnly';
 const specialPayoutChannels = new Set<PayoutFormValues['channel']>(['imps', 'bd_wallet']);
 
 const shouldPreservePayoutApiKey = (
@@ -381,6 +383,13 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     },
   };
 
+  const channelFieldOverrides: Record<string, RequestBuilderFieldOverride> = {
+    [productNoFieldKey]: {
+      readOnly: true,
+      badge: readOnlyBadgeLabel,
+    },
+  };
+
   return {
     form,
     apiKey,
@@ -395,6 +404,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     previewLogContext,
     createLogContext,
     commonFieldOverrides,
+    channelFieldOverrides,
     visibilityResolver: shouldHidePayoutField as FieldVisibilityResolver,
     updateApiKey: (value: string) => {
       apiKeyRef.current = value;

@@ -42,6 +42,7 @@ export function PayoutPage() {
     previewLogContext,
     createLogContext,
     commonFieldOverrides,
+    channelFieldOverrides,
     visibilityResolver,
     updateApiKey,
     updateCommonValue,
@@ -95,6 +96,7 @@ export function PayoutPage() {
             commonValues={form.commonValues as Record<string, unknown>}
             onCommonValueChange={updateCommonValue}
             commonFieldOverrides={commonFieldOverrides}
+            channelFieldOverrides={channelFieldOverrides}
             channelSchema={channelSchema}
             channelValues={form.channelValues}
             onChannelValueChange={updateChannelValue}

@@ -348,6 +348,7 @@ export function RequestBuilderCard(props: {
   commonValues: Record<string, unknown>;
   onCommonValueChange: (key: string, value: string) => void;
   commonFieldOverrides?: Record<string, RequestBuilderFieldOverride>;
+  channelFieldOverrides?: Record<string, RequestBuilderFieldOverride>;
   channelSchema: SharedFieldMap;
   channelValues: Record<string, unknown>;
   onChannelValueChange: (path: Array<string | number>, value: unknown) => void;
@@ -367,6 +368,7 @@ export function RequestBuilderCard(props: {
     commonValues,
     onCommonValueChange,
     commonFieldOverrides,
+    channelFieldOverrides,
     channelSchema,
     channelValues,
     onChannelValueChange,
@@ -422,6 +424,7 @@ export function RequestBuilderCard(props: {
             pathPrefix={[]}
             onChange={onChannelValueChange}
             disabled={disabled}
+            fieldOverrides={channelFieldOverrides}
             visibilityResolver={visibilityResolver}
           />
         </div>

@@ -442,7 +442,13 @@ describe('PayoutPage', () => {
 
     await waitFor(() => {
       expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-secondary-server');
-      expect(view.getByLabelText('Product number *')).toHaveValue('product-secondary-server');
+    });
+
+    await waitFor(() => {
+      const productNumber = view.getByLabelText(/Product number/);
+      expect(productNumber).toHaveValue('product-secondary-server');
+      expect(productNumber).toHaveAttribute('readonly');
+      expect(productNumber).toHaveAttribute('aria-readonly', 'true');
     });
 
     expect(view.getByText('typed-payout-key')).toBeInTheDocument();
