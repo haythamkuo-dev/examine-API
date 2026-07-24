@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 
 import '../../tests/web-setup';
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
 import { DEPOSIT_CHANNELS } from '../../src/core/env';
@@ -238,6 +238,7 @@ const textResponse = (body: string, init?: ResponseInit): Response =>
 
 const fetchRecords: FetchRequestRecord[] = [];
 const clipboardWriteText = mock(async (_value: string): Promise<void> => {});
+const originalClipboard = navigator.clipboard;
 let routeHandlers = new Map<string, MockRouteHandler>();
 
 const renderDepositPage = () => {
@@ -318,6 +319,13 @@ beforeEach(() => {
 
     return await handler(record);
   }) as typeof fetch;
+});
+
+afterEach(() => {
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: originalClipboard,
+  });
 });
 
 describe('DepositPage', () => {

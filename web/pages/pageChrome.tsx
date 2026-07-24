@@ -10,12 +10,12 @@ import {
 } from 'react';
 import { ToastContainer } from 'react-toastify';
 import { FaSpinner } from 'react-icons/fa';
-import { MdCheck, MdContentCopy } from 'react-icons/md';
 import {
   getOperatorEnvironmentLabel,
   type ApiLogContext,
   type OperatorEnvironmentMode,
 } from './helper/operatorShared';
+import { JsonCopyButton } from './JsonCopyButton';
 
 const panelClassName =
   'relative overflow-hidden rounded-[28px] border border-[var(--operator-panel-border)] bg-[var(--operator-panel-bg)] shadow-[var(--shadow-lg)] backdrop-blur-xl transition-colors duration-200';
@@ -547,52 +547,6 @@ export function SectionHeading({ title, detail }: { title: string; detail?: Reac
   );
 }
 
-function CopyJsonButton({ value }: { value: string | null }) {
-  const [copied, setCopied] = useState(false);
-  const [copyResetTimer, setCopyResetTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => {
-    if (copyResetTimer) {
-      clearTimeout(copyResetTimer);
-    }
-  }, [copyResetTimer]);
-
-  const copyValue = async () => {
-    if (!value) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-
-      if (copyResetTimer) {
-        clearTimeout(copyResetTimer);
-      }
-
-      setCopyResetTimer(setTimeout(() => {
-        setCopied(false);
-        setCopyResetTimer(null);
-      }, 2000));
-    } catch {
-      setCopied(false);
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      aria-label={copied ? 'Copied JSON' : 'Copy JSON'}
-      title={copied ? 'Copied JSON' : 'Copy JSON'}
-      disabled={!value}
-      onClick={copyValue}
-      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--operator-card-border)] bg-[var(--operator-ghost-button-bg)] text-[var(--color-text)] transition-colors duration-200 hover:bg-[var(--operator-ghost-button-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-40"
-    >
-      {copied ? <MdCheck aria-hidden="true" className="h-4 w-4 text-[var(--status-success-text)]" /> : <MdContentCopy aria-hidden="true" className="h-4 w-4" />}
-    </button>
-  );
-}
-
 /**
  * Displays JSON data inside the shared operator panel treatment.
  *
@@ -619,7 +573,7 @@ export function JsonPanel({
     <PageCard className="flex min-w-0 flex-col p-6">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-[1.05rem] font-semibold tracking-[-0.02em] text-[var(--color-text)]">{title}</h2>
-        {copyable ? <CopyJsonButton value={json} /> : null}
+        {copyable ? <JsonCopyButton value={json} /> : null}
       </div>
       {logContext ? <LogContextSummary logContext={logContext} /> : null}
       <pre className="operator-pre flex-1">{json ?? emptyState}</pre>
@@ -669,7 +623,7 @@ export function ResultPanel(props: {
             </div>
           ) : null}
         </div>
-        {copyable ? <CopyJsonButton value={json} /> : null}
+        {copyable ? <JsonCopyButton value={json} /> : null}
       </div>
       {logContext ? <LogContextSummary logContext={logContext} /> : null}
       {message ? (

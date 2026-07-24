@@ -140,6 +140,7 @@ export function SubscriptionPage() {
             body={preview ? { payload: preview.request.payload } : null}
             emptyState={previewEmptyState}
             logContext={previewLogContext}
+            copyable
           />
           <ResultPanel
             statusLabel={apiResult ? `${apiResult.action.toUpperCase()}${apiResult.status !== null ? ` Status ${apiResult.status}` : ''}` : null}
@@ -149,6 +150,7 @@ export function SubscriptionPage() {
             raw={apiResult?.raw}
             emptyState={resultEmptyState}
             logContext={apiResult?.logContext ?? createLogContext}
+            copyable
           />
         </section>
       </section>

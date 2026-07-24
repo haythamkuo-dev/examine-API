@@ -119,6 +119,7 @@ export function PayoutPage() {
             body={preview ? { payload: preview.request.payload } : null}
             emptyState={previewEmptyState}
             logContext={previewLogContext}
+            copyable
           />
           <ResultPanel
             statusLabel={
@@ -132,6 +133,7 @@ export function PayoutPage() {
             raw={result?.raw}
             emptyState={resultEmptyState}
             logContext={result?.logContext ?? createLogContext}
+            copyable
           />
         </section>
       </section>
