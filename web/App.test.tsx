@@ -114,6 +114,61 @@ describe('web app routing', () => {
     expect(html).toContain('Subscription');
   });
 
+  test('shows the back-to-top button after the top sentinel leaves the viewport', () => {
+    type ObserverEntry = { isIntersecting: boolean };
+    type ObserverCallback = (entries: ObserverEntry[]) => void;
+
+    let observerCallback: ObserverCallback | undefined;
+    const originalIntersectionObserver = globalThis.IntersectionObserver;
+
+    class MockIntersectionObserver {
+      constructor(callback: ObserverCallback) {
+        observerCallback = callback;
+      }
+
+      observe() {}
+
+      disconnect() {}
+    }
+
+    (globalThis as typeof globalThis & { IntersectionObserver: typeof IntersectionObserver }).IntersectionObserver =
+      MockIntersectionObserver as unknown as typeof IntersectionObserver;
+
+    const originalScrollTo = window.scrollTo;
+    const scrollTo = (options: ScrollToOptions) => {
+      expect(options.top).toBe(0);
+    };
+    window.scrollTo = scrollTo;
+
+    try {
+      const view = renderApp(['/deposit']);
+
+      const backToTopButton = view.container.querySelector('button[aria-label="Back to top"]');
+      if (!backToTopButton) {
+        throw new Error('Back-to-top button was not rendered.');
+      }
+
+      expect(backToTopButton).toHaveAttribute('aria-hidden', 'true');
+      expect(backToTopButton).toHaveClass('opacity-0');
+
+      act(() => {
+        observerCallback?.([{ isIntersecting: false }]);
+      });
+
+      expect(backToTopButton).toHaveAttribute('aria-hidden', 'false');
+      expect(backToTopButton).toHaveClass('opacity-100');
+
+      act(() => {
+        fireEvent.click(backToTopButton);
+      });
+    } finally {
+      window.scrollTo = originalScrollTo;
+      if (originalIntersectionObserver) {
+        globalThis.IntersectionObserver = originalIntersectionObserver;
+      }
+    }
+  });
+
   test('toggles the application color theme and persists it separately from target environment', () => {
     const view = renderApp(['/']);
 
