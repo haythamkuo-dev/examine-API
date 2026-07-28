@@ -122,6 +122,7 @@ export function PayoutPage() {
             logContext={previewLogContext}
             copyable
           />
+          <CheckoutUrlPanel url={result?.ok ? result.checkoutUrl : undefined} />
           <ResultPanel
             statusLabel={
               result
@@ -136,7 +137,6 @@ export function PayoutPage() {
             logContext={result?.logContext ?? createLogContext}
             copyable
           />
-          <CheckoutUrlPanel url={result?.ok ? result.checkoutUrl : undefined} />
         </section>
       </section>
     </OperatorThemeFrame>

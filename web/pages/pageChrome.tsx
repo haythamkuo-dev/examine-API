@@ -653,7 +653,7 @@ export function CheckoutUrlPanel({ url }: { url?: string }) {
   if (!url) return null;
 
   return (
-    <PageCard className="border-[var(--status-success-border)] bg-[var(--status-success-bg)] p-6">
+    <PageCard className="checkout-panel-enter border-[var(--status-success-border)] bg-[var(--status-success-bg)] p-6">
       <h2 className="text-[1.05rem] font-semibold text-[var(--color-text)]">Checkout</h2>
       <p className="mt-2 text-sm text-[color:var(--color-text-muted)]">Open the checkout page to complete payment.</p>
       <a

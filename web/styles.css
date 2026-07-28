@@ -110,6 +110,22 @@ a {
   color: var(--operator-pre-text, #dce6ef);
 }
 
+@keyframes checkout-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.checkout-panel-enter {
+  animation: checkout-panel-enter 240ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

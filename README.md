@@ -16,12 +16,6 @@ brew install bun
 bun install
 ```
 
-<!-- ## Run locally
-
-```bash
-bun run index.ts --help
-``` -->
-
 ## 開啟後端 port
 
 Start the local API proxy:
@@ -38,24 +32,6 @@ bun run dev:api
 bun run dev:web
 ```
 
-<!-- Open the Vite URL shown in the terminal, then use the Deposit form to preview and send requests through the local proxy.
-The server-owned deposit presets live in `data/deposit-presets.json`; the React UI can load and save channel defaults there.
-
-Preview payloads without sending requests:
-
-```bash
-bun run index.ts deposit preview --channel linepay
-bun run index.ts payout preview --channel co_bank
-bun run index.ts subscription preview --plan-id PLAN-001
-``` -->
-
-<!-- Send requests:
-
-```bash
-bun run index.ts deposit create --channel linepay
-bun run index.ts payout create --channel co_wallet
-bun run index.ts subscription create --plan-id PLAN-001
-``` -->
 ## Build for publish
 
 ```bash

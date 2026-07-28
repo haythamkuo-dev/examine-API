@@ -143,6 +143,7 @@ export function SubscriptionPage() {
             logContext={previewLogContext}
             copyable
           />
+          <CheckoutUrlPanel url={apiResult?.ok ? apiResult.checkoutUrl : undefined} />
           <ResultPanel
             statusLabel={apiResult ? `${apiResult.action.toUpperCase()}${apiResult.status !== null ? ` Status ${apiResult.status}` : ''}` : null}
             message={apiResult?.message ?? null}
@@ -153,7 +154,6 @@ export function SubscriptionPage() {
             logContext={apiResult?.logContext ?? createLogContext}
             copyable
           />
-          <CheckoutUrlPanel url={apiResult?.ok ? apiResult.checkoutUrl : undefined} />
         </section>
       </section>
     </OperatorThemeFrame>
