@@ -99,7 +99,9 @@ export type SubscriptionPreviewResponse = {
   };
 };
 
-export type SubscriptionCreateResponse = CommandResult;
+export type SubscriptionCreateResponse = CommandResult & {
+  checkoutUrl?: string | null;
+};
 
 export type SubscriptionMerchantRefResponse = {
   ok: true;

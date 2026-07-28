@@ -199,7 +199,11 @@ describe('payout API routes', () => {
       upstreamBody = JSON.parse(String(init?.body ?? '{}')) as PayoutUpstreamBody;
       upstreamAuthorization = String((init?.headers as Record<string, string> | undefined)?.Authorization || '');
 
-      return new Response(JSON.stringify({ ok: true, transaction_id: 'po_123' }), {
+      return new Response(JSON.stringify({
+        ok: true,
+        transaction_id: 'po_123',
+        checkout: { checkout_url: 'https://checkout.example.test/payout/po_123' },
+      }), {
         status: 201,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -233,6 +237,7 @@ describe('payout API routes', () => {
     const body = (await response.json()) as Record<string, unknown>;
     expect(body.ok).toBe(true);
     expect(body.status).toBe(201);
+    expect(body.checkoutUrl).toBe('https://checkout.example.test/payout/po_123');
     expect(upstreamAuthorization).toBe('ApiKey india-bangladesh-token');
     expect(upstreamBody).not.toBeNull();
     const capturedUpstreamBody = upstreamBody as unknown as PayoutUpstreamBody;

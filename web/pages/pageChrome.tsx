@@ -644,6 +644,31 @@ export function ResultPanel(props: {
 }
 
 /**
+ * Displays the checkout action returned by a successful API request.
+ *
+ * @param props Checkout URL to expose as an external action.
+ * @returns A checkout link card, or `null` when no URL is available.
+ */
+export function CheckoutUrlPanel({ url }: { url?: string }) {
+  if (!url) return null;
+
+  return (
+    <PageCard className="border-[var(--status-success-border)] bg-[var(--status-success-bg)] p-6">
+      <h2 className="text-[1.05rem] font-semibold text-[var(--color-text)]">Checkout</h2>
+      <p className="mt-2 text-sm text-[color:var(--color-text-muted)]">Open the checkout page to complete payment.</p>
+      <a
+        className="mt-4 inline-flex max-w-full items-center rounded-full bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-slate-950 transition-colors duration-200 hover:bg-[var(--color-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+      >
+        Open checkout
+      </a>
+    </PageCard>
+  );
+}
+
+/**
  * Renders the shared loading or error state before page defaults are available.
  *
  * @param props Hero copy plus the current loading or error message.

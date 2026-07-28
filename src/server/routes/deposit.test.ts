@@ -205,7 +205,11 @@ describe('deposit API routes', () => {
       upstreamBody = JSON.parse(String(init?.body ?? '{}')) as DepositUpstreamBody;
       upstreamAuthorization = String((init?.headers as Record<string, string> | undefined)?.Authorization || '');
 
-      return new Response(JSON.stringify({ ok: true, intent_id: 'dep_123' }), {
+      return new Response(JSON.stringify({
+        ok: true,
+        intent_id: 'dep_123',
+        checkout: { checkout_url: 'https://checkout.example.test/deposit/dep_123' },
+      }), {
         status: 201,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -225,6 +229,7 @@ describe('deposit API routes', () => {
     const body = (await response.json()) as Record<string, unknown>;
     expect(body.ok).toBe(true);
     expect(body.status).toBe(201);
+    expect(body.checkoutUrl).toBe('https://checkout.example.test/deposit/dep_123');
     expect(upstreamAuthorization).toBe('ApiKey payout-token');
     expect(upstreamBody).not.toBeNull();
     const capturedUpstreamBody = upstreamBody as unknown as DepositUpstreamBody;

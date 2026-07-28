@@ -1,5 +1,6 @@
 import {
   JsonPanel,
+  CheckoutUrlPanel,
   LoadingHero,
   OperatorThemeFrame,
   PageHero,
@@ -135,6 +136,7 @@ export function PayoutPage() {
             logContext={result?.logContext ?? createLogContext}
             copyable
           />
+          <CheckoutUrlPanel url={result?.ok ? result.checkoutUrl : undefined} />
         </section>
       </section>
     </OperatorThemeFrame>

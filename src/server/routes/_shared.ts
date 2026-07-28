@@ -4,6 +4,25 @@ import { AppError, normalizeRouteError } from '../errors';
 
 type RouteResponse = Response | null;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const extractCheckoutUrl = (value: unknown): string | null => {
+  if (!isRecord(value)) return null;
+  const checkout = isRecord(value.checkout) ? value.checkout : null;
+  const url = checkout?.checkout_url;
+  return typeof url === 'string' && url.trim() ? url.trim() : null;
+};
+
+const addCheckoutUrl = <CreateResponse,>(result: CreateResponse): CreateResponse & { checkoutUrl: string | null } => {
+  const response = isRecord(result) && 'response' in result ? result.response : null;
+
+  return {
+    ...(result as CreateResponse & object),
+    checkoutUrl: extractCheckoutUrl(response),
+  } as CreateResponse & { checkoutUrl: string | null };
+};
+
 export type PresetBackedRouteConfig<
   Channel,
   RequestValues,
@@ -164,7 +183,7 @@ export const handlePresetBackedRoute = async <
           status: normalizedError.response.status,
         });
       }
-      return json(result, {
+      return json(addCheckoutUrl(result), {
         status: (result as { ok?: boolean; status?: number }).ok ? 200 : (result as { status?: number }).status || 500,
       });
     } catch (error) {

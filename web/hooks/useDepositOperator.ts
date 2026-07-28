@@ -209,6 +209,7 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
         raw: {
           response: response.response ?? null,
         },
+        checkoutUrl: response.checkoutUrl,
       });
     } catch (caught) {
       setApiResult(buildFailureResult('create', caught, createLogContext));

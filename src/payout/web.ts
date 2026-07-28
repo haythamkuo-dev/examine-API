@@ -83,7 +83,9 @@ export type PayoutPreviewResponse = {
   };
 };
 
-export type PayoutCreateResponse = CommandResult;
+export type PayoutCreateResponse = CommandResult & {
+  checkoutUrl?: string | null;
+};
 
 export type PayoutMerchantReferenceResponse = {
   ok: true;

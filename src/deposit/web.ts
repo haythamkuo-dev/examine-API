@@ -103,6 +103,7 @@ export type DepositPreviewResponse = {
 
 export type DepositCreateResponse = CommandResult & {
   hint?: string;
+  checkoutUrl?: string | null;
 };
 
 export type DepositMerchantRefResponse = {

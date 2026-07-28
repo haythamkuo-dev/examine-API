@@ -43,6 +43,7 @@ export type ApiResultView = {
   details?: string;
   logContext?: ApiLogContext;
   raw: unknown;
+  checkoutUrl?: string | null;
 };
 
 export type MerchantReferencePayloadKey = 'merchant_ref' | 'merchant_reference';

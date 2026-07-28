@@ -235,7 +235,11 @@ describe('subscription API routes', () => {
       upstreamBody = JSON.parse(String(init?.body ?? '{}')) as SubscriptionUpstreamBody;
       upstreamAuthorization = String((init?.headers as Record<string, string> | undefined)?.Authorization || '');
 
-      return new Response(JSON.stringify({ ok: true, subscription_id: 'sub_123' }), {
+      return new Response(JSON.stringify({
+        ok: true,
+        subscription_id: 'sub_123',
+        checkout: { checkout_url: 'https://checkout.example.test/subscription/sub_123' },
+      }), {
         status: 201,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -252,6 +256,7 @@ describe('subscription API routes', () => {
     const body = (await response.json()) as Record<string, unknown>;
     expect(body.ok).toBe(true);
     expect(body.status).toBe(201);
+    expect(body.checkoutUrl).toBe('https://checkout.example.test/subscription/sub_123');
     expect(upstreamAuthorization).toBe('ApiKey payout-token');
     expect(upstreamBody).not.toBeNull();
     const capturedUpstreamBody = upstreamBody as unknown as SubscriptionUpstreamBody;

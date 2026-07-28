@@ -86,6 +86,7 @@ export const normalizeCreateResult = async (response: Response): Promise<ApiResu
     status: typeof record?.status === 'number' ? record.status : response.status,
     message: 'Request sent successfully.',
     raw: { response: record?.response ?? parsedBody },
+    checkoutUrl: typeof record?.checkoutUrl === 'string' ? record.checkoutUrl : null,
   };
 };
 
