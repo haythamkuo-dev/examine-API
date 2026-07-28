@@ -31,8 +31,11 @@ const addCheckoutUrl = <CreateResponse,>(
   result: CreateResponse,
   policy: CheckoutUrlPolicy,
 ): CreateResponse & { checkoutUrl: string | null } => {
-  const response = isRecord(result) && 'response' in result ? result.response : null;
-  policy.onUnexpected?.(response);
+  const response = isRecord(result) && 'response' in result ? result.response : null; 
+
+  if(policy.service === 'payout') {
+    policy.onUnexpected?.(response);
+  }
 
   return {
     ...(result as CreateResponse & object),

@@ -84,6 +84,7 @@ export const normalizeCreateResult = async (response: Response): Promise<ApiResu
       status: envelope.response.status,
       message: envelope.response.message,
       raw: envelope,
+      checkoutUrl: null,
     };
   }
 
