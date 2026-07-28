@@ -73,9 +73,16 @@ const createValidBody = (): PayoutApiRequestBody => ({
 
 describe('payout API routes', () => {
   let context: ApiTestServerContext;
+  const warnings: unknown[][] = [];
 
   beforeAll(async () => {
-    context = await startApiTestServer();
+    context = await startApiTestServer({
+      logger: {
+        info: () => undefined,
+        warn: (...args) => warnings.push(args),
+        error: () => undefined,
+      },
+    });
   });
 
   afterAll(async () => {
@@ -86,6 +93,7 @@ describe('payout API routes', () => {
 
   beforeEach(async () => {
     mock.restore();
+    warnings.length = 0;
     await context.resetPayoutFixtures();
   });
 
@@ -237,7 +245,8 @@ describe('payout API routes', () => {
     const body = (await response.json()) as Record<string, unknown>;
     expect(body.ok).toBe(true);
     expect(body.status).toBe(201);
-    expect(body.checkoutUrl).toBe('https://checkout.example.test/payout/po_123');
+    expect(body.checkoutUrl).toBeNull();
+    expect(warnings.some(([message]) => message === 'Payout response contains unsupported checkout fields:')).toBe(true);
     expect(upstreamAuthorization).toBe('ApiKey india-bangladesh-token');
     expect(upstreamBody).not.toBeNull();
     const capturedUpstreamBody = upstreamBody as unknown as PayoutUpstreamBody;

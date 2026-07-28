@@ -238,7 +238,7 @@ describe('subscription API routes', () => {
       return new Response(JSON.stringify({
         ok: true,
         subscription_id: 'sub_123',
-        checkout: { checkout_url: 'https://checkout.example.test/subscription/sub_123' },
+        checkout: { cashier_url: 'https://checkout.example.test/subscription/sub_123' },
       }), {
         status: 201,
         headers: { 'Content-Type': 'application/json' },

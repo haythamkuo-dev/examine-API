@@ -2,7 +2,18 @@ import type { PayoutServiceDeps } from '../../payout/service';
 import { createPayoutService, getRequestedPayoutChannel } from '../../payout/service';
 import { validatePayoutForm } from '../../payout/validation';
 import type { PayoutRequestValues } from '../../payout/web';
-import { handlePresetBackedRoute } from './_shared';
+import { handlePresetBackedRoute, type CheckoutUrlPolicy } from './_shared';
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const payoutCheckoutUrlPolicy = (warn: (...args: unknown[]) => void): CheckoutUrlPolicy => ({
+  resolve: () => null,
+  onUnexpected: (response) => {
+    if (!isRecord(response) || !isRecord(response.checkout)) return;
+    warn('Payout response contains unsupported checkout fields:', Object.keys(response.checkout));
+  },
+});
 
 /**
  * Handles payout API routes for defaults, preview, and create requests.
@@ -45,6 +56,7 @@ export const handlePayoutRoute = async ({
     generateMerchantRef: (service) => service.generateMerchantReference(),
     preview: (service, values, targetEnvironment) => service.preview(values, targetEnvironment),
     execute: (service, values, targetEnvironment) => service.execute(values, targetEnvironment),
+    checkoutUrlPolicy: payoutCheckoutUrlPolicy((...args) => deps.logger.warn(...args)),
     validate: (values, bundle) =>
       validatePayoutForm(
         values,

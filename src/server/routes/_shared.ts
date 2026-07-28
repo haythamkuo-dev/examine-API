@@ -7,19 +7,24 @@ type RouteResponse = Response | null;
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const extractCheckoutUrl = (value: unknown): string | null => {
-  if (!isRecord(value)) return null;
-  const checkout = isRecord(value.checkout) ? value.checkout : null;
-  const url = checkout?.checkout_url;
-  return typeof url === 'string' && url.trim() ? url.trim() : null;
+/** Defines service-specific checkout response handling for a create route. */
+export type CheckoutUrlPolicy = {
+  /** Resolves the frontend-safe checkout URL from the upstream response. */
+  resolve: (response: unknown) => string | null;
+  /** Reports upstream checkout-like fields that are not supported by the service. */
+  onUnexpected?: (response: unknown) => void;
 };
 
-const addCheckoutUrl = <CreateResponse,>(result: CreateResponse): CreateResponse & { checkoutUrl: string | null } => {
+const addCheckoutUrl = <CreateResponse,>(
+  result: CreateResponse,
+  policy: CheckoutUrlPolicy,
+): CreateResponse & { checkoutUrl: string | null } => {
   const response = isRecord(result) && 'response' in result ? result.response : null;
+  policy.onUnexpected?.(response);
 
   return {
     ...(result as CreateResponse & object),
-    checkoutUrl: extractCheckoutUrl(response),
+    checkoutUrl: policy.resolve(response),
   } as CreateResponse & { checkoutUrl: string | null };
 };
 
@@ -53,6 +58,7 @@ export type PresetBackedRouteConfig<
   generateMerchantRef: (service: Service) => unknown;
   preview: (service: Service, values: RequestValues, targetEnvironment: TargetEnvironment) => unknown;
   execute: (service: Service, values: RequestValues, targetEnvironment: TargetEnvironment) => Promise<CreateResponse>;
+  checkoutUrlPolicy: CheckoutUrlPolicy;
   validate: (
     values: RequestValues,
     bundle: {
@@ -95,6 +101,7 @@ const handleRouteError = async (
  * @param options.generateMerchantRef Builds a new merchant reference response payload.
  * @param options.preview Builds a preview response for the request body.
  * @param options.execute Executes the upstream request for the request body.
+ * @param options.checkoutUrlPolicy Defines service-specific checkout URL parsing and warnings.
  * @param options.validate Validates request values against the loaded schema bundle.
  * @param options.onRouteError Converts route-specific errors into HTTP responses when needed.
  * @returns A response when the request matches the route, otherwise `null`.
@@ -123,6 +130,7 @@ export const handlePresetBackedRoute = async <
   generateMerchantRef,
   preview,
   execute,
+  checkoutUrlPolicy,
   validate,
   onRouteError,
 }: PresetBackedRouteConfig<
@@ -183,7 +191,7 @@ export const handlePresetBackedRoute = async <
           status: normalizedError.response.status,
         });
       }
-      return json(addCheckoutUrl(result), {
+      return json(addCheckoutUrl(result, checkoutUrlPolicy), {
         status: (result as { ok?: boolean; status?: number }).ok ? 200 : (result as { status?: number }).status || 500,
       });
     } catch (error) {

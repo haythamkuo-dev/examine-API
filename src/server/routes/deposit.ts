@@ -2,7 +2,18 @@ import type { DepositServiceDeps } from '../../deposit/service';
 import { createDepositService, getRequestedDepositChannel } from '../../deposit/service';
 import { validateDepositForm } from '../../deposit/validation';
 import type { DepositRequestValues } from '../../deposit/web';
-import { handlePresetBackedRoute } from './_shared';
+import { handlePresetBackedRoute, type CheckoutUrlPolicy } from './_shared';
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const depositCheckoutUrlPolicy: CheckoutUrlPolicy = {
+  resolve: (response) => {
+    const checkout = isRecord(response) && isRecord(response.checkout) ? response.checkout : null;
+    const url = checkout?.checkout_url;
+    return typeof url === 'string' && url.trim() ? url.trim() : null;
+  },
+};
 
 export const handleDepositRoute = async ({
   request,
@@ -35,6 +46,7 @@ export const handleDepositRoute = async ({
     generateMerchantRef: (service) => service.generateMerchantRef(),
     preview: (service, values, targetEnvironment) => service.preview(values, targetEnvironment),
     execute: (service, values, targetEnvironment) => service.execute(values, targetEnvironment),
+    checkoutUrlPolicy: depositCheckoutUrlPolicy,
     validate: (values, bundle) =>
       validateDepositForm(
         values,

@@ -10,7 +10,18 @@ import {
   type SubscriptionRequestValues,
 } from '../../subscription/web';
 import { AppError } from '../errors';
-import { handlePresetBackedRoute } from './_shared';
+import { handlePresetBackedRoute, type CheckoutUrlPolicy } from './_shared';
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const subscriptionCheckoutUrlPolicy: CheckoutUrlPolicy = {
+  resolve: (response) => {
+    const checkout = isRecord(response) && isRecord(response.checkout) ? response.checkout : null;
+    const url = checkout?.cashier_url;
+    return typeof url === 'string' && url.trim() ? url.trim() : null;
+  },
+};
 
 const subscriptionPlanError = (message: string): AppError =>
   new AppError({
@@ -61,6 +72,7 @@ export const handleSubscriptionRoute = async ({
     generateMerchantRef: (service) => service.generateMerchantRef(),
     preview: (service, values, targetEnvironment) => service.preview(values, targetEnvironment),
     execute: (service, values, targetEnvironment) => service.execute(values, targetEnvironment),
+    checkoutUrlPolicy: subscriptionCheckoutUrlPolicy,
     validate: (values, bundle) =>
       validateSubscriptionForm(
         values,
