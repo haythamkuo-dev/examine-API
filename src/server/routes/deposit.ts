@@ -8,6 +8,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const depositCheckoutUrlPolicy: CheckoutUrlPolicy = {
+  service: 'deposit',
   resolve: (response) => {
     const checkout = isRecord(response) && isRecord(response.checkout) ? response.checkout : null;
     const url = checkout?.checkout_url;

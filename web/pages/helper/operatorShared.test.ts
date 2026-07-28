@@ -110,6 +110,7 @@ describe('operatorShared', () => {
       action: 'preview',
       status: 400,
       message: 'product_no is required',
+      logContext: undefined,
       raw: {
         response: {
           status: 400,
@@ -117,6 +118,7 @@ describe('operatorShared', () => {
           message: 'product_no is required',
         },
       },
+      checkoutUrl: null,
     });
   });
 

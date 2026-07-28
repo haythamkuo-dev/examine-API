@@ -8,6 +8,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const payoutCheckoutUrlPolicy = (warn: (...args: unknown[]) => void): CheckoutUrlPolicy => ({
+  service: 'payout',
   resolve: () => null,
   onUnexpected: (response) => {
     if (!isRecord(response) || !isRecord(response.checkout)) return;

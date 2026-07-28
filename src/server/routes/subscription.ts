@@ -16,6 +16,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const subscriptionCheckoutUrlPolicy: CheckoutUrlPolicy = {
+  service: 'subscription',
   resolve: (response) => {
     const checkout = isRecord(response) && isRecord(response.checkout) ? response.checkout : null;
     const url = checkout?.cashier_url;

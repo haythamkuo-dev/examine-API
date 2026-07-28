@@ -35,16 +35,29 @@ export type ApiLogContext = {
   targetLabel: typeof localTargetLabel | typeof remoteTargetLabel;
 };
 
-export type ApiResultView = {
-  ok: boolean;
+export type ApiSuccessResult = {
+  ok: true;
   action: ApiAction;
   status: number | null;
   message: string;
   details?: string;
   logContext?: ApiLogContext;
   raw: unknown;
-  checkoutUrl?: string | null;
+  checkoutUrl: string | null;
 };
+
+export type ApiFailureResult = {
+  ok: false;
+  action: ApiAction;
+  status: number | null;
+  message: string;
+  details?: string;
+  logContext?: ApiLogContext;
+  raw: unknown;
+  checkoutUrl: null;
+};
+
+export type ApiResultView = ApiSuccessResult | ApiFailureResult;
 
 export type MerchantReferencePayloadKey = 'merchant_ref' | 'merchant_reference';
 
@@ -136,6 +149,7 @@ export const buildFailureResult = (
       message: envelope.response.message,
       logContext,
       raw: envelope,
+      checkoutUrl: null,
     };
   }
 
@@ -148,6 +162,7 @@ export const buildFailureResult = (
     message: envelope.response.message,
     logContext,
     raw: envelope,
+    checkoutUrl: null,
   };
 };
 

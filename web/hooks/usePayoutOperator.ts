@@ -365,6 +365,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
           status: 200,
           data: response,
         },
+        checkoutUrl: null,
       });
     } catch (caught) {
       setResult(buildFailureResult('generate', caught, generateLogContext));

@@ -244,6 +244,7 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
           status: getNumericStatus(response),
           data: response,
         },
+        checkoutUrl: null,
       });
     } catch (caught) {
       setApiResult(buildFailureResult('generate', caught, generateLogContext));

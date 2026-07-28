@@ -334,6 +334,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
           status: 200,
           data: response,
         },
+        checkoutUrl: null,
       });
     } catch (caught) {
       setApiResult(buildFailureResult('generate', caught, generateLogContext));

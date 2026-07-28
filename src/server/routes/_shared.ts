@@ -8,12 +8,24 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /** Defines service-specific checkout response handling for a create route. */
-export type CheckoutUrlPolicy = {
-  /** Resolves the frontend-safe checkout URL from the upstream response. */
-  resolve: (response: unknown) => string | null;
-  /** Reports upstream checkout-like fields that are not supported by the service. */
-  onUnexpected?: (response: unknown) => void;
-};
+export type CheckoutUrlPolicy =
+  | {
+      service: 'deposit';
+      /** Resolves the frontend-safe checkout URL from the upstream response. */
+      resolve: (response: unknown) => string | null;
+    }
+  | {
+      service: 'subscription';
+      /** Resolves the frontend-safe checkout URL from the upstream response. */
+      resolve: (response: unknown) => string | null;
+    }
+  | {
+      service: 'payout';
+      /** Payout does not currently expose a checkout URL. */
+      resolve: () => null;
+      /** Reports upstream checkout-like fields that are not supported by payout. */
+      onUnexpected: (response: unknown) => void;
+    };
 
 const addCheckoutUrl = <CreateResponse,>(
   result: CreateResponse,
