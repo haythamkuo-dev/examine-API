@@ -766,6 +766,30 @@ describe('DepositPage', () => {
     expect(view.getByText('/api/deposit/create')).toBeInTheDocument();
   });
 
+  test('clears a previous checkout URL before previewing a new request', async () => {
+    const checkoutUrl = 'https://checkout.example.test/deposit/previous';
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+      'POST /api/deposit/create': async () => jsonResponse({ ...createResponseBody, checkoutUrl }),
+      'POST /api/deposit/preview': async () => jsonResponse(createPreviewResponse('PREVIEW-AFTER-CREATE')),
+    });
+
+    const view = renderDepositPage();
+    await view.findByRole('heading', { name: 'Deposit' });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Send request' }));
+    });
+    await view.findByRole('link', { name: 'Open checkout' });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
+    });
+
+    expect(view.queryByRole('link', { name: 'Open checkout' })).toBeNull();
+    await view.findByText(/"merchant_ref": "PREVIEW-AFTER-CREATE"/);
+  });
+
   test('preview replaces the current merchant reference and create reuses it', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),

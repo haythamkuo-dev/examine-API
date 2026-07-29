@@ -160,6 +160,7 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
 
     setLoading('preview');
     setError(null);
+    setApiResult(null);
 
     try {
       const response = await previewDepositRequest(mode, {

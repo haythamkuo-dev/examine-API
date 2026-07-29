@@ -286,6 +286,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
     setLoading('preview');
     setError(null);
+    setResult(null);
 
     try {
       const response = await previewPayoutRequest(mode, {

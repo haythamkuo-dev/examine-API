@@ -257,6 +257,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
 
     setLoading('preview');
     setError(null);
+    setApiResult(null);
 
     try {
       const response = await previewSubscriptionRequest(mode, {
