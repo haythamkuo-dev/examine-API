@@ -25,6 +25,7 @@ const env = getCliEnv({
   SUBSCRIPTION_PLAN: 'PLAN-DEFAULT-001',
   SUBSCRIPTION_PLAN_LINEPAY: 'PLAN-LINEPAY-001',
   SUBSCRIPTION_PLAN_TNG: 'PLAN-TNG-001',
+  SUBSCRIPTION_PLAN_INTERNATIONAL_CARD: 'PLAN-INTERNATIONAL-CARD-001',
 });
 
 const productEnv = getProductCliEnv({
@@ -37,6 +38,7 @@ const productEnv = getProductCliEnv({
   SUBSCRIPTION_PLAN_PROD: 'PLAN-PROD-001',
   SUBSCRIPTION_PLAN_PROD_LINEPAY: 'PLAN-PROD-LINEPAY-001',
   SUBSCRIPTION_PLAN_PROD_TNG: 'PLAN-PROD-TNG-001',
+  SUBSCRIPTION_PLAN_PROD_INTERNATIONAL_CARD: 'PLAN-PROD-INTERNATIONAL-CARD-001',
 });
 
 const makeId = (prefix: string) => `${prefix}fixed-id`;
@@ -61,11 +63,13 @@ describe('subscription web helpers', () => {
     const defaultIntervalCount = result.channels.default.schema.interval_count;
     const rabbitLinePayIntervalCount = result.channels.rabbitLinePay.schema.interval_count;
     const touchAndGoIntervalCount = result.channels.touchAndGo.schema.interval_count;
+    const internationalCreditCardIntervalCount = result.channels.internationalCreditCard.schema.interval_count;
 
     expect(result.common.values.merchantRef).toBe('TEST_ORDER_fixed-id');
     expect(defaultIntervalCount?.kind).toBe('number');
     expect(rabbitLinePayIntervalCount?.kind).toBe('number');
     expect(touchAndGoIntervalCount?.kind).toBe('number');
+    expect(internationalCreditCardIntervalCount?.kind).toBe('number');
     expect(result.channels.default.values.subs_plan_id).toBeUndefined();
     expect(result.channels.default.values.payment_instrument).toEqual({
       os_type: 'WEB',
@@ -156,6 +160,7 @@ describe('subscription web helpers', () => {
       ['default', 'PLAN-DEFAULT-001', 'PLAN-PROD-001'],
       ['rabbitLinePay', 'PLAN-LINEPAY-001', 'PLAN-PROD-LINEPAY-001'],
       ['touchAndGo', 'PLAN-TNG-001', 'PLAN-PROD-TNG-001'],
+      ['internationalCreditCard', 'PLAN-INTERNATIONAL-CARD-001', 'PLAN-PROD-INTERNATIONAL-CARD-001'],
     ] as const;
 
     for (const [channel, localPlanId, productPlanId] of channels) {
@@ -321,6 +326,35 @@ describe('subscription web helpers', () => {
 
     expect(() => buildSubscriptionRequestFromForm(invalidEnv, values, makeId)).toThrow(
       'Missing subscription plan configuration for "rabbitLinePay". Expected env var: SUBSCRIPTION_PLAN_LINEPAY',
+    );
+  });
+
+  test('uses the international card plan env var in missing plan errors', async () => {
+    const defaults = toSubscriptionDefaultsResponse(
+      'internationalCreditCard',
+      env,
+      'local',
+      await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId }),
+    );
+    const values: SubscriptionRequestValues = {
+      ...defaults.form,
+      channel: 'internationalCreditCard',
+      channelValues: {
+        ...defaults.form.channelValues,
+        subs_plan_id: '',
+      },
+    };
+    const invalidEnv = getCliEnv({
+      API_BASE_URL: 'https://example.test',
+      MERCHANT_SIGN: 'sign-key',
+      NORMAL_MERCHANT_API_TOKEN: 'subscription-token',
+      SUBSCRIPTION_URL: '/s2s/v1/subscriptions',
+      CALLBACK_URL_SUBSCRIPTION: 'https://merchant.example.com/subscription/callback',
+      SUBSCRIPTION_PLAN: 'PLAN-DEFAULT-001',
+    });
+
+    expect(() => buildSubscriptionRequestFromForm(invalidEnv, values, makeId)).toThrow(
+      'Missing subscription plan configuration for "internationalCreditCard". Expected env var: SUBSCRIPTION_PLAN_INTERNATIONAL_CARD',
     );
   });
 });

@@ -28,7 +28,12 @@ export const DEPOSIT_CHANNELS = [
 ] as const;
 
 export const PAYOUT_CHANNELS = ['co_bank', 'co_wallet', 'imps', 'bd_wallet'] as const;
-export const SUBSCRIPTION_CHANNELS = ['default', 'rabbitLinePay', 'touchAndGo'] as const;
+export const SUBSCRIPTION_CHANNELS = [
+  'default',
+  'rabbitLinePay',
+  'touchAndGo',
+  'internationalCreditCard',
+] as const;
 
 export type DepositChannel = (typeof DEPOSIT_CHANNELS)[number];
 export type PayoutChannel = (typeof PAYOUT_CHANNELS)[number];
@@ -182,6 +187,10 @@ const getSubscriptionPlanEnvVarName = (
     return `${prefix}_LINEPAY`;
   }
 
+  if (channel === 'internationalCreditCard') {
+    return `${prefix}_INTERNATIONAL_CARD`;
+  }
+
   return `${prefix}_TNG`;
 };
 
@@ -226,6 +235,12 @@ const buildCliEnv = (params: {
       params.env[params.target === 'product' ? 'SUBSCRIPTION_PLAN_PROD_LINEPAY' : 'SUBSCRIPTION_PLAN_LINEPAY'] || '',
     touchAndGo:
       params.env[params.target === 'product' ? 'SUBSCRIPTION_PLAN_PROD_TNG' : 'SUBSCRIPTION_PLAN_TNG'] || '',
+    internationalCreditCard:
+      params.env[
+        params.target === 'product'
+          ? 'SUBSCRIPTION_PLAN_PROD_INTERNATIONAL_CARD'
+          : 'SUBSCRIPTION_PLAN_INTERNATIONAL_CARD'
+      ] || '',
   },
   tokens: {
     deposit: params.defaultMerchantApiToken,

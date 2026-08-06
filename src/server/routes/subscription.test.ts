@@ -57,6 +57,8 @@ describe('subscription API routes', () => {
         SUBSCRIPTION_PLAN: 'PLAN-STAGE-DEFAULT',
         SUBSCRIPTION_PLAN_LINEPAY: 'PLAN-STAGE-LINEPAY',
         SUBSCRIPTION_PLAN_TNG: 'PLAN-STAGE-TNG',
+        SUBSCRIPTION_PLAN_INTERNATIONAL_CARD: 'PLAN-STAGE-INTERNATIONAL-CARD',
+        SUBSCRIPTION_PLAN_PROD_INTERNATIONAL_CARD: 'PLAN-PROD-INTERNATIONAL-CARD',
       }),
     });
   });
@@ -82,7 +84,12 @@ describe('subscription API routes', () => {
     const commonValues = form.commonValues as Record<string, unknown>;
 
     expect(body.channel).toBe('default');
-    expect(body.availableChannels).toEqual(['default', 'rabbitLinePay', 'touchAndGo']);
+    expect(body.availableChannels).toEqual([
+      'default',
+      'rabbitLinePay',
+      'touchAndGo',
+      'internationalCreditCard',
+    ]);
     expect(body.apiKey).toBe('payout-token');
     expect(body.resolvedPlanId).toBe('PLAN-STAGE-DEFAULT');
     expect(commonValues.merchantRef).toBe('Click button to acquire a merchant ref');
@@ -114,6 +121,20 @@ describe('subscription API routes', () => {
     const body = (await response.json()) as Record<string, unknown>;
     expect(body.apiKey).toBe(context.envRegistry.product.tokens.subscription);
     expect(body.resolvedPlanId).toBe('PLAN-PROD-TNG');
+  });
+
+  test('GET /api/subscription/defaults returns the international credit card channel plan', async () => {
+    const response = await context.requestApi('/api/subscription/defaults?channel=internationalCreditCard');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('internationalCreditCard');
+    expect(body.resolvedPlanId).toBe('PLAN-STAGE-INTERNATIONAL-CARD');
+    expect(channelValues.subs_plan_id).toBe('PLAN-STAGE-INTERNATIONAL-CARD');
   });
 
   test('POST /api/subscription/merchant-ref returns a generated merchant reference', async () => {
