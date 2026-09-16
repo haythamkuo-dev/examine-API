@@ -106,6 +106,30 @@ describe('deposit web helpers', () => {
     expect(payload.payment_order).toBeUndefined();
   });
 
+  test('builds the ezpay USD intercard request from its preset', () => {
+    const defaults = toDepositDefaultsResponse(
+      'ez-intercard-usd',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+    const amount = payload.amount as { amount: string; currency_code: string };
+
+    expect(payload.product_no).toBe('DEP-EZPAY-INTERCARD-USD');
+    expect(amount).toEqual({ amount: '99.99', currency_code: 'USD' });
+    expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
+    expect(payload.payment_order).toEqual({
+      collect: {
+        country_code: 'US',
+        product_detail: 'USD intercard order for %s',
+        product_name: 'USD Checkout',
+        shopper_reference: 'CUSTOMER_001',
+        origin: 'https://www.fellowproducts.com.tw/products/ekgpro',
+      },
+    });
+  });
+
   test('builds masked preview response', () => {
     const defaults = toDepositDefaultsResponse(
       'southafrica_cards',

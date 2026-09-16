@@ -23,6 +23,7 @@ export const DEPOSIT_CHANNEL_LABELS: Partial<Record<DepositChannel, string>> = {
   'ALIPAY-6014': '人民幣代收(6014通道)',
   'WECHAT-6016': '人民幣代收(6016通道)',
   'cmoney-intercard': 'cmoney-國際信用卡',
+  'ez-intercard-usd': 'ezpay-usd',
 };
 
 /**

@@ -48,6 +48,21 @@ describe('validateDepositForm', () => {
     expect(error).toBeUndefined();
   });
 
+  test('accepts ezpay USD requests without optional collect defaults', async () => {
+    const presets = await loadDepositPresets({ dirPath: presetDirPath, env, makeId });
+    const defaults = toDepositDefaultsResponse('ez-intercard-usd', env, presets);
+    const paymentOrder = defaults.form.channelValues.payment_order as Record<string, unknown>;
+    const collect = paymentOrder.collect as Record<string, unknown>;
+
+    delete collect.country_code;
+    delete collect.shopper_reference;
+    delete collect.origin;
+
+    const error = validateDepositForm(defaults.form, defaults.commonSchema, defaults.channelSchema);
+
+    expect(error).toBeUndefined();
+  });
+
   test('returns an error when a required common field is blank', async () => {
     const presets = await loadDepositPresets({ dirPath: presetDirPath, env, makeId });
     const defaults = toDepositDefaultsResponse('southafrica_cards', env, presets);

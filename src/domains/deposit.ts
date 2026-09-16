@@ -279,6 +279,20 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
   'ALIPAY-6014': { product_no: 'DEP-HONGYUNPAY-ALIPAY6014-CNY', amount: { amount: '120.00', currency_code: 'CNY' }, return_url: env.callbackUrlDeposit },
   'WECHAT-6016': { product_no: 'DEP-HONGYUNPAY-WECHAT6016-CNY', amount: { amount: '150.00', currency_code: 'CNY' }, return_url: env.callbackUrlDeposit },
   'cmoney-intercard': { product_no: 'DEP-CMONEY-INTERCARD-USD', amount: { amount: '100.00', currency_code: 'USD' }, return_url: env.callbackUrlDeposit },
+  'ez-intercard-usd': {
+    product_no: 'DEP-EZPAY-INTERCARD-USD',
+    amount: { amount: '99.99', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        country_code: 'US',
+        product_detail: 'USD intercard order for %s',
+        product_name: 'USD Checkout',
+        shopper_reference: 'CUSTOMER_001',
+        origin: 'https://www.fellowproducts.com.tw/products/ekgpro',
+      },
+    },
+  },
 });
 
 export const createDepositPayload = (

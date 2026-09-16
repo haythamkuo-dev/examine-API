@@ -105,6 +105,18 @@ const SOUTH_AFRICA_SCHEMA: DepositFieldMap = {
 
 const JCB_SCHEMA = SOUTH_AFRICA_SCHEMA;
 
+const EZ_INTERCARD_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {
+      country_code: textField('Country code'),
+      product_detail: textareaField('Product detail', true),
+      product_name: textField('Product name', true),
+      shopper_reference: textField('Shopper reference'),
+      origin: textField('Origin'),
+    }),
+  }),
+};
+
 const SIMPLE_COLLECT_SCHEMA: DepositFieldMap = {
   payment_order: objectField('Payment order', {
     collect: objectField('Collect payload', {
@@ -600,6 +612,21 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
     commonValues: { productNo: 'DEP-CMONEY-INTERCARD-USD', amount: '100.00', currencyCode: 'USD' },
     schema: {},
     values: {},
+  },
+  'ez-intercard-usd': {
+    commonValues: { productNo: 'DEP-EZPAY-INTERCARD-USD', amount: '99.99', currencyCode: 'USD' },
+    schema: clone(EZ_INTERCARD_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          country_code: 'US',
+          product_detail: 'USD intercard order for %s',
+          product_name: 'USD Checkout',
+          shopper_reference: 'CUSTOMER_001',
+          origin: 'https://www.fellowproducts.com.tw/products/ekgpro',
+        },
+      },
+    },
   },
 });
 
