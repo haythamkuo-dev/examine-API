@@ -2,7 +2,7 @@
 
 import '../../tests/web-setup';
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { fireEvent, render, waitFor, within } from '@testing-library/react';
+import { fireEvent, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
 import { DEPOSIT_CHANNELS } from '../../src/core/env';
 import { targetEnvironmentHeaderName } from '../../src/core/targetEnvironment';
@@ -17,9 +17,15 @@ import type {
   DepositRequestValues,
 } from '../../src/deposit/web';
 import { DepositPage } from './DepositPage';
-import { AppThemeProvider } from './pageChrome';
-import { ModalProvider } from './utils/modal';
 import { getDepositChannelLabel } from './helper/depositChannelLabels';
+import {
+  createFetchHarness,
+  jsonResponse,
+  readJsonBody,
+  renderPage,
+  textResponse,
+  updateApiKeyFromModal,
+} from './testUtils';
 
 const defaultsEndpoint = '/api/deposit/defaults';
 const previewEndpoint = '/api/deposit/preview';
@@ -37,15 +43,6 @@ const [firstSpecialDepositChannel, secondSpecialDepositChannel] = specialDeposit
 if (!primaryChannel || !secondaryChannel || !firstSpecialDepositChannel || !secondSpecialDepositChannel) {
   throw new Error('Deposit channels are not configured.');
 }
-
-type FetchRequestRecord = {
-  body: DepositRequestValues | null;
-  headers: Headers;
-  method: string;
-  url: string;
-};
-
-type MockRouteHandler = (request: FetchRequestRecord) => Response | Promise<Response>;
 
 const commonSchema: DepositFieldMap = {
   productNo: {
@@ -224,101 +221,24 @@ const createSavedDefaultsResponse = (
   }),
 });
 
-const jsonResponse = (body: unknown, init?: ResponseInit): Response =>
-  new Response(JSON.stringify(body), {
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
-  });
-
-const textResponse = (body: string, init?: ResponseInit): Response =>
-  new Response(body, {
-    headers: { 'Content-Type': 'text/plain' },
-    ...init,
-  });
-
-const fetchRecords: FetchRequestRecord[] = [];
 const clipboardWriteText = mock(async (_value: string): Promise<void> => {});
 const originalClipboard = navigator.clipboard;
-let routeHandlers = new Map<string, MockRouteHandler>();
-
-const renderDepositPage = () => {
-  const view = render(
-    <AppThemeProvider>
-      <ModalProvider>
-        <DepositPage />
-      </ModalProvider>
-    </AppThemeProvider>,
-  );
-
-  return { ...view, ...within(view.container) };
-};
-
-const updateApiKeyFromModal = async (
-  view: ReturnType<typeof renderDepositPage>,
-  value: string,
-  action: 'Confirm' | 'Cancel' = 'Confirm',
-) => {
-  await act(async () => {
-    fireEvent.click(view.getByRole('button', { name: 'Edit API key' }));
-  });
-
-  await waitFor(() => {
-    expect(view.getByRole('dialog')).toBeInTheDocument();
-  });
-
-  await act(async () => {
-    fireEvent.input(view.getByLabelText('API key'), {
-      target: { value },
-    });
-  });
-
-  await act(async () => {
-    fireEvent.click(view.getByRole('button', { name: action }));
-  });
-};
-
-const setRouteHandlers = (handlers: Record<string, MockRouteHandler>): void => {
-  routeHandlers = new Map(Object.entries(handlers));
-};
-
-const readPostedForm = (body: BodyInit | null | undefined): DepositRequestValues | null => {
-  if (typeof body !== 'string' || !body.trim()) {
-    return null;
-  }
-
-  return JSON.parse(body) as DepositRequestValues;
-};
+const renderDepositPage = () => renderPage(<DepositPage />);
+const fetchHarness = createFetchHarness<DepositRequestValues>({
+  parseBody: (body) => readJsonBody<DepositRequestValues>(body),
+});
+const { records: fetchRecords, setHandlers: setRouteHandlers } = fetchHarness;
 
 beforeEach(() => {
-  fetchRecords.length = 0;
+  fetchHarness.reset();
   clipboardWriteText.mockClear();
   Object.defineProperty(navigator, 'clipboard', {
     configurable: true,
     value: { writeText: clipboardWriteText },
   });
-  routeHandlers = new Map();
   localStorage.clear();
   sessionStorage.clear();
-
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    const method = init?.method ?? 'GET';
-    const record: FetchRequestRecord = {
-      url,
-      method,
-      body: readPostedForm(init?.body),
-      headers: new Headers(init?.headers),
-    };
-
-    fetchRecords.push(record);
-
-    const handler = routeHandlers.get(`${method} ${url}`);
-    if (!handler) {
-      throw new Error(`Unexpected fetch request: ${method} ${url}`);
-    }
-
-    return await handler(record);
-  }) as typeof fetch;
+  fetchHarness.install();
 });
 
 afterEach(() => {

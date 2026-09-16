@@ -2,7 +2,7 @@
 
 import '../../tests/web-setup';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { fireEvent, render, waitFor, within } from '@testing-library/react';
+import { fireEvent, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
 import { PAYOUT_CHANNELS } from '../../src/core/env';
 import { targetEnvironmentHeaderName } from '../../src/core/targetEnvironment';
@@ -16,9 +16,15 @@ import type {
   PayoutRequestValues,
 } from '../../src/payout/web';
 import { normalizeCreateResult, PayoutPage, shouldHidePayoutField } from './PayoutPage';
-import { AppThemeProvider } from './pageChrome';
-import { ModalProvider } from './utils/modal';
 import { getPayoutChannelLabel } from './helper/payoutChannelLabels';
+import {
+  createFetchHarness,
+  jsonResponse,
+  readJsonBody,
+  renderPage,
+  textResponse,
+  updateApiKeyFromModal,
+} from './testUtils';
 
 const defaultsEndpoint = '/api/payout/defaults';
 const previewEndpoint = '/api/payout/preview';
@@ -35,15 +41,6 @@ const [firstSpecialPayoutChannel, secondSpecialPayoutChannel] = specialPayoutCha
 if (!primaryChannel || !secondaryChannel || !firstSpecialPayoutChannel || !secondSpecialPayoutChannel) {
   throw new Error('Payout channels are not configured.');
 }
-
-type FetchRequestRecord = {
-  body: PayoutRequestValues | null;
-  headers: Headers;
-  method: string;
-  url: string;
-};
-
-type MockRouteHandler = (request: FetchRequestRecord) => Response | Promise<Response>;
 
 const commonSchema: PayoutFieldMap = {
   merchantReference: {
@@ -172,85 +169,20 @@ const createMerchantReferenceResponse = (
   merchantReference,
 });
 
-const jsonResponse = (body: unknown, init?: ResponseInit): Response =>
-  new Response(JSON.stringify(body), {
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
-  });
-
-const textResponse = (body: string, init?: ResponseInit): Response =>
-  new Response(body, {
-    headers: { 'Content-Type': 'text/plain' },
-    ...init,
-  });
-
-const fetchRecords: FetchRequestRecord[] = [];
-let routeHandlers = new Map<string, MockRouteHandler>();
-
-const renderPayoutPage = () => {
-  const view = render(
-    <AppThemeProvider>
-      <ModalProvider>
-        <PayoutPage />
-      </ModalProvider>
-    </AppThemeProvider>,
-  );
-
-  return { ...view, ...within(view.container) };
-};
-
-const updateApiKeyFromModal = async (
-  view: ReturnType<typeof renderPayoutPage>,
-  value: string,
-  action: 'Confirm' | 'Cancel' = 'Confirm',
-) => {
-  await act(async () => {
-    fireEvent.click(view.getByRole('button', { name: 'Edit API key' }));
-  });
-
-  await waitFor(() => {
-    expect(view.getByRole('dialog')).toBeInTheDocument();
-  });
-
-  await act(async () => {
-    fireEvent.input(view.getByLabelText('API key'), {
-      target: { value },
-    });
-  });
-
-  await act(async () => {
-    fireEvent.click(view.getByRole('button', { name: action }));
-  });
-};
-
-const setRouteHandler = (url: string, handler: MockRouteHandler) => {
-  routeHandlers.set(url, handler);
-};
+const renderPayoutPage = () => renderPage(<PayoutPage />);
+const fetchHarness = createFetchHarness<PayoutRequestValues>({
+  parseBody: (body) => readJsonBody<PayoutRequestValues>(body),
+  routeKey: (_method, url) => url.split('?')[0] ?? url,
+});
+const { records: fetchRecords, setHandler: setRouteHandler } = fetchHarness;
 
 beforeEach(() => {
-  fetchRecords.length = 0;
-  routeHandlers = new Map<string, MockRouteHandler>();
+  fetchHarness.reset();
   localStorage.clear();
   sessionStorage.clear();
 
   setRouteHandler(defaultsEndpoint, () => jsonResponse(createDefaultsResponse(primaryChannel)));
-
-  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    const method = init?.method ?? (input instanceof Request ? input.method : 'GET');
-    const rawBody = typeof init?.body === 'string' ? init.body : null;
-    const body = rawBody ? (JSON.parse(rawBody) as PayoutRequestValues) : null;
-
-    fetchRecords.push({ url, method, body, headers: new Headers(init?.headers) });
-
-    const [pathname] = url.split('?');
-    const handler = routeHandlers.get(pathname);
-    if (!handler) {
-      throw new Error(`Unhandled fetch for ${method} ${url}`);
-    }
-
-    return await handler({ url, method, body });
-  }) as typeof fetch;
+  fetchHarness.install();
 });
 
 describe('shouldHidePayoutField', () => {

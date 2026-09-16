@@ -2,7 +2,7 @@
 
 import '../../tests/web-setup';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { fireEvent, render, waitFor, within } from '@testing-library/react';
+import { fireEvent, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
 import { targetEnvironmentHeaderName } from '../../src/core/targetEnvironment';
 import type {
@@ -14,20 +14,18 @@ import type {
   SubscriptionRequestValues,
 } from '../../src/subscription/web';
 import { normalizeCreateResult, SubscriptionPage } from './SubscriptionPage';
-import { AppThemeProvider } from './pageChrome';
-import { ModalProvider } from './utils/modal';
 import { getSubscriptionChannelLabel } from './helper/subscriptionChannelLabels';
+import {
+  createFetchHarness,
+  jsonResponse,
+  readJsonBody,
+  renderPage,
+  textResponse,
+  updateApiKeyFromModal,
+  updateModalField,
+} from './testUtils';
 
 const channel = 'default';
-
-type FetchRequestRecord = {
-  body: SubscriptionRequestValues | null;
-  headers: Headers;
-  method: string;
-  url: string;
-};
-
-type MockRouteHandler = (request: FetchRequestRecord) => Response | Promise<Response>;
 
 const commonSchema: SubscriptionFieldMap = {
   merchantRef: {
@@ -100,119 +98,24 @@ const createMerchantRefResponse = (
   merchantRef,
 });
 
-const jsonResponse = (body: unknown, init?: ResponseInit): Response =>
-  new Response(JSON.stringify(body), {
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
-  });
+const renderSubscriptionPage = () => renderPage(<SubscriptionPage />);
+const fetchHarness = createFetchHarness<SubscriptionRequestValues>({
+  parseBody: (body) => readJsonBody<SubscriptionRequestValues>(body),
+});
+const { records: fetchRecords, setHandlers: setRouteHandlers } = fetchHarness;
 
-const textResponse = (body: string, init?: ResponseInit): Response =>
-  new Response(body, {
-    headers: { 'Content-Type': 'text/plain' },
-    ...init,
-  });
-
-const fetchRecords: FetchRequestRecord[] = [];
-let routeHandlers = new Map<string, MockRouteHandler>();
-
-const renderSubscriptionPage = () => {
-  const view = render(
-    <AppThemeProvider>
-      <ModalProvider>
-        <SubscriptionPage />
-      </ModalProvider>
-    </AppThemeProvider>,
-  );
-
-  return { ...view, ...within(view.container) };
-};
-
-const updateApiKeyFromModal = async (
+const updatePlanIdFromModal = (
   view: ReturnType<typeof renderSubscriptionPage>,
   value: string,
   action: 'Confirm' | 'Cancel' = 'Confirm',
-) => {
-  await act(async () => {
-    fireEvent.click(view.getByRole('button', { name: 'Edit API key' }));
-  });
-
-  await waitFor(() => {
-    expect(view.getByRole('dialog')).toBeInTheDocument();
-  });
-
-  await act(async () => {
-    fireEvent.input(view.getByLabelText('API key'), {
-      target: { value },
-    });
-  });
-
-  await act(async () => {
-    fireEvent.click(view.getByRole('button', { name: action }));
-  });
-};
-
-const updatePlanIdFromModal = async (
-  view: ReturnType<typeof renderSubscriptionPage>,
-  value: string,
-  action: 'Confirm' | 'Cancel' = 'Confirm',
-) => {
-  await act(async () => {
-    fireEvent.click(view.getByRole('button', { name: 'Edit Plan ID' }));
-  });
-
-  await waitFor(() => {
-    expect(view.getByRole('dialog')).toBeInTheDocument();
-  });
-
-  await act(async () => {
-    fireEvent.input(view.getByLabelText('Plan ID'), {
-      target: { value },
-    });
-  });
-
-  await act(async () => {
-    fireEvent.click(view.getByRole('button', { name: action }));
-  });
-};
-
-const readPostedForm = (body: BodyInit | null | undefined): SubscriptionRequestValues | null => {
-  if (typeof body !== 'string' || !body.trim()) {
-    return null;
-  }
-
-  return JSON.parse(body) as SubscriptionRequestValues;
-};
+): Promise<void> => updateModalField(view, 'Edit Plan ID', 'Plan ID', value, action);
 
 beforeEach(() => {
-  fetchRecords.length = 0;
-  routeHandlers = new Map();
+  fetchHarness.reset();
   localStorage.clear();
   sessionStorage.clear();
-
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    const method = init?.method ?? 'GET';
-    const record: FetchRequestRecord = {
-      url,
-      method,
-      body: readPostedForm(init?.body),
-      headers: new Headers(init?.headers),
-    };
-
-    fetchRecords.push(record);
-
-    const handler = routeHandlers.get(`${method} ${url}`);
-    if (!handler) {
-      throw new Error(`Unexpected fetch request: ${method} ${url}`);
-    }
-
-    return await handler(record);
-  }) as typeof fetch;
+  fetchHarness.install();
 });
-
-const setRouteHandlers = (handlers: Record<string, MockRouteHandler>): void => {
-  routeHandlers = new Map(Object.entries(handlers));
-};
 
 describe('normalizeCreateResult', () => {
   test('keeps JSON object response as structured success output', async () => {

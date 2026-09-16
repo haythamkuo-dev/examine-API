@@ -34,6 +34,16 @@ describe('API server exception boundary', () => {
     mock.restore();
   });
 
+  test('reports that the API server is alive', async () => {
+    expect.hasAssertions();
+
+    const response = await context.requestApi('/health');
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toContain('application/json');
+    expect(await response.json()).toEqual({ ok: true });
+  });
+
   test('returns route-level 404 envelopes without invoking the exception logger', async () => {
     const response = await context.requestApi('/api/does-not-exist');
 
