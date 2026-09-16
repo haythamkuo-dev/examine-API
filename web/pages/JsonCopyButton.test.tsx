@@ -2,7 +2,7 @@
 
 import '../../tests/web-setup';
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
 import { JsonCopyButton } from './JsonCopyButton';
 
@@ -33,11 +33,11 @@ describe('JsonCopyButton', () => {
     const view = render(<JsonCopyButton value={value} />);
 
     await act(async () => {
-      fireEvent.click(view.getByRole('button', { name: 'Copy JSON' }));
+      fireEvent.click(within(view.container).getByRole('button', { name: 'Copy JSON' }));
     });
 
     expect(writeText).toHaveBeenCalledWith(value);
-    expect(view.getByRole('button', { name: 'Copied JSON' })).toBeInTheDocument();
+    expect(within(view.container).getByRole('button', { name: 'Copied JSON' })).toBeInTheDocument();
   });
 
   test('shows an error when clipboard writing fails', async () => {
@@ -45,18 +45,20 @@ describe('JsonCopyButton', () => {
     const view = render(<JsonCopyButton value='{\n  "ok": false\n}' />);
 
     await act(async () => {
-      fireEvent.click(view.getByRole('button', { name: 'Copy JSON' }));
+      fireEvent.click(within(view.container).getByRole('button', { name: 'Copy JSON' }));
     });
 
     await waitFor(() => {
-      expect(view.getByRole('status')).toHaveTextContent('Copy failed. Check your browser clipboard permission.');
+      expect(within(view.container).getByRole('status')).toHaveTextContent(
+        'Copy failed. Check your browser clipboard permission.',
+      );
     });
-    expect(view.getByRole('button', { name: 'Copy JSON' })).toBeInTheDocument();
+    expect(within(view.container).getByRole('button', { name: 'Copy JSON' })).toBeInTheDocument();
   });
 
   test('disables copying when no JSON is available', () => {
     const view = render(<JsonCopyButton value={null} />);
 
-    expect(view.getByRole('button', { name: 'Copy JSON' })).toBeDisabled();
+    expect(within(view.container).getByRole('button', { name: 'Copy JSON' })).toBeDisabled();
   });
 });

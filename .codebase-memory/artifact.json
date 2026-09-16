@@ -1,11 +1,11 @@
 {
     "schema_version": 1,
-    "commit": "f77b00efec310d5efd02b04755933ebe2c8666b3",
-    "indexed_at": "2026-08-06T07:59:40Z",
+    "commit": "182970916f556ae4a1cfd228499d3a4ceb1cbdcc",
+    "indexed_at": "2026-09-16T02:38:35Z",
     "project": "Users-haytahm-Desktop-examine_api",
-    "nodes": 1811,
-    "edges": 2688,
-    "original_size": 5373952,
-    "compressed_size": 786063,
+    "nodes": 0,
+    "edges": 2685,
+    "original_size": 5177344,
+    "compressed_size": 112635,
     "compression_level": 3
 }

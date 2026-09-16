@@ -56,7 +56,7 @@ describe('deposit service', () => {
 
     expect(defaults.channel).toBe('southafrica_cards');
     expect(defaults.availableChannels).toContain('linepay');
-    expect(defaults.form.commonValues.merchantRef).toBe('TEST_ORDER_000001');
+    expect(defaults.form.commonValues.merchantRef).toBe('Click button to acquire a merchant ref');
     expect(defaults.form.commonValues.productNo).toBe('DEP-FUTUREPAY_COLLECT-ZASOUTHAFRICACARDS-USD');
   });
 

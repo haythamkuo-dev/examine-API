@@ -2,7 +2,7 @@
 
 import '../../tests/web-setup';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { fireEvent, render } from '@testing-library/react';
+import { fireEvent, render, within } from '@testing-library/react';
 import { usePersistentApiKey } from './usePersistentApiKey';
 
 const storageKey = 'examine-api.operator-api-key';
@@ -32,7 +32,7 @@ describe('usePersistentApiKey', () => {
 
     expect(view.getByTestId('value')).toHaveTextContent('stored-api-key');
 
-    fireEvent.click(view.getByRole('button', { name: 'Update' }));
+    fireEvent.click(within(view.container).getByRole('button', { name: 'Update' }));
 
     expect(localStorage.getItem(storageKey)).toBe('manual-api-key');
   });
@@ -40,7 +40,7 @@ describe('usePersistentApiKey', () => {
   test('removes the draft when the hook unmounts', () => {
     const view = render(<Harness fallbackValue="default-api-key" />);
 
-    fireEvent.click(view.getByRole('button', { name: 'Update' }));
+    fireEvent.click(within(view.container).getByRole('button', { name: 'Update' }));
     expect(localStorage.getItem(storageKey)).toBe('manual-api-key');
 
     view.unmount();
@@ -51,7 +51,7 @@ describe('usePersistentApiKey', () => {
   test('clears the draft during beforeunload', () => {
     const view = render(<Harness fallbackValue="default-api-key" />);
 
-    fireEvent.click(view.getByRole('button', { name: 'Update' }));
+    fireEvent.click(within(view.container).getByRole('button', { name: 'Update' }));
     expect(localStorage.getItem(storageKey)).toBe('manual-api-key');
 
     window.dispatchEvent(new Event('beforeunload'));
