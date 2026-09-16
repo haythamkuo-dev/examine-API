@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { getCliEnv } from '../core/env';
+import { DEPOSIT_CHANNELS, getCliEnv } from '../core/env';
 import {
   buildDepositPreviewResponse,
   buildDepositRequestFromForm,
@@ -10,6 +10,7 @@ import {
   type DepositChannelConfig,
   type DepositCommonConfig,
   type DepositPresetSource,
+  loadDepositPresets,
   normalizeDepositPresets,
   toDepositDefaultsResponse,
   updateDepositPreset,
@@ -18,7 +19,7 @@ import { createRunner } from '../runner';
 import { buildDepositCreateResponse } from './web';
 import { mkdtemp, readFile } from 'fs/promises';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { join, resolve } from 'path';
 
 const env = getCliEnv({
   API_BASE_URL: 'https://example.test',
@@ -128,6 +129,28 @@ describe('deposit web helpers', () => {
         origin: 'https://www.fellowproducts.com.tw/products/ekgpro',
       },
     });
+  });
+
+  test('builds all ezpay intercard requests from their channel presets', async () => {
+    const presets = await loadDepositPresets({
+      dirPath: resolve(process.cwd(), 'data/deposit'),
+      env,
+      makeId,
+    });
+    const channels = DEPOSIT_CHANNELS.filter((channel) => channel.startsWith('ez-intercard-'));
+
+    for (const channel of channels) {
+      const defaults = toDepositDefaultsResponse(channel, env, presets);
+      const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+      const payload = request.payload as Record<string, unknown>;
+
+      expect(payload.product_no).toBe(defaults.form.commonValues.productNo);
+      expect(payload.amount).toEqual({
+        amount: defaults.form.commonValues.amount,
+        currency_code: defaults.form.commonValues.currencyCode,
+      });
+      expect(payload.payment_order).toEqual(defaults.form.channelValues.payment_order);
+    }
   });
 
   test('builds masked preview response', () => {

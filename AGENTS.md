@@ -1,3 +1,6 @@
+### Instruction Source of Truth
+- 根目錄 `AGENTS.md` 是本專案共用規範的唯一來源。`CLAUDE.md` 僅可補充明確的 Claude-specific 行為，不得複製或改寫本檔的共用規範；若兩者衝突，以本檔為準。
+
 ### 🏗️ Technical Stack & Scope
 - Backend: Bun + TypeScript (處理 API 邏輯與數據持久化)。
 - Frontend: React + Vite + Tailwind CSS + React-Router-dom。
@@ -33,7 +36,17 @@
 - **DO NOT:** 嚴禁在測試程式碼中 `Hard-coding` 任何環境變數或配置字串。
 - **DO:** 確保非同步邏輯正確使用 `async/await`，並善用 `expect.hasAssertions()` 來確保非同步斷言有被確實執行
 - **DO:** 測試生命週期清理：必須在 `afterEach` 等生命週期 Hook 中，使用 `mock.restore()` 統一還原所有的 mock 實作，或使用 `mockFn.mockClear()` 清除呼叫紀錄，確保測試間完全隔離，不互相污染。
-- **DO:** 必須針對「必填欄位缺失」與「邊界值」撰寫 Negative Tests。
+- **DO:** 對產品可達且會改變使用者或 API 結果的「必填欄位缺失」與「邊界值」撰寫代表性 Negative Tests；若相同驗證規則已在共用 validator 覆蓋，不得在每個頁面重複測試。
+
+### Test Necessity & Scope (必須遵守)
+- **MUST:** 每個新增或修改的測試都必須對應一個具體的產品行為、API contract、資料轉換、錯誤邊界或已知回歸風險；若無法說明它要防止哪個回歸，不得新增。
+- **MUST NOT:** 不得僅為提高 coverage 百分比、覆蓋每個 branch、增加測試數量或滿足形式上的測試要求而新增測試。Coverage 是診斷訊號，不是測試目標。
+- **MUST:** 選擇能證明該風險的最低測試層級（純函式／domain／service／API route／page／完整流程）；同一內部邏輯預設只在一層驗證。若 page、API route 或完整流程各自有獨立的公開 contract 或故障風險，應各自保留最小必要的 boundary test。
+- **MUST:** 新增、刪除或合併測試時，必須在任務／PR 變更說明中記錄 `Risk → Test → Test layer`；刪除或合併時另列出仍保留的風險與替代測試。若只是機械性格式或共用 setup 變更，可簡短說明不涉及行為覆蓋。
+- **MUST:** 測試重構可以合併、刪除或改寫重複案例；測試數量或 coverage 下降本身不是問題，前提是關鍵風險仍由清楚且不重複的測試保護。
+- **MUST:** 測試 helper、wrapper 或 fixture factory 只有在重複造成實際維護成本，且抽出後能更清楚表達測試意圖時才建立；若抽象只減少少數幾行或隱藏測試行為，應保留在案例中。使用次數只是判斷訊號，不是硬性門檻。
+- **MUST NOT:** 不得為了讓測試通過而修改生產行為、暴露內部實作，或增加沒有產品用途的 prop、route、endpoint；優先在邊界注入最小 mock 或使用既有 fixture。
+- **MUST:** 跨頁面或跨層的共用內部行為只在共用元件／共用邏輯測一次；各頁面或 API route 若有獨立輸入、輸出、環境或失敗模式，保留一個最小 boundary test。頁面測試不得複製下層已覆蓋的逐欄位、簽名或資料轉換斷言。
 
 
 ## Definition of Done
@@ -65,6 +78,7 @@
 - **DO:** 必須透過 `test:web` 腳本（含 `--preload ./tests/web-setup.ts` 或是依官方建議設定 `bunfig.toml`）來統一註冊 `@happy-dom/global-registrator`。**嚴禁**將此設定用於後端測試以避免環境污染。
 - **DO:** 必須在前端測試檔案的頂部加上 `/// <reference lib="dom" />`，確保 TypeScript 能正確識別瀏覽器 API 的型別
 - **DO:** 使用 `@testing-library/react` 來渲染及驗證 React 元件。
-- **DO:** 對於 UI 結構測試，使用 `.toMatchSnapshot()` 或 `.toMatchInlineSnapshot()` 將元件結構儲存成快照防範破壞。
+- **DO:** 僅在 DOM 結構本身是穩定且需要保護的公開 contract 時，使用 `.toMatchSnapshot()` 或 `.toMatchInlineSnapshot()`；一般頁面測試優先驗證使用者可觀察的角色、文字、互動與結果。
+- **DO NOT:** 不得為了提高覆蓋率或替代行為斷言而新增整頁 snapshot，也不得以 className、DOM 排列或實作細節作為頁面測試的主要目的。
 - **DO:** 搭配生命週期鉤子（如 `beforeEach`）重置 DOM 狀態，並確實呼叫測試庫提供的清理函式（例如 React Testing Library 的 `cleanup`），確保測試間不會互相污染。
 - **DO NOT:** 避免在單一測試中建立過多龐大的 DOM 元素，以維持大型測試的效能與穩定性。

@@ -293,6 +293,34 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  'ez-intercard-hkd': {
+    product_no: 'DEP-EZPAY-INTERCARD-HKD',
+    amount: { amount: '121.00', currency_code: 'HKD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        country_code: 'HK',
+        product_detail: 'HKD intercard order for %s',
+        product_name: 'HKD Checkout',
+        shopper_reference: 'CUSTOMER_002',
+        origin: 'https://www.fellowproducts.com.tw/products/fellow-espresso-series1',
+      },
+    },
+  },
+  'ez-intercard-jpy': {
+    product_no: 'DEP-EZPAY-INTERCARD-JPY',
+    amount: { amount: '1000', currency_code: 'JPY' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        country_code: 'JP',
+        product_detail: 'JPY intercard order for %s',
+        product_name: 'JPY Checkout',
+        shopper_reference: 'CUSTOMER_003',
+        origin: 'https://www.fellowproducts.com.tw/products/carter-move-mug-1',
+      },
+    },
+  },
 });
 
 export const createDepositPayload = (

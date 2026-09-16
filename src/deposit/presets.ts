@@ -628,6 +628,36 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       },
     },
   },
+  'ez-intercard-hkd': {
+    commonValues: { productNo: 'DEP-EZPAY-INTERCARD-HKD', amount: '121.00', currencyCode: 'HKD' },
+    schema: clone(EZ_INTERCARD_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          country_code: 'HK',
+          product_detail: 'HKD intercard order for %s',
+          product_name: 'HKD Checkout',
+          shopper_reference: 'CUSTOMER_002',
+          origin: 'https://www.fellowproducts.com.tw/products/fellow-espresso-series1',
+        },
+      },
+    },
+  },
+  'ez-intercard-jpy': {
+    commonValues: { productNo: 'DEP-EZPAY-INTERCARD-JPY', amount: '1000', currencyCode: 'JPY' },
+    schema: clone(EZ_INTERCARD_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          country_code: 'JP',
+          product_detail: 'JPY intercard order for %s',
+          product_name: 'JPY Checkout',
+          shopper_reference: 'CUSTOMER_003',
+          origin: 'https://www.fellowproducts.com.tw/products/carter-move-mug-1',
+        },
+      },
+    },
+  },
 });
 
 export const createSeedDepositPresets = (

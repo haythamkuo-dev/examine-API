@@ -26,6 +26,8 @@ export const DEPOSIT_CHANNELS = [
   'WECHAT-6016',
   'cmoney-intercard',
   'ez-intercard-usd',
+  'ez-intercard-hkd',
+  'ez-intercard-jpy',
 ] as const;
 
 export const PAYOUT_CHANNELS = ['co_bank', 'co_wallet', 'imps', 'bd_wallet'] as const;
@@ -90,6 +92,8 @@ const DEPOSIT_CHANNEL_TOKEN_KEYS: Record<DepositChannel, MerchantTokenKey> = {
   'WECHAT-6016': MerchantTokenKey.Normal,
   'cmoney-intercard': MerchantTokenKey.Normal,
   'ez-intercard-usd': MerchantTokenKey.Normal,
+  'ez-intercard-hkd': MerchantTokenKey.Normal,
+  'ez-intercard-jpy': MerchantTokenKey.Normal,
 };
 
 const PAYOUT_CHANNEL_TOKEN_KEYS: Record<PayoutChannel, MerchantTokenKey> = {
