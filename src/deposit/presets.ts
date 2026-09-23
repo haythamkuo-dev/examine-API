@@ -537,11 +537,59 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       },
     },
   },
+  th_rabbit_linepay_usd: {
+    commonValues: {
+      productNo: 'DEP-SINGLEPAYMENT-RABBITLINEPAY-USD',
+      amount: '100.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(TH_RABBIT_SCHEMA),
+    values: {
+      payment_order: {
+        country_code: 'TH',
+        product_detail: 'Single Payment Rabbit LINE Pay order for %s',
+        singlepayment_rabbitlinepay: {
+          origin: 'merchant.example.com',
+          shopper_reference: 'CUSTOMER_001',
+          shopper_email: 'shopper@example.com',
+          holder_name: 'Rabbit User',
+          browser_info: {
+            os_type: 'ANDROID',
+            terminal_type: 'APP',
+          },
+        },
+      },
+    },
+  },
   my_tng: {
     commonValues: {
       productNo: 'DEP-SINGLEPAYMENT-TNG-MYR',
       amount: '45.00',
       currencyCode: 'MYR',
+    },
+    schema: clone(TNG_SCHEMA),
+    values: {
+      payment_order: {
+        country_code: 'MY',
+        product_detail: 'Single Payment TNG order for %s',
+        singlepayment_tng: {
+          origin: 'merchant.example.com',
+          shopper_reference: 'CUSTOMER_001',
+          shopper_email: 'shopper@example.com',
+          holder_name: 'Test User',
+          browser_info: {
+            os_type: 'IOS',
+            terminal_type: 'APP',
+          },
+        },
+      },
+    },
+  },
+  my_tng_usd: {
+    commonValues: {
+      productNo: 'DEP-SINGLEPAYMENT-TNG-USD',
+      amount: '45.00',
+      currencyCode: 'USD',
     },
     schema: clone(TNG_SCHEMA),
     values: {
