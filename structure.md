@@ -38,9 +38,11 @@
 │   │   │   ├── linepay_invoice.json
 │   │   │   ├── my_tng.json
 │   │   │   ├── my_tng_usd.json
+│   │   │   ├── my_tng_usd2.json
 │   │   │   ├── southafrica_cards.json
 │   │   │   ├── th_rabbit_linepay.json
-│   │   │   └── th_rabbit_linepay_usd.json
+│   │   │   ├── th_rabbit_linepay_usd.json
+│   │   │   └── th_rabbit_linepay_usd2.json
 │   │   └── common.json
 │   ├── payout
 │   │   ├── channels
@@ -171,4 +173,4 @@
     │       └── modal.tsx
     └── styles.css
 
-25 directories, 147 files
+25 directories, 149 files
