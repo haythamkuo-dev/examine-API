@@ -6,6 +6,8 @@ import {
   startApiTestServer,
   type ApiTestServerContext,
 } from '../../../tests/server-setup';
+import type { DepositFormValues } from '../../deposit/web';
+import { updateDepositPreset } from '../../deposit/presets';
 
 type DepositApiRequestBody = {
   apiKey?: string;
@@ -43,6 +45,31 @@ const createValidBody = (): DepositApiRequestBody => ({
         product_name: 'Hugo industry',
         shopper_reference: 'CUSTOMER_001',
         origin: 'https://www.amazon.com/',
+      },
+    },
+  },
+});
+
+const createPixBody = (): DepositApiRequestBody => ({
+  channel: 'pix_brl',
+  commonValues: {
+    productNo: 'DEP-FUTUREPAY_COLLECT-PIX-BRL',
+    merchantRef: 'M-ORDER-PIX-BRL-20260929-000001',
+    amount: '12.34',
+    currencyCode: 'BRL',
+    returnUrl: 'https://merchant.example.com/deposit/result',
+  },
+  channelValues: {
+    issue_invoice: false,
+    checkout_url_type: 'direct',
+    payment_order: {
+      collect: {
+        country_code: 'BR',
+        product_detail: 'Pix order %s',
+        product_name: 'Pix Checkout',
+        shopper_reference: 'SHOPPER-PIX-BRL-000001',
+        shopper_email: 'customer@example.com',
+        origin: 'https://merchant.example.com/checkout',
       },
     },
   },
@@ -101,6 +128,41 @@ describe('deposit API routes', () => {
     expect(body.availableChannels).toEqual([...DEPOSIT_CHANNELS]);
     expect(body.apiKey).toBe('payout-token');
     expect(commonValues.merchantRef).toBe('Click button to acquire a merchant ref');
+  });
+
+  test('GET /api/deposit/defaults returns the PIX Brazil defaults and required shopper email field', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=pix_brl');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+    const shopperEmailSchema = collectFields.shopper_email as Record<string, unknown>;
+
+    expect(body.channel).toBe('pix_brl');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-FUTUREPAY_COLLECT-PIX-BRL',
+      amount: '12.34',
+      currencyCode: 'BRL',
+    });
+    expect(channelValues).toMatchObject({
+      issue_invoice: false,
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          country_code: 'BR',
+          shopper_reference: 'SHOPPER-PIX-BRL-000001',
+          shopper_email: 'customer@example.com',
+        },
+      },
+    });
+    expect(shopperEmailSchema.required).toBe(true);
   });
 
   test('POST /api/deposit/merchant-ref returns a generated merchant reference', async () => {
@@ -182,6 +244,90 @@ describe('deposit API routes', () => {
     expect(request.url).toBe('https://example.test/s2s/v1/intents/deposit');
     expect(headers.Authorization).toBe('ApiKey ****-token');
     expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
+  });
+
+  test('POST /api/deposit/preview builds the PIX Brazil payload with a generated merchant reference', async () => {
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        [targetEnvironmentHeaderName]: 'local',
+      },
+      body: JSON.stringify(createPixBody()),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as { request: { payload: Record<string, unknown> } };
+    expect(body.request.payload).toMatchObject({
+      product_no: 'DEP-FUTUREPAY_COLLECT-PIX-BRL',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '12.34', currency_code: 'BRL' },
+      issue_invoice: false,
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          country_code: 'BR',
+          product_detail: 'Pix order %s',
+          product_name: 'Pix Checkout',
+          shopper_reference: 'SHOPPER-PIX-BRL-000001',
+          shopper_email: 'customer@example.com',
+          origin: 'https://merchant.example.com/checkout',
+        },
+      },
+    });
+  });
+
+  test('POST /api/deposit/preview requires a PIX shopper email', async () => {
+    const requestBody = createPixBody();
+    const paymentOrder = requestBody.channelValues.payment_order as Record<string, unknown>;
+    const collect = paymentOrder.collect as Record<string, unknown>;
+    delete collect.shopper_email;
+
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      response: {
+        message: 'payment_order.collect.shopper_email is required',
+      },
+    });
+  });
+
+  test('keeps edited PIX amount for the request without persisting it to the preset', async () => {
+    const defaultsResponse = await context.requestApi('/api/deposit/defaults?channel=pix_brl');
+    const defaults = (await defaultsResponse.json()) as { form: DepositFormValues };
+    const editedForm: DepositFormValues = {
+      ...defaults.form,
+      commonValues: {
+        ...defaults.form.commonValues,
+        amount: '88.88',
+      },
+    };
+
+    await updateDepositPreset({
+      dirPath: context.depositPresetDirPath,
+      channel: 'pix_brl',
+      values: editedForm,
+      env: context.envRegistry.local,
+      makeId: (prefix: string) => `${prefix}fixed-id`,
+    });
+
+    const reloadedResponse = await context.requestApi('/api/deposit/defaults?channel=pix_brl');
+    const reloaded = (await reloadedResponse.json()) as { form: DepositFormValues };
+    expect(reloaded.form.commonValues.amount).toBe('12.34');
+
+    const previewResponse = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editedForm),
+    });
+    const preview = (await previewResponse.json()) as { request: { payload: Record<string, unknown> } };
+    expect(preview.request.payload.amount).toEqual({ amount: '88.88', currency_code: 'BRL' });
   });
 
   test('GET /api/deposit/defaults switches the default api key for the product environment', async () => {

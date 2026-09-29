@@ -191,6 +191,19 @@ const UPI_SCHEMA: DepositFieldMap = {
   ),
 };
 
+const PIX_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {
+      country_code: textField('Country code', true),
+      product_detail: textareaField('Product detail', true),
+      product_name: textField('Product name', true),
+      shopper_reference: textField('Shopper reference', true),
+      shopper_email: textField('Shopper email', true),
+      origin: textField('Origin', true),
+    }),
+  }),
+};
+
 const WORLDPAY_SCHEMA: DepositFieldMap = {
   payment_order: objectField('Payment order', {
     worldpay: objectField('Worldpay', {
@@ -676,6 +689,28 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       },
     },
   },
+  pix_brl: {
+    commonValues: {
+      productNo: 'DEP-FUTUREPAY_COLLECT-PIX-BRL',
+      amount: '12.34',
+      currencyCode: 'BRL',
+    },
+    schema: clone(PIX_SCHEMA),
+    values: {
+      issue_invoice: false,
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          country_code: 'BR',
+          product_detail: 'Pix order %s',
+          product_name: 'Pix Checkout',
+          shopper_reference: 'SHOPPER-PIX-BRL-000001',
+          shopper_email: 'customer@example.com',
+          origin: 'https://merchant.example.com/checkout',
+        },
+      },
+    },
+  },
   'JCB-USD': {
     commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-GENERALJCBCOLLECT-USD', amount: '99.99', currencyCode: 'USD' },
     schema: clone(JCB_SCHEMA),
@@ -766,6 +801,11 @@ export const createSeedDepositPresets = (
 
 const COMMON_VALUE_KEYS = ['merchantRef', 'returnUrl'] as const;
 const CHANNEL_COMMON_KEYS = ['productNo', 'amount', 'currencyCode'] as const;
+type ChannelCommonKey = (typeof CHANNEL_COMMON_KEYS)[number];
+
+const NON_PERSISTED_CHANNEL_COMMON_KEYS: Partial<Record<DepositChannel, readonly ChannelCommonKey[]>> = {
+  pix_brl: ['amount'],
+};
 
 const normalizeCommonValues = (
   source: Partial<DepositCommonValues>,
@@ -905,14 +945,23 @@ export const saveDepositPresets = async ({
 };
 
 const splitCommonValues = (
+  channel: DepositChannel,
   values: DepositCommonValues,
 ): {
   shared: Partial<DepositCommonValues>;
   channelOwned: Partial<DepositCommonValues>;
-} => ({
-  shared: Object.fromEntries(COMMON_VALUE_KEYS.map((key) => [key, values[key]])) as Partial<DepositCommonValues>,
-  channelOwned: Object.fromEntries(CHANNEL_COMMON_KEYS.map((key) => [key, values[key]])) as Partial<DepositCommonValues>,
-});
+} => {
+  const nonPersistedKeys = NON_PERSISTED_CHANNEL_COMMON_KEYS[channel] || [];
+
+  return {
+    shared: Object.fromEntries(COMMON_VALUE_KEYS.map((key) => [key, values[key]])) as Partial<DepositCommonValues>,
+    channelOwned: Object.fromEntries(
+      CHANNEL_COMMON_KEYS
+        .filter((key) => !nonPersistedKeys.includes(key))
+        .map((key) => [key, values[key]]),
+    ) as Partial<DepositCommonValues>,
+  };
+};
 
 export const updateDepositPreset = async ({
   dirPath,
@@ -928,7 +977,7 @@ export const updateDepositPreset = async ({
   makeId: (prefix: string) => string;
 }): Promise<DepositPresetStore> => {
   const presets = await loadDepositPresets({ dirPath, env, makeId });
-  const splitValues = splitCommonValues(values.commonValues);
+  const splitValues = splitCommonValues(channel, values.commonValues);
 
   presets.common.values = {
     ...presets.common.values,

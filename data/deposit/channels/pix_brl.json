@@ -1,0 +1,41 @@
+{
+  "commonValues": {
+    "productNo": "DEP-FUTUREPAY_COLLECT-PIX-BRL",
+    "amount": "12.34",
+    "currencyCode": "BRL"
+  },
+  "schema": {
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "collect": {
+          "kind": "object",
+          "label": "Collect payload",
+          "fields": {
+            "country_code": { "kind": "text", "label": "Country code", "required": true },
+            "product_detail": { "kind": "textarea", "label": "Product detail", "required": true },
+            "product_name": { "kind": "text", "label": "Product name", "required": true },
+            "shopper_reference": { "kind": "text", "label": "Shopper reference", "required": true },
+            "shopper_email": { "kind": "text", "label": "Shopper email", "required": true },
+            "origin": { "kind": "text", "label": "Origin", "required": true }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "issue_invoice": false,
+    "checkout_url_type": "direct",
+    "payment_order": {
+      "collect": {
+        "country_code": "BR",
+        "product_detail": "Pix order %s",
+        "product_name": "Pix Checkout",
+        "shopper_reference": "SHOPPER-PIX-BRL-000001",
+        "shopper_email": "customer@example.com",
+        "origin": "https://merchant.example.com/checkout"
+      }
+    }
+  }
+}

@@ -21,6 +21,7 @@ type DepositTemplate = {
   payment_order?: Record<string, unknown>;
   issue_invoice?: boolean;
   invoice?: Record<string, unknown>;
+  checkout_url_type?: string;
 };
 
 export type DepositPayload = {
@@ -31,6 +32,7 @@ export type DepositPayload = {
   payment_order?: Record<string, unknown>;
   issue_invoice?: boolean;
   invoice?: Record<string, unknown>;
+  checkout_url_type?: string;
   sign?: string;
 };
 
@@ -346,6 +348,23 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  pix_brl: {
+    product_no: 'DEP-FUTUREPAY_COLLECT-PIX-BRL',
+    amount: { amount: '12.34', currency_code: 'BRL' },
+    return_url: env.callbackUrlDeposit,
+    issue_invoice: false,
+    checkout_url_type: 'direct',
+    payment_order: {
+      collect: {
+        country_code: 'BR',
+        product_detail: 'Pix order %s',
+        product_name: 'Pix Checkout',
+        shopper_reference: 'SHOPPER-PIX-BRL-000001',
+        shopper_email: 'customer@example.com',
+        origin: 'https://merchant.example.com/checkout',
+      },
+    },
+  },
   'JCB-USD': { product_no: 'DEP-FUTUREPAY_COLLECT-GENERALJCBCOLLECT-USD', amount: { amount: '99.99', currency_code: 'USD' }, return_url: env.callbackUrlDeposit },
   'JCB-JPY': { product_no: 'DEP-FUTUREPAY_COLLECT-GENERALJCBCOLLECT-JPY', amount: { amount: '1000', currency_code: 'JPY' }, return_url: env.callbackUrlDeposit },
   'ALIPAY-CNY': { product_no: 'DEP-FUTUREPAY_COLLECT-ALIPAYCN-CNY', amount: { amount: '188.00', currency_code: 'CNY' }, return_url: env.callbackUrlDeposit },
@@ -434,6 +453,10 @@ export const createDepositPayload = (
 
   if (template.invoice && !overrides.collect) {
     payload.invoice = template.invoice;
+  }
+
+  if (template.checkout_url_type && !overrides.collect) {
+    payload.checkout_url_type = template.checkout_url_type;
   }
 
   return {

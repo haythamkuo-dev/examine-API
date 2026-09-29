@@ -252,7 +252,11 @@ describe('DepositPage', () => {
   test('translates deposit channel labels without changing channel values', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () =>
-        jsonResponse(createDefaultsResponse('southafrica_cards')),
+        jsonResponse(
+          createDefaultsResponse('southafrica_cards', {
+            availableChannels: ['southafrica_cards', 'pix_brl'],
+          }),
+        ),
     });
 
     const view = renderDepositPage();
@@ -261,6 +265,8 @@ describe('DepositPage', () => {
 
     const channelSelect = view.getByLabelText('Channel');
     expect(within(channelSelect).getByRole('option', { name: '南非卡' })).toHaveValue('southafrica_cards');
+    expect(within(channelSelect).getByRole('option', { name: '巴西pix支付' })).toHaveValue('pix_brl');
+    expect(getDepositChannelLabel('pix_brl')).toBe('巴西pix支付');
     expect(getDepositChannelLabel('unknown_channel')).toBe('unknown_channel');
   });
 

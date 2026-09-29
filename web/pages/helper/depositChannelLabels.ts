@@ -18,6 +18,7 @@ export const DEPOSIT_CHANNEL_LABELS: Partial<Record<DepositChannel, string>> = {
   my_tng_usd: '馬來西亞tng-USD',
   my_tng_usd2: '馬來西亞tng-USD2',
   international_credit_cards: 'collect_USD 一般通道',
+  pix_brl: '巴西pix支付',
   'JCB-USD': 'collect_USD 指定通道',
   'JCB-JPY': 'collect_JPY 指定通道',
   'ALIPAY-CNY': 'collect_CNY 通道',
