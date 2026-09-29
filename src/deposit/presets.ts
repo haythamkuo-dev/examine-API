@@ -691,7 +691,7 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
   },
   pix_brl: {
     commonValues: {
-      productNo: 'DEP-FUTUREPAY_COLLECT-PIX-BRL',
+      productNo: 'DEP-FUTUREPAY_COLLECT-PIX-USD',
       amount: '12.34',
       currencyCode: 'BRL',
     },

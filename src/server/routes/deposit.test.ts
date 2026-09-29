@@ -53,7 +53,7 @@ const createValidBody = (): DepositApiRequestBody => ({
 const createPixBody = (): DepositApiRequestBody => ({
   channel: 'pix_brl',
   commonValues: {
-    productNo: 'DEP-FUTUREPAY_COLLECT-PIX-BRL',
+    productNo: 'DEP-FUTUREPAY_COLLECT-PIX-USD',
     merchantRef: 'M-ORDER-PIX-BRL-20260929-000001',
     amount: '12.34',
     currencyCode: 'BRL',
@@ -147,7 +147,7 @@ describe('deposit API routes', () => {
 
     expect(body.channel).toBe('pix_brl');
     expect(commonValues).toMatchObject({
-      productNo: 'DEP-FUTUREPAY_COLLECT-PIX-BRL',
+      productNo: 'DEP-FUTUREPAY_COLLECT-PIX-USD',
       amount: '12.34',
       currencyCode: 'BRL',
     });
@@ -260,7 +260,7 @@ describe('deposit API routes', () => {
 
     const body = (await response.json()) as { request: { payload: Record<string, unknown> } };
     expect(body.request.payload).toMatchObject({
-      product_no: 'DEP-FUTUREPAY_COLLECT-PIX-BRL',
+      product_no: 'DEP-FUTUREPAY_COLLECT-PIX-USD',
       merchant_ref: 'TEST_ORDER_fixed-id',
       amount: { amount: '12.34', currency_code: 'BRL' },
       issue_invoice: false,

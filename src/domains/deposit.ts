@@ -349,7 +349,7 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
     },
   },
   pix_brl: {
-    product_no: 'DEP-FUTUREPAY_COLLECT-PIX-BRL',
+    product_no: 'DEP-FUTUREPAY_COLLECT-PIX-USD',
     amount: { amount: '12.34', currency_code: 'BRL' },
     return_url: env.callbackUrlDeposit,
     issue_invoice: false,
