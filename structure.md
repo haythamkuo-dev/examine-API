@@ -138,6 +138,7 @@
     ├── App.tsx
     ├── hooks
     │   ├── sessionDraft.ts
+    │   ├── useDepositOperator.test.ts
     │   ├── useDepositOperator.ts
     │   ├── usePayoutOperator.ts
     │   ├── usePersistentApiKey.test.tsx
@@ -176,4 +177,4 @@
     │       └── modal.tsx
     └── styles.css
 
-25 directories, 152 files
+25 directories, 153 files

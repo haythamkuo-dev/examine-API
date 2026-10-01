@@ -8,6 +8,11 @@ const depositValidationRules = [
     pattern: /^DEP-[A-Za-z0-9_-]+$/,
     message: 'commonValues.productNo must be a valid deposit product code',
   },
+  {
+    path: ['commonValues', 'amount'],
+    pattern: /^\d+(?:\.\d+)?$/,
+    message: 'commonValues.amount must be a numeric amount',
+  },
 ] as const;
 
 /**

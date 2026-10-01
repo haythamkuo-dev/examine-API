@@ -415,6 +415,28 @@ describe('deposit API routes', () => {
     });
   });
 
+  test('POST /api/deposit/preview rejects a product number used as the amount', async () => {
+    const requestBody = createDanaBody();
+    requestBody.commonValues.amount = requestBody.commonValues.productNo;
+
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    expect(response.status).toBe(400);
+
+    const body = (await response.json()) as {
+      response: { status: number; code: string; message: string };
+    };
+    expect(body.response).toEqual({
+      status: 400,
+      code: 'UNKNOWN_ERROR',
+      message: 'commonValues.amount must be a numeric amount',
+    });
+  });
+
   test('POST /api/deposit/preview builds the DUITNOW QR USD payload with editable defaults', async () => {
     const requestBody = createDuitnowBody();
     requestBody.commonValues.amount = '12.50';
