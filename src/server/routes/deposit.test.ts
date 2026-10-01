@@ -75,6 +75,53 @@ const createPixBody = (): DepositApiRequestBody => ({
   },
 });
 
+const createDanaBody = (): DepositApiRequestBody => ({
+  channel: 'id_dana_usd',
+  commonValues: {
+    productNo: 'DEP-SINGLEPAYMENT-DANA-USD',
+    merchantRef: 'TEST-DANA-USD-20261001-0001',
+    amount: '10.00',
+    currencyCode: 'USD',
+    returnUrl: 'https://merchant.example.com/deposit/result',
+  },
+  channelValues: {
+    payment_order: {
+      country_code: 'ID',
+      product_detail: 'Dana USD test order %s',
+      singlepayment_dana: {
+        origin: 'merchant.example.com',
+        shopper_reference: 'DANA-TEST-USD-001',
+        shopper_email: 'dana.test@example.com',
+        holder_name: 'Dana Test User',
+        browser_info: {
+          os_type: 'ANDROID',
+          terminal_type: 'WEB',
+        },
+      },
+    },
+  },
+});
+
+const createDuitnowBody = (): DepositApiRequestBody => ({
+  channel: 'duitnowqr_usd',
+  commonValues: {
+    productNo: 'DEP-FUTUREPAY_COLLECT-DUITNOWQR-USD',
+    merchantRef: 'TEST-DUITNOW-USD-20261001-0001',
+    amount: '10.00',
+    currencyCode: 'USD',
+    returnUrl: 'https://merchant.example.com/deposit/result',
+  },
+  channelValues: {
+    payment_order: {
+      collect: {
+        shopper_email: 'duitnow.test@example.com',
+        telephone_number: '60321414552',
+        product_name: 'DuitNow QR Test',
+      },
+    },
+  },
+});
+
 describe('deposit API routes', () => {
   let context: ApiTestServerContext;
 
@@ -163,6 +210,66 @@ describe('deposit API routes', () => {
       },
     });
     expect(shopperEmailSchema.required).toBe(true);
+  });
+
+  test('GET /api/deposit/defaults returns the DANA USD defaults and schema', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=id_dana_usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const paymentOrder = channelValues.payment_order as Record<string, unknown>;
+    const danaValues = paymentOrder.singlepayment_dana as Record<string, unknown>;
+
+    expect(body.channel).toBe('id_dana_usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-SINGLEPAYMENT-DANA-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toMatchObject({
+      payment_order: {
+        country_code: 'ID',
+        product_detail: 'Dana USD test order %s',
+      },
+    });
+    expect(danaValues).toMatchObject({
+      origin: 'merchant.example.com',
+      shopper_reference: 'DANA-TEST-USD-001',
+      shopper_email: 'dana.test@example.com',
+      holder_name: 'Dana Test User',
+      browser_info: { os_type: 'ANDROID', terminal_type: 'WEB' },
+    });
+  });
+
+  test('GET /api/deposit/defaults returns the DUITNOW QR USD defaults and schema', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=duitnowqr_usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('duitnowqr_usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-FUTUREPAY_COLLECT-DUITNOWQR-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'duitnow.test@example.com',
+          telephone_number: '60321414552',
+          product_name: 'DuitNow QR Test',
+        },
+      },
+    });
   });
 
   test('POST /api/deposit/merchant-ref returns a generated merchant reference', async () => {
@@ -273,6 +380,65 @@ describe('deposit API routes', () => {
           shopper_reference: 'SHOPPER-PIX-BRL-000001',
           shopper_email: 'customer@example.com',
           origin: 'https://merchant.example.com/checkout',
+        },
+      },
+    });
+  });
+
+  test('POST /api/deposit/preview builds the DANA USD payload with editable defaults', async () => {
+    const requestBody = createDanaBody();
+    requestBody.commonValues.amount = '12.50';
+    const paymentOrder = requestBody.channelValues.payment_order as Record<string, unknown>;
+    const dana = paymentOrder.singlepayment_dana as Record<string, unknown>;
+    dana.holder_name = 'Edited Dana User';
+
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as { request: { payload: Record<string, unknown> } };
+    expect(body.request.payload).toMatchObject({
+      product_no: 'DEP-SINGLEPAYMENT-DANA-USD',
+      amount: { amount: '12.50', currency_code: 'USD' },
+      payment_order: {
+        country_code: 'ID',
+        product_detail: 'Dana USD test order %s',
+        singlepayment_dana: {
+          holder_name: 'Edited Dana User',
+          browser_info: { os_type: 'ANDROID', terminal_type: 'WEB' },
+        },
+      },
+    });
+  });
+
+  test('POST /api/deposit/preview builds the DUITNOW QR USD payload with editable defaults', async () => {
+    const requestBody = createDuitnowBody();
+    requestBody.commonValues.amount = '12.50';
+    const paymentOrder = requestBody.channelValues.payment_order as Record<string, unknown>;
+    const collect = paymentOrder.collect as Record<string, unknown>;
+    collect.product_name = 'Edited DuitNow QR';
+
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as { request: { payload: Record<string, unknown> } };
+    expect(body.request.payload).toMatchObject({
+      product_no: 'DEP-FUTUREPAY_COLLECT-DUITNOWQR-USD',
+      amount: { amount: '12.50', currency_code: 'USD' },
+      payment_order: {
+        collect: {
+          shopper_email: 'duitnow.test@example.com',
+          telephone_number: '60321414552',
+          product_name: 'Edited DuitNow QR',
         },
       },
     });

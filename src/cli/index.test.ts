@@ -66,6 +66,49 @@ describe('request builders', () => {
     });
   });
 
+  test('builds the DANA USD deposit request with the normal merchant token', () => {
+    const request = createDepositRequest(env, 'id_dana_usd', makeId);
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(request.payload).toMatchObject({
+      product_no: 'DEP-SINGLEPAYMENT-DANA-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'USD' },
+      payment_order: {
+        country_code: 'ID',
+        product_detail: 'Dana USD test order %s',
+        singlepayment_dana: {
+          origin: 'merchant.example.com',
+          shopper_reference: 'DANA-TEST-USD-001',
+          shopper_email: 'dana.test@example.com',
+          holder_name: 'Dana Test User',
+          browser_info: {
+            os_type: 'ANDROID',
+            terminal_type: 'WEB',
+          },
+        },
+      },
+    });
+  });
+
+  test('builds the DUITNOW QR USD deposit request with the normal merchant token', () => {
+    const request = createDepositRequest(env, 'duitnowqr_usd', makeId);
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(request.payload).toMatchObject({
+      product_no: 'DEP-FUTUREPAY_COLLECT-DUITNOWQR-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'USD' },
+      payment_order: {
+        collect: {
+          shopper_email: 'duitnow.test@example.com',
+          telephone_number: '60321414552',
+          product_name: 'DuitNow QR Test',
+        },
+      },
+    });
+  });
+
   test('builds deposit request from manual CLI-style overrides', () => {
     const request = createDepositRequest(env, 'linepay', makeId, {
       apiKey: 'manual-deposit-token',

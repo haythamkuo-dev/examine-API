@@ -309,6 +309,33 @@ const TNG_SCHEMA: DepositFieldMap = {
   }),
 };
 
+const DANA_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    country_code: textField('Country code', true),
+    product_detail: textareaField('Product detail', true),
+    singlepayment_dana: objectField('DANA', {
+      origin: textField('Origin', true),
+      shopper_reference: textField('Shopper reference', true),
+      shopper_email: textField('Shopper email', true),
+      holder_name: textField('Holder name', true),
+      browser_info: objectField('Browser info', {
+        os_type: textField('OS type', true),
+        terminal_type: textField('Terminal type', true),
+      }),
+    }),
+  }),
+};
+
+const DUITNOW_QR_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {
+      shopper_email: textField('Shopper email', true),
+      telephone_number: textField('Telephone number', true),
+      product_name: textField('Product name', true),
+    }),
+  }),
+};
+
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const getSeedCommonConfig = (env: CliEnv, makeId: (prefix: string) => string): DepositCommonConfig => ({
@@ -707,6 +734,47 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
           shopper_reference: 'SHOPPER-PIX-BRL-000001',
           shopper_email: 'customer@example.com',
           origin: 'https://merchant.example.com/checkout',
+        },
+      },
+    },
+  },
+  id_dana_usd: {
+    commonValues: {
+      productNo: 'DEP-SINGLEPAYMENT-DANA-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(DANA_SCHEMA),
+    values: {
+      payment_order: {
+        country_code: 'ID',
+        product_detail: 'Dana USD test order %s',
+        singlepayment_dana: {
+          origin: 'merchant.example.com',
+          shopper_reference: 'DANA-TEST-USD-001',
+          shopper_email: 'dana.test@example.com',
+          holder_name: 'Dana Test User',
+          browser_info: {
+            os_type: 'ANDROID',
+            terminal_type: 'WEB',
+          },
+        },
+      },
+    },
+  },
+  duitnowqr_usd: {
+    commonValues: {
+      productNo: 'DEP-FUTUREPAY_COLLECT-DUITNOWQR-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(DUITNOW_QR_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          shopper_email: 'duitnow.test@example.com',
+          telephone_number: '60321414552',
+          product_name: 'DuitNow QR Test',
         },
       },
     },

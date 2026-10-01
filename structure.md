@@ -29,9 +29,11 @@
 │   │   │   ├── co_cash.json
 │   │   │   ├── co_nequi.json
 │   │   │   ├── co_pse.json
+│   │   │   ├── duitnowqr_usd.json
 │   │   │   ├── ez-intercard-hkd.json
 │   │   │   ├── ez-intercard-jpy.json
 │   │   │   ├── ez-intercard-usd.json
+│   │   │   ├── id_dana_usd.json
 │   │   │   ├── inr_upi.json
 │   │   │   ├── international_credit_cards.json
 │   │   │   ├── linepay.json
@@ -174,4 +176,4 @@
     │       └── modal.tsx
     └── styles.css
 
-25 directories, 150 files
+25 directories, 152 files

@@ -1,0 +1,33 @@
+{
+  "commonValues": {
+    "productNo": "DEP-FUTUREPAY_COLLECT-DUITNOWQR-USD",
+    "amount": "10.00",
+    "currencyCode": "USD"
+  },
+  "schema": {
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "collect": {
+          "kind": "object",
+          "label": "Collect payload",
+          "fields": {
+            "shopper_email": { "kind": "text", "label": "Shopper email", "required": true },
+            "telephone_number": { "kind": "text", "label": "Telephone number", "required": true },
+            "product_name": { "kind": "text", "label": "Product name", "required": true }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "payment_order": {
+      "collect": {
+        "shopper_email": "duitnow.test@example.com",
+        "telephone_number": "60321414552",
+        "product_name": "DuitNow QR Test"
+      }
+    }
+  }
+}

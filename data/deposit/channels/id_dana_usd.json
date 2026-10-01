@@ -1,0 +1,51 @@
+{
+  "commonValues": {
+    "productNo": "DEP-SINGLEPAYMENT-DANA-USD",
+    "amount": "10.00",
+    "currencyCode": "USD"
+  },
+  "schema": {
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "country_code": { "kind": "text", "label": "Country code", "required": true },
+        "product_detail": { "kind": "textarea", "label": "Product detail", "required": true },
+        "singlepayment_dana": {
+          "kind": "object",
+          "label": "DANA",
+          "fields": {
+            "origin": { "kind": "text", "label": "Origin", "required": true },
+            "shopper_reference": { "kind": "text", "label": "Shopper reference", "required": true },
+            "shopper_email": { "kind": "text", "label": "Shopper email", "required": true },
+            "holder_name": { "kind": "text", "label": "Holder name", "required": true },
+            "browser_info": {
+              "kind": "object",
+              "label": "Browser info",
+              "fields": {
+                "os_type": { "kind": "text", "label": "OS type", "required": true },
+                "terminal_type": { "kind": "text", "label": "Terminal type", "required": true }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "payment_order": {
+      "country_code": "ID",
+      "product_detail": "Dana USD test order %s",
+      "singlepayment_dana": {
+        "origin": "merchant.example.com",
+        "shopper_reference": "DANA-TEST-USD-001",
+        "shopper_email": "dana.test@example.com",
+        "holder_name": "Dana Test User",
+        "browser_info": {
+          "os_type": "ANDROID",
+          "terminal_type": "WEB"
+        }
+      }
+    }
+  }
+}

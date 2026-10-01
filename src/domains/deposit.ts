@@ -365,6 +365,37 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  id_dana_usd: {
+    product_no: 'DEP-SINGLEPAYMENT-DANA-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      country_code: 'ID',
+      product_detail: 'Dana USD test order %s',
+      singlepayment_dana: {
+        origin: 'merchant.example.com',
+        shopper_reference: 'DANA-TEST-USD-001',
+        shopper_email: 'dana.test@example.com',
+        holder_name: 'Dana Test User',
+        browser_info: {
+          os_type: 'ANDROID',
+          terminal_type: 'WEB',
+        },
+      },
+    },
+  },
+  duitnowqr_usd: {
+    product_no: 'DEP-FUTUREPAY_COLLECT-DUITNOWQR-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        shopper_email: 'duitnow.test@example.com',
+        telephone_number: '60321414552',
+        product_name: 'DuitNow QR Test',
+      },
+    },
+  },
   'JCB-USD': { product_no: 'DEP-FUTUREPAY_COLLECT-GENERALJCBCOLLECT-USD', amount: { amount: '99.99', currency_code: 'USD' }, return_url: env.callbackUrlDeposit },
   'JCB-JPY': { product_no: 'DEP-FUTUREPAY_COLLECT-GENERALJCBCOLLECT-JPY', amount: { amount: '1000', currency_code: 'JPY' }, return_url: env.callbackUrlDeposit },
   'ALIPAY-CNY': { product_no: 'DEP-FUTUREPAY_COLLECT-ALIPAYCN-CNY', amount: { amount: '188.00', currency_code: 'CNY' }, return_url: env.callbackUrlDeposit },
