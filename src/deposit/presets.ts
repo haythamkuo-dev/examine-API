@@ -697,6 +697,23 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       },
     },
   },
+  my_fpx_usd: {
+    commonValues: {
+      productNo: 'DEP-FUTUREPAY_COLLECT-FPX-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(DUITNOW_QR_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          shopper_email: 'customer@example.com',
+          telephone_number: '60123456789',
+          product_name: 'FPX USD Test Checkout',
+        },
+      },
+    },
+  },
   international_credit_cards: {
     commonValues: {
       productNo: 'DEP-FUTUREPAY_COLLECT-COLLECT-USD',

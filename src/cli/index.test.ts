@@ -109,6 +109,24 @@ describe('request builders', () => {
     });
   });
 
+  test('builds the FPX USD deposit request with the normal merchant token', () => {
+    const request = createDepositRequest(env, 'my_fpx_usd', makeId);
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(request.payload).toMatchObject({
+      product_no: 'DEP-FUTUREPAY_COLLECT-FPX-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'USD' },
+      payment_order: {
+        collect: {
+          shopper_email: 'customer@example.com',
+          telephone_number: '60123456789',
+          product_name: 'FPX USD Test Checkout',
+        },
+      },
+    });
+  });
+
   test('builds deposit request from manual CLI-style overrides', () => {
     const request = createDepositRequest(env, 'linepay', makeId, {
       apiKey: 'manual-deposit-token',

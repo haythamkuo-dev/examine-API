@@ -271,6 +271,7 @@ describe('DepositPage', () => {
     expect(getDepositChannelLabel('duitnowqr_usd')).toBe('DUITNOW-Collect-USD');
     expect(getDepositChannelLabel('my_tng_usd')).toBe('馬來西亞-tng-single-美金');
     expect(getDepositChannelLabel('my_tng_usd2')).toBe('馬來西亞-tng-collect-美金');
+    expect(getDepositChannelLabel('my_fpx_usd')).toBe('馬來西亞-FPX');
     expect(getDepositChannelLabel('unknown_channel')).toBe('unknown_channel');
   });
 

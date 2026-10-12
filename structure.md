@@ -38,6 +38,7 @@
 │   │   │   ├── international_credit_cards.json
 │   │   │   ├── linepay.json
 │   │   │   ├── linepay_invoice.json
+│   │   │   ├── my_fpx_usd.json
 │   │   │   ├── my_tng.json
 │   │   │   ├── my_tng_usd.json
 │   │   │   ├── my_tng_usd2.json
@@ -177,4 +178,4 @@
     │       └── modal.tsx
     └── styles.css
 
-25 directories, 153 files
+25 directories, 154 files

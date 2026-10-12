@@ -69,6 +69,20 @@ describe('deposit web helpers', () => {
     expect(result.channels['ALIPAY-CNY'].values).toMatchObject({
       payment_order: { collect: { country_code: 'CN', product_name: 'aliPay for CNY' } },
     });
+    expect(result.channels.my_fpx_usd.commonValues).toEqual({
+      productNo: 'DEP-FUTUREPAY_COLLECT-FPX-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(result.channels.my_fpx_usd.values).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'customer@example.com',
+          telephone_number: '60123456789',
+          product_name: 'FPX USD Test Checkout',
+        },
+      },
+    });
     expect(result.channels['ALIPAY-8000'].values).toEqual({});
   });
 

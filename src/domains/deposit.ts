@@ -334,6 +334,18 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  my_fpx_usd: {
+    product_no: 'DEP-FUTUREPAY_COLLECT-FPX-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        shopper_email: 'customer@example.com',
+        telephone_number: '60123456789',
+        product_name: 'FPX USD Test Checkout',
+      },
+    },
+  },
   international_credit_cards: {
     product_no: 'DEP-FUTUREPAY_COLLECT-COLLECT-USD',
     amount: { amount: '99.99', currency_code: 'USD' },

@@ -1,0 +1,33 @@
+{
+  "commonValues": {
+    "productNo": "DEP-FUTUREPAY_COLLECT-FPX-USD",
+    "amount": "10.00",
+    "currencyCode": "USD"
+  },
+  "schema": {
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "collect": {
+          "kind": "object",
+          "label": "Collect payload",
+          "fields": {
+            "shopper_email": { "kind": "text", "label": "Shopper email", "required": true },
+            "telephone_number": { "kind": "text", "label": "Telephone number", "required": true },
+            "product_name": { "kind": "text", "label": "Product name", "required": true }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "payment_order": {
+      "collect": {
+        "shopper_email": "customer@example.com",
+        "telephone_number": "60123456789",
+        "product_name": "FPX USD Test Checkout"
+      }
+    }
+  }
+}

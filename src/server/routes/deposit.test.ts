@@ -122,6 +122,26 @@ const createDuitnowBody = (): DepositApiRequestBody => ({
   },
 });
 
+const createFpxBody = (): DepositApiRequestBody => ({
+  channel: 'my_fpx_usd',
+  commonValues: {
+    productNo: 'DEP-FUTUREPAY_COLLECT-FPX-USD',
+    merchantRef: 'TEST-FPX-USD-20261012-001',
+    amount: '10.00',
+    currencyCode: 'USD',
+    returnUrl: 'https://merchant.example.com/deposit/result',
+  },
+  channelValues: {
+    payment_order: {
+      collect: {
+        shopper_email: 'customer@example.com',
+        telephone_number: '60123456789',
+        product_name: 'FPX USD Test Checkout',
+      },
+    },
+  },
+});
+
 describe('deposit API routes', () => {
   let context: ApiTestServerContext;
 
@@ -267,6 +287,33 @@ describe('deposit API routes', () => {
           shopper_email: 'duitnow.test@example.com',
           telephone_number: '60321414552',
           product_name: 'DuitNow QR Test',
+        },
+      },
+    });
+  });
+
+  test('GET /api/deposit/defaults returns the Malaysia FPX USD defaults and schema', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=my_fpx_usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('my_fpx_usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-FUTUREPAY_COLLECT-FPX-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'customer@example.com',
+          telephone_number: '60123456789',
+          product_name: 'FPX USD Test Checkout',
         },
       },
     });
@@ -461,6 +508,36 @@ describe('deposit API routes', () => {
           shopper_email: 'duitnow.test@example.com',
           telephone_number: '60321414552',
           product_name: 'Edited DuitNow QR',
+        },
+      },
+    });
+  });
+
+  test('POST /api/deposit/preview builds the Malaysia FPX USD payload with editable defaults', async () => {
+    const requestBody = createFpxBody();
+    requestBody.commonValues.amount = '12.50';
+    const paymentOrder = requestBody.channelValues.payment_order as Record<string, unknown>;
+    const collect = paymentOrder.collect as Record<string, unknown>;
+    collect.product_name = 'Edited FPX Checkout';
+
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as { request: { payload: Record<string, unknown> } };
+    expect(body.request.payload).toMatchObject({
+      product_no: 'DEP-FUTUREPAY_COLLECT-FPX-USD',
+      amount: { amount: '12.50', currency_code: 'USD' },
+      return_url: 'https://merchant.example.com/deposit/result',
+      payment_order: {
+        collect: {
+          shopper_email: 'customer@example.com',
+          telephone_number: '60123456789',
+          product_name: 'Edited FPX Checkout',
         },
       },
     });
