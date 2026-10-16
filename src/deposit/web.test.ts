@@ -83,7 +83,57 @@ describe('deposit web helpers', () => {
         },
       },
     });
+    expect(result.channels.my_boost_usd.commonValues).toEqual({
+      productNo: 'DEP-SINGLEPAYMENT-BOOST-USD',
+      amount: '45.00',
+      currencyCode: 'USD',
+    });
+    expect(result.channels.my_boost_usd.values).toEqual({
+      payment_order: {
+        country_code: 'MY',
+        product_detail: 'Boost USD test order for %s',
+        singlepayment_boost: {
+          origin: 'merchant.example.com',
+          shopper_reference: 'BOOST_TEST_SHOPPER_001',
+          shopper_email: 'shopper@example.com',
+          holder_name: 'Test Shopper',
+          browser_info: {
+            os_type: 'ANDROID',
+            terminal_type: 'WEB',
+          },
+        },
+      },
+    });
     expect(result.channels['ALIPAY-8000'].values).toEqual({});
+  });
+
+  test('builds the Boost USD request with the provider-specific payload key', () => {
+    const defaults = toDepositDefaultsResponse(
+      'my_boost_usd',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-SINGLEPAYMENT-BOOST-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '45.00', currency_code: 'USD' },
+      return_url: 'https://merchant.example.com/deposit',
+      payment_order: {
+        country_code: 'MY',
+        product_detail: 'Boost USD test order for %s',
+        singlepayment_boost: {
+          origin: 'merchant.example.com',
+          shopper_reference: 'BOOST_TEST_SHOPPER_001',
+          shopper_email: 'shopper@example.com',
+          holder_name: 'Test Shopper',
+          browser_info: { os_type: 'ANDROID', terminal_type: 'WEB' },
+        },
+      },
+    });
   });
 
   test('builds requests for a new deposit channel with a generated merchant reference', () => {

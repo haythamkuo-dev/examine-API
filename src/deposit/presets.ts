@@ -309,6 +309,23 @@ const TNG_SCHEMA: DepositFieldMap = {
   }),
 };
 
+const BOOST_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    country_code: textField('Country code', true),
+    product_detail: textareaField('Product detail', true),
+    singlepayment_boost: objectField('Boost', {
+      origin: textField('Origin', true),
+      shopper_reference: textField('Shopper reference', true),
+      shopper_email: textField('Shopper email', true),
+      holder_name: textField('Holder name', true),
+      browser_info: objectField('Browser info', {
+        os_type: textField('OS type', true),
+        terminal_type: textField('Terminal type', true),
+      }),
+    }),
+  }),
+};
+
 const DANA_SCHEMA: DepositFieldMap = {
   payment_order: objectField('Payment order', {
     country_code: textField('Country code', true),
@@ -668,6 +685,30 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
           browser_info: {
             os_type: 'IOS',
             terminal_type: 'APP',
+          },
+        },
+      },
+    },
+  },
+  my_boost_usd: {
+    commonValues: {
+      productNo: 'DEP-SINGLEPAYMENT-BOOST-USD',
+      amount: '45.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(BOOST_SCHEMA),
+    values: {
+      payment_order: {
+        country_code: 'MY',
+        product_detail: 'Boost USD test order for %s',
+        singlepayment_boost: {
+          origin: 'merchant.example.com',
+          shopper_reference: 'BOOST_TEST_SHOPPER_001',
+          shopper_email: 'shopper@example.com',
+          holder_name: 'Test Shopper',
+          browser_info: {
+            os_type: 'ANDROID',
+            terminal_type: 'WEB',
           },
         },
       },

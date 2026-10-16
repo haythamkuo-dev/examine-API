@@ -16,6 +16,7 @@ export const DEPOSIT_CHANNEL_LABELS: Partial<Record<DepositChannel, string>> = {
   th_rabbit_linepay_usd2: '泰國linepay-USD2',
   my_tng: '馬來西亞tng',
   my_tng_usd: '馬來西亞-tng-single-美金',
+  my_boost_usd: '馬來西亞-boost-USD',
   my_tng_usd2: '馬來西亞-tng-collect-美金',
   my_fpx_usd: '馬來西亞-FPX',
   international_credit_cards: 'collect_USD 一般通道',

@@ -319,6 +319,39 @@ describe('deposit API routes', () => {
     });
   });
 
+  test('GET /api/deposit/defaults returns the Malaysia Boost USD defaults and schema', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=my_boost_usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const paymentOrder = channelValues.payment_order as Record<string, unknown>;
+    const boostValues = paymentOrder.singlepayment_boost as Record<string, unknown>;
+
+    expect(body.channel).toBe('my_boost_usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-SINGLEPAYMENT-BOOST-USD',
+      amount: '45.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toMatchObject({
+      payment_order: {
+        country_code: 'MY',
+        product_detail: 'Boost USD test order for %s',
+      },
+    });
+    expect(boostValues).toMatchObject({
+      origin: 'merchant.example.com',
+      shopper_reference: 'BOOST_TEST_SHOPPER_001',
+      shopper_email: 'shopper@example.com',
+      holder_name: 'Test Shopper',
+      browser_info: { os_type: 'ANDROID', terminal_type: 'WEB' },
+    });
+  });
+
   test('POST /api/deposit/merchant-ref returns a generated merchant reference', async () => {
     const response = await context.requestApi('/api/deposit/merchant-ref', {
       method: 'POST',

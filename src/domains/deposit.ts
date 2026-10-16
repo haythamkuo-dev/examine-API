@@ -315,6 +315,25 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  my_boost_usd: {
+    product_no: 'DEP-SINGLEPAYMENT-BOOST-USD',
+    amount: { amount: '45.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      country_code: 'MY',
+      product_detail: 'Boost USD test order for %s',
+      singlepayment_boost: {
+        origin: 'merchant.example.com',
+        shopper_reference: 'BOOST_TEST_SHOPPER_001',
+        shopper_email: 'shopper@example.com',
+        holder_name: 'Test Shopper',
+        browser_info: {
+          os_type: 'ANDROID',
+          terminal_type: 'WEB',
+        },
+      },
+    },
+  },
   my_tng_usd2: {
     product_no: 'DEP-FUTUREPAY_COLLECT-TNG-USD',
     amount: { amount: '45.00', currency_code: 'USD' },

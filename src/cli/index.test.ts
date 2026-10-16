@@ -127,6 +127,31 @@ describe('request builders', () => {
     });
   });
 
+  test('builds the Boost USD deposit request with the normal merchant token', () => {
+    const request = createDepositRequest(env, 'my_boost_usd', makeId);
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(request.payload).toMatchObject({
+      product_no: 'DEP-SINGLEPAYMENT-BOOST-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '45.00', currency_code: 'USD' },
+      payment_order: {
+        country_code: 'MY',
+        product_detail: 'Boost USD test order for %s',
+        singlepayment_boost: {
+          origin: 'merchant.example.com',
+          shopper_reference: 'BOOST_TEST_SHOPPER_001',
+          shopper_email: 'shopper@example.com',
+          holder_name: 'Test Shopper',
+          browser_info: {
+            os_type: 'ANDROID',
+            terminal_type: 'WEB',
+          },
+        },
+      },
+    });
+  });
+
   test('builds deposit request from manual CLI-style overrides', () => {
     const request = createDepositRequest(env, 'linepay', makeId, {
       apiKey: 'manual-deposit-token',
