@@ -273,6 +273,9 @@ describe('DepositPage', () => {
     expect(getDepositChannelLabel('my_boost_usd')).toBe('馬來西亞-boost-USD');
     expect(getDepositChannelLabel('my_tng_usd2')).toBe('馬來西亞-tng-collect-美金');
     expect(getDepositChannelLabel('my_fpx_usd')).toBe('馬來西亞-FPX');
+    expect(getDepositChannelLabel('ALIPAY-8000')).toBe('鴻運-8000-CNY');
+    expect(getDepositChannelLabel('ALIPAY-6014')).toBe('鴻運-6014-CNY');
+    expect(getDepositChannelLabel('WECHAT-6016')).toBe('鴻運-6016-CNY');
     expect(getDepositChannelLabel('WECHAT-6016-USD')).toBe('鴻運-6016-USD');
     expect(getDepositChannelLabel('ALIPAY-6014-USD')).toBe('鴻運-6014-USD');
     expect(getDepositChannelLabel('unknown_channel')).toBe('unknown_channel');
