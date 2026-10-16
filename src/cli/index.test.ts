@@ -152,6 +152,18 @@ describe('request builders', () => {
     });
   });
 
+  test('builds the Hongyun WeChat 6016 USD deposit request with the normal merchant token', () => {
+    const request = createDepositRequest(env, 'WECHAT-6016-USD', makeId);
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(request.payload).toMatchObject({
+      product_no: 'DEP-HONGYUNPAY-WECHAT6016-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '100.00', currency_code: 'USD' },
+    });
+    expect(request.payload).not.toHaveProperty('payment_order');
+  });
+
   test('builds deposit request from manual CLI-style overrides', () => {
     const request = createDepositRequest(env, 'linepay', makeId, {
       apiKey: 'manual-deposit-token',

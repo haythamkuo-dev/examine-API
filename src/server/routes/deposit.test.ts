@@ -352,6 +352,25 @@ describe('deposit API routes', () => {
     });
   });
 
+  test('GET /api/deposit/defaults returns the Hongyun WeChat 6016 USD defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=WECHAT-6016-USD');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('WECHAT-6016-USD');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-HONGYUNPAY-WECHAT6016-USD',
+      amount: '100.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({});
+  });
+
   test('POST /api/deposit/merchant-ref returns a generated merchant reference', async () => {
     const response = await context.requestApi('/api/deposit/merchant-ref', {
       method: 'POST',

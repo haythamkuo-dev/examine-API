@@ -865,6 +865,7 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
   'ALIPAY-8000': { commonValues: { productNo: 'DEP-HONGYUNPAY-ALIPAY8000-CNY', amount: '100.00', currencyCode: 'CNY' }, schema: {}, values: {} },
   'ALIPAY-6014': { commonValues: { productNo: 'DEP-HONGYUNPAY-ALIPAY6014-CNY', amount: '120.00', currencyCode: 'CNY' }, schema: {}, values: {} },
   'WECHAT-6016': { commonValues: { productNo: 'DEP-HONGYUNPAY-WECHAT6016-CNY', amount: '150.00', currencyCode: 'CNY' }, schema: {}, values: {} },
+  'WECHAT-6016-USD': { commonValues: { productNo: 'DEP-HONGYUNPAY-WECHAT6016-USD', amount: '100.00', currencyCode: 'USD' }, schema: {}, values: {} },
   'cmoney-intercard': {
     commonValues: { productNo: 'DEP-CMONEY-INTERCARD-USD', amount: '100.00', currencyCode: 'USD' },
     schema: {},
