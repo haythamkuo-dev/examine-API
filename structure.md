@@ -15,6 +15,7 @@
 ├── data
 │   ├── deposit
 │   │   ├── channels
+│   │   │   ├── ALIPAY-6014-USD.json
 │   │   │   ├── ALIPAY-6014.json
 │   │   │   ├── ALIPAY-8000.json
 │   │   │   ├── ALIPAY-CNY.json
@@ -185,4 +186,4 @@
     │       └── modal.tsx
     └── styles.css
 
-28 directories, 158 files
+28 directories, 159 files

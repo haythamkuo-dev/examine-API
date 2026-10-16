@@ -164,6 +164,18 @@ describe('request builders', () => {
     expect(request.payload).not.toHaveProperty('payment_order');
   });
 
+  test('builds the Hongyun Alipay 6014 USD deposit request with the normal merchant token', () => {
+    const request = createDepositRequest(env, 'ALIPAY-6014-USD', makeId);
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(request.payload).toMatchObject({
+      product_no: 'DEP-HONGYUNPAY-ALIPAY6014-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '120.00', currency_code: 'USD' },
+    });
+    expect(request.payload).not.toHaveProperty('payment_order');
+  });
+
   test('builds deposit request from manual CLI-style overrides', () => {
     const request = createDepositRequest(env, 'linepay', makeId, {
       apiKey: 'manual-deposit-token',

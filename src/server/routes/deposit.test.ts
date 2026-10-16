@@ -371,6 +371,25 @@ describe('deposit API routes', () => {
     expect(channelValues).toEqual({});
   });
 
+  test('GET /api/deposit/defaults returns the Hongyun Alipay 6014 USD defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=ALIPAY-6014-USD');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('ALIPAY-6014-USD');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-HONGYUNPAY-ALIPAY6014-USD',
+      amount: '120.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({});
+  });
+
   test('POST /api/deposit/merchant-ref returns a generated merchant reference', async () => {
     const response = await context.requestApi('/api/deposit/merchant-ref', {
       method: 'POST',

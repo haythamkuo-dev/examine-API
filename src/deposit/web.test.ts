@@ -111,6 +111,12 @@ describe('deposit web helpers', () => {
       currencyCode: 'USD',
     });
     expect(result.channels['WECHAT-6016-USD'].values).toEqual({});
+    expect(result.channels['ALIPAY-6014-USD'].commonValues).toEqual({
+      productNo: 'DEP-HONGYUNPAY-ALIPAY6014-USD',
+      amount: '120.00',
+      currencyCode: 'USD',
+    });
+    expect(result.channels['ALIPAY-6014-USD'].values).toEqual({});
   });
 
   test('builds the Boost USD request with the provider-specific payload key', () => {
@@ -156,6 +162,25 @@ describe('deposit web helpers', () => {
       product_no: 'DEP-HONGYUNPAY-WECHAT6016-USD',
       merchant_ref: 'TEST_ORDER_fixed-id',
       amount: { amount: '100.00', currency_code: 'USD' },
+      return_url: 'https://merchant.example.com/deposit',
+    });
+    expect(payload).not.toHaveProperty('payment_order');
+  });
+
+  test('builds the Hongyun Alipay 6014 USD request without provider-specific fields', () => {
+    const defaults = toDepositDefaultsResponse(
+      'ALIPAY-6014-USD',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-HONGYUNPAY-ALIPAY6014-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '120.00', currency_code: 'USD' },
       return_url: 'https://merchant.example.com/deposit',
     });
     expect(payload).not.toHaveProperty('payment_order');
