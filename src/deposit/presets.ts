@@ -353,6 +353,15 @@ const DUITNOW_QR_SCHEMA: DepositFieldMap = {
   }),
 };
 
+const SPEI_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {
+      shopper_email: textField('Shopper email', true),
+      country_code: textField('Country code'),
+    }),
+  }),
+};
+
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const getSeedCommonConfig = (env: CliEnv, makeId: (prefix: string) => string): DepositCommonConfig => ({
@@ -751,6 +760,22 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
           shopper_email: 'customer@example.com',
           telephone_number: '60123456789',
           product_name: 'FPX USD Test Checkout',
+        },
+      },
+    },
+  },
+  mx_spei_usd: {
+    commonValues: {
+      productNo: 'DEP-FUTUREPAY_COLLECT-SPEI-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(SPEI_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          shopper_email: 'spei-test@example.com',
+          country_code: 'MX',
         },
       },
     },

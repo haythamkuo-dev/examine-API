@@ -36,7 +36,7 @@ describe('validateDepositForm', () => {
       .itemSchema.fields.products as { itemSchema: { fields: Record<string, { kind: string }> } };
 
     expect(quantity).toBe(1);
-    expect(quantitySchema.itemSchema.fields.quantity.kind).toBe('number');
+    expect(quantitySchema.itemSchema.fields.quantity?.kind).toBe('number');
   });
 
   test('accepts valid deposit defaults for the selected channel', async () => {

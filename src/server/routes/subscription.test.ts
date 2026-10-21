@@ -360,7 +360,10 @@ describe('subscription API routes', () => {
 
     expect(response.status).toBe(200);
     expect(upstreamBody).not.toBeNull();
-    expect((upstreamBody as SubscriptionUpstreamBody).subs_plan_id).toBe('PLAN-DRAFT-UPSTREAM-001');
+    if (!upstreamBody) {
+      throw new Error('Expected the upstream subscription body to be captured.');
+    }
+    expect(upstreamBody.subs_plan_id).toBe('PLAN-DRAFT-UPSTREAM-001');
   });
 
   test('POST /api/subscription/create returns 400 when the selected channel is missing a configured plan id', async () => {

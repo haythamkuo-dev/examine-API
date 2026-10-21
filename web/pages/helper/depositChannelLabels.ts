@@ -19,6 +19,7 @@ export const DEPOSIT_CHANNEL_LABELS: Partial<Record<DepositChannel, string>> = {
   my_boost_usd: '馬來西亞-boost-USD',
   my_tng_usd2: '馬來西亞-tng-collect-美金',
   my_fpx_usd: '馬來西亞-FPX',
+  mx_spei_usd: '墨西哥-SPEI-USD',
   international_credit_cards: 'collect_USD 一般通道',
   pix_brl: '巴西pix支付',
   id_dana_usd: 'DANA-Single-USD',

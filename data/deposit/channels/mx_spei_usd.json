@@ -1,0 +1,31 @@
+{
+  "commonValues": {
+    "productNo": "DEP-FUTUREPAY_COLLECT-SPEI-USD",
+    "amount": "10.00",
+    "currencyCode": "USD"
+  },
+  "schema": {
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "collect": {
+          "kind": "object",
+          "label": "Collect payload",
+          "fields": {
+            "shopper_email": { "kind": "text", "label": "Shopper email", "required": true },
+            "country_code": { "kind": "text", "label": "Country code" }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "payment_order": {
+      "collect": {
+        "shopper_email": "spei-test@example.com",
+        "country_code": "MX"
+      }
+    }
+  }
+}

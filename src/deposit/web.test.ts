@@ -83,6 +83,19 @@ describe('deposit web helpers', () => {
         },
       },
     });
+    expect(result.channels.mx_spei_usd.commonValues).toEqual({
+      productNo: 'DEP-FUTUREPAY_COLLECT-SPEI-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(result.channels.mx_spei_usd.values).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'spei-test@example.com',
+          country_code: 'MX',
+        },
+      },
+    });
     expect(result.channels.my_boost_usd.commonValues).toEqual({
       productNo: 'DEP-SINGLEPAYMENT-BOOST-USD',
       amount: '45.00',
@@ -201,6 +214,30 @@ describe('deposit web helpers', () => {
     expect(payload.return_url).toBe('https://merchant.example.com/deposit');
     expect(payload.payment_order).toMatchObject({
       collect: { country_code: 'US', product_name: 'JCB for USD' },
+    });
+  });
+
+  test('builds the Mexico SPEI USD request with the shared deposit defaults', () => {
+    const defaults = toDepositDefaultsResponse(
+      'mx_spei_usd',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-FUTUREPAY_COLLECT-SPEI-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'USD' },
+      return_url: 'https://merchant.example.com/deposit',
+      payment_order: {
+        collect: {
+          shopper_email: 'spei-test@example.com',
+          country_code: 'MX',
+        },
+      },
     });
   });
 

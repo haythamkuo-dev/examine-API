@@ -365,6 +365,17 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  mx_spei_usd: {
+    product_no: 'DEP-FUTUREPAY_COLLECT-SPEI-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        shopper_email: 'spei-test@example.com',
+        country_code: 'MX',
+      },
+    },
+  },
   international_credit_cards: {
     product_no: 'DEP-FUTUREPAY_COLLECT-COLLECT-USD',
     amount: { amount: '99.99', currency_code: 'USD' },

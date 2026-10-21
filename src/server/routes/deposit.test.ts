@@ -142,6 +142,25 @@ const createFpxBody = (): DepositApiRequestBody => ({
   },
 });
 
+const createSpeiBody = (): DepositApiRequestBody => ({
+  channel: 'mx_spei_usd',
+  commonValues: {
+    productNo: 'DEP-FUTUREPAY_COLLECT-SPEI-USD',
+    merchantRef: 'M-ORDER-MX-SPEI-USD-000001',
+    amount: '10.00',
+    currencyCode: 'USD',
+    returnUrl: 'https://merchant.example.com/deposit/result',
+  },
+  channelValues: {
+    payment_order: {
+      collect: {
+        shopper_email: 'spei-test@example.com',
+        country_code: 'MX',
+      },
+    },
+  },
+});
+
 describe('deposit API routes', () => {
   let context: ApiTestServerContext;
 
@@ -317,6 +336,40 @@ describe('deposit API routes', () => {
         },
       },
     });
+  });
+
+  test('GET /api/deposit/defaults returns the Mexico SPEI USD defaults with only shopper email required', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=mx_spei_usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+    const shopperEmailSchema = collectFields.shopper_email as Record<string, unknown>;
+    const countryCodeSchema = collectFields.country_code as Record<string, unknown>;
+
+    expect(body.channel).toBe('mx_spei_usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-FUTUREPAY_COLLECT-SPEI-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'spei-test@example.com',
+          country_code: 'MX',
+        },
+      },
+    });
+    expect(shopperEmailSchema.required).toBe(true);
+    expect(countryCodeSchema.required).not.toBe(true);
   });
 
   test('GET /api/deposit/defaults returns the Malaysia Boost USD defaults and schema', async () => {
@@ -609,6 +662,30 @@ describe('deposit API routes', () => {
           shopper_email: 'customer@example.com',
           telephone_number: '60123456789',
           product_name: 'Edited FPX Checkout',
+        },
+      },
+    });
+  });
+
+  test('POST /api/deposit/preview builds the Mexico SPEI USD payload', async () => {
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(createSpeiBody()),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as { request: { payload: Record<string, unknown> } };
+    expect(body.request.payload).toMatchObject({
+      product_no: 'DEP-FUTUREPAY_COLLECT-SPEI-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'USD' },
+      return_url: 'https://merchant.example.com/deposit/result',
+      payment_order: {
+        collect: {
+          shopper_email: 'spei-test@example.com',
+          country_code: 'MX',
         },
       },
     });
