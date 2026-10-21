@@ -96,6 +96,24 @@ describe('deposit web helpers', () => {
         },
       },
     });
+    expect(result.channels.th_kplus_usd.commonValues).toEqual({
+      productNo: 'DEP-SINGLEPAYMENT-KPLUS-USD',
+      amount: '45.00',
+      currencyCode: 'USD',
+    });
+    expect(result.channels.th_kplus_usd.values).toMatchObject({
+      payment_order: {
+        country_code: 'TH',
+        product_detail: 'KPlus order for %s',
+        singlepayment_kplus: {
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'KPLUS-CUSTOMER-001',
+          shopper_email: 'shopper@example.com',
+          holder_name: 'Test User',
+          browser_info: { os_type: 'ANDROID', terminal_type: 'WEB' },
+        },
+      },
+    });
     expect(result.channels.my_boost_usd.commonValues).toEqual({
       productNo: 'DEP-SINGLEPAYMENT-BOOST-USD',
       amount: '45.00',
@@ -236,6 +254,35 @@ describe('deposit web helpers', () => {
         collect: {
           shopper_email: 'spei-test@example.com',
           country_code: 'MX',
+        },
+      },
+    });
+  });
+
+  test('builds the Thailand KPlus USD request with the provider-specific payload key', () => {
+    const defaults = toDepositDefaultsResponse(
+      'th_kplus_usd',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-SINGLEPAYMENT-KPLUS-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '45.00', currency_code: 'USD' },
+      return_url: 'https://merchant.example.com/deposit',
+      payment_order: {
+        country_code: 'TH',
+        product_detail: 'KPlus order for %s',
+        singlepayment_kplus: {
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'KPLUS-CUSTOMER-001',
+          shopper_email: 'shopper@example.com',
+          holder_name: 'Test User',
+          browser_info: { os_type: 'ANDROID', terminal_type: 'WEB' },
         },
       },
     });

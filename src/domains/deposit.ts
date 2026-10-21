@@ -277,6 +277,25 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  th_kplus_usd: {
+    product_no: 'DEP-SINGLEPAYMENT-KPLUS-USD',
+    amount: { amount: '45.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      country_code: 'TH',
+      product_detail: 'KPlus order for %s',
+      singlepayment_kplus: {
+        origin: 'https://merchant.example.com',
+        shopper_reference: 'KPLUS-CUSTOMER-001',
+        shopper_email: 'shopper@example.com',
+        holder_name: 'Test User',
+        browser_info: {
+          os_type: 'ANDROID',
+          terminal_type: 'WEB',
+        },
+      },
+    },
+  },
   my_tng: {
     product_no: 'DEP-SINGLEPAYMENT-TNG-MYR',
     amount: { amount: '45.00', currency_code: 'MYR' },

@@ -309,6 +309,23 @@ const TNG_SCHEMA: DepositFieldMap = {
   }),
 };
 
+const KPLUS_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    country_code: textField('Country code', true),
+    product_detail: textareaField('Product detail', true),
+    singlepayment_kplus: objectField('KPlus', {
+      origin: textField('Origin', true),
+      shopper_reference: textField('Shopper reference', true),
+      shopper_email: textField('Shopper email', true),
+      holder_name: textField('Holder name', true),
+      browser_info: objectField('Browser info', {
+        os_type: textField('OS type', true),
+        terminal_type: textField('Terminal type', true),
+      }),
+    }),
+  }),
+};
+
 const BOOST_SCHEMA: DepositFieldMap = {
   payment_order: objectField('Payment order', {
     country_code: textField('Country code', true),
@@ -646,6 +663,30 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
           browser_info: {
             os_type: 'ANDROID',
             terminal_type: 'APP',
+          },
+        },
+      },
+    },
+  },
+  th_kplus_usd: {
+    commonValues: {
+      productNo: 'DEP-SINGLEPAYMENT-KPLUS-USD',
+      amount: '45.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(KPLUS_SCHEMA),
+    values: {
+      payment_order: {
+        country_code: 'TH',
+        product_detail: 'KPlus order for %s',
+        singlepayment_kplus: {
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'KPLUS-CUSTOMER-001',
+          shopper_email: 'shopper@example.com',
+          holder_name: 'Test User',
+          browser_info: {
+            os_type: 'ANDROID',
+            terminal_type: 'WEB',
           },
         },
       },

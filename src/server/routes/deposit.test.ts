@@ -161,6 +161,33 @@ const createSpeiBody = (): DepositApiRequestBody => ({
   },
 });
 
+const createKplusBody = (): DepositApiRequestBody => ({
+  channel: 'th_kplus_usd',
+  commonValues: {
+    productNo: 'DEP-SINGLEPAYMENT-KPLUS-USD',
+    merchantRef: 'M-ORDER-TH-KPLUS-USD-000001',
+    amount: '45.00',
+    currencyCode: 'USD',
+    returnUrl: 'https://merchant.example.com/deposit/result',
+  },
+  channelValues: {
+    payment_order: {
+      country_code: 'TH',
+      product_detail: 'KPlus order for %s',
+      singlepayment_kplus: {
+        origin: 'https://merchant.example.com',
+        shopper_reference: 'KPLUS-CUSTOMER-001',
+        shopper_email: 'shopper@example.com',
+        holder_name: 'Test User',
+        browser_info: {
+          os_type: 'ANDROID',
+          terminal_type: 'WEB',
+        },
+      },
+    },
+  },
+});
+
 describe('deposit API routes', () => {
   let context: ApiTestServerContext;
 
@@ -370,6 +397,39 @@ describe('deposit API routes', () => {
     });
     expect(shopperEmailSchema.required).toBe(true);
     expect(countryCodeSchema.required).not.toBe(true);
+  });
+
+  test('GET /api/deposit/defaults returns the Thailand KPlus USD defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=th_kplus_usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const paymentOrder = channelValues.payment_order as Record<string, unknown>;
+    const kplusValues = paymentOrder.singlepayment_kplus as Record<string, unknown>;
+
+    expect(body.channel).toBe('th_kplus_usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-SINGLEPAYMENT-KPLUS-USD',
+      amount: '45.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toMatchObject({
+      payment_order: {
+        country_code: 'TH',
+        product_detail: 'KPlus order for %s',
+      },
+    });
+    expect(kplusValues).toMatchObject({
+      origin: 'https://merchant.example.com',
+      shopper_reference: 'KPLUS-CUSTOMER-001',
+      shopper_email: 'shopper@example.com',
+      holder_name: 'Test User',
+      browser_info: { os_type: 'ANDROID', terminal_type: 'WEB' },
+    });
   });
 
   test('GET /api/deposit/defaults returns the Malaysia Boost USD defaults and schema', async () => {
@@ -686,6 +746,35 @@ describe('deposit API routes', () => {
         collect: {
           shopper_email: 'spei-test@example.com',
           country_code: 'MX',
+        },
+      },
+    });
+  });
+
+  test('POST /api/deposit/preview builds the Thailand KPlus USD payload', async () => {
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(createKplusBody()),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as { request: { payload: Record<string, unknown> } };
+    expect(body.request.payload).toMatchObject({
+      product_no: 'DEP-SINGLEPAYMENT-KPLUS-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '45.00', currency_code: 'USD' },
+      return_url: 'https://merchant.example.com/deposit/result',
+      payment_order: {
+        country_code: 'TH',
+        product_detail: 'KPlus order for %s',
+        singlepayment_kplus: {
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'KPLUS-CUSTOMER-001',
+          shopper_email: 'shopper@example.com',
+          holder_name: 'Test User',
+          browser_info: { os_type: 'ANDROID', terminal_type: 'WEB' },
         },
       },
     });

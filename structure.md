@@ -48,6 +48,7 @@
 │   │   │   ├── my_tng_usd2.json
 │   │   │   ├── pix_brl.json
 │   │   │   ├── southafrica_cards.json
+│   │   │   ├── th_kplus_usd.json
 │   │   │   ├── th_rabbit_linepay.json
 │   │   │   ├── th_rabbit_linepay_usd.json
 │   │   │   └── th_rabbit_linepay_usd2.json
@@ -187,4 +188,4 @@
     │       └── modal.tsx
     └── styles.css
 
-28 directories, 160 files
+28 directories, 161 files
