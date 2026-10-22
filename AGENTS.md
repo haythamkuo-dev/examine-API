@@ -1,5 +1,6 @@
 ### Instruction Source of Truth
 - 根目錄 `AGENTS.md` 是本專案共用規範的唯一來源。`CLAUDE.md` 僅可補充明確的 Claude-specific 行為，不得複製或改寫本檔的共用規範；若兩者衝突，以本檔為準。
+- 所有適用於整個專案的強制規範、測試工具與生命週期要求、驗證命令及完成 gate 都只在本檔維護。`devlope_guides/ai_design_doc_writing.md` 與 `devlope_guides/ai_reference.md` 均從屬於本檔；Writing Guide 只在不違反本檔的前提下負責設計書等級分流與要求 AI 選擇適用 gate，Reference 只提供章節與案例參考，不得另立專案級規範或設計書等級門檻。
 
 ### 🏗️ Technical Stack & Scope
 - Backend: Bun + TypeScript (處理 API 邏輯與數據持久化)。
@@ -21,10 +22,28 @@
 * **[Tests] 後端測試**: 與後端源碼同層或位於 `__tests__` 中，並透過 `tests/server-setup.ts` 初始化環境。
 * **[Tests] 前端測試**: 位於 `web/` 內部對應元件旁，並透過 `web-setup.ts` 初始化瀏覽器環境。
 
-### Build and Test Commands
-- 跑前端測試： `bun run test:web`
-- 跑後端測試： `bun run test:api`
-- 執行特定測試並顯示覆蓋率: `bun test --preload ./tests/setup.ts --coverage`
+### Build, Test, and Verification Commands
+
+以下是本專案的驗證命令目錄。每個任務只需依變更範圍選擇適用的 gate，不代表每次都要執行全部命令：
+
+- 前端測試：`bun run test:web`
+- 後端測試：`bun run test:api`
+- 全部測試：`bun run test`
+- TypeScript 型別檢查：`tsc --noEmit`
+- API 建置：`bun run build:api`
+- Web 建置：`bun run build:web`
+- CLI／完整套件建置：`bun run build`
+- 結構快照：`bun run structure`（只有修改資料夾結構時需要，並更新 `structure.md`）
+- 特定測試與覆蓋率：`bun test --preload ./tests/setup.ts --coverage`
+
+適用 gate 的基本判斷如下：
+
+- 修改後端 domain、service、validation、API route 或 server 行為：至少執行 `bun run test:api` 與 `tsc --noEmit`；若影響 API 建置輸出，再執行 `bun run build:api`。
+- 修改 React page、hook、component、frontend route 或 web 行為：至少執行 `bun run test:web` 與 `tsc --noEmit`；若影響 production bundle、routing 或 frontend build，再執行 `bun run build:web`。
+- 跨越前後端或同時影響兩側公開行為：執行兩側相關測試與建置 gate。
+- 修改 CLI、入口或完整套件建置流程：執行 `bun run build`，並依受影響層級補充 API 或 Web gate。
+- 修改資料夾結構：執行 `bun run structure` 並確認 `structure.md` 已更新。
+- 只修改文件且不影響程式行為：檢查文件格式與引用即可，不要求執行與文件無關的程式驗證。
 
 
 ### When writing Tests (Global 通用規範)
@@ -48,13 +67,33 @@
 - **MUST NOT:** 不得為了讓測試通過而修改生產行為、暴露內部實作，或增加沒有產品用途的 prop、route、endpoint；優先在邊界注入最小 mock 或使用既有 fixture。
 - **MUST:** 跨頁面或跨層的共用內部行為只在共用元件／共用邏輯測一次；各頁面或 API route 若有獨立輸入、輸出、環境或失敗模式，保留一個最小 boundary test。頁面測試不得複製下層已覆蓋的逐欄位、簽名或資料轉換斷言。
 
+## Implementation Judgment and Verification
+
+### When implementation differs from confirmed design
+- 實作前應先對照已確認的設計、需求與現有程式碼，辨識行為、公開契約、資料格式、錯誤處理與核准範圍的差異。
+- 若差異僅屬不影響業務語意或公開契約的實作細節，AI 應採取最小修改完成實作，並在交付說明中記錄判斷。
+- 若實際程式碼與已確認設計存在實質衝突，AI 不得自行改變業務語意、公開契約、資料格式、資安邊界或核准範圍。必須先回報現況、設計差異、影響與可選方案，等待必要的決策或確認。
+- 實質衝突只阻塞受影響的實作路徑；不受影響且不依賴該決策的工作可以繼續進行。
+- 直接修改既有函式或建立新函式，應以最小變更、維持既有契約與符合專案分層為原則。若新增函式或調整設計會改變行為、契約或範圍，必須依前項規則回報，不得以實作選擇掩蓋設計變更。
+
+### When implementation errors occur
+- AI 可以自行修正局部且可合理判定的實作錯誤，例如型別不符、錯誤 import、null handling、非同步流程或測試 fixture 使用錯誤；修正後必須重新執行受影響的驗證。
+- 不得為了讓型別檢查或測試通過而刪除、弱化或跳過測試，修改共用型別或公開 API 契約，停用檢查，濫用 `any`、`@ts-ignore` 或未說明的型別斷言，或改寫設計中的完成條件。
+- 若修正錯誤需要改變共用契約、業務語意、測試所保護的產品行為，或同一問題經合理修正後仍無法解決，應停止受影響部分並回報證據、影響與需要決策的事項；其他獨立工作可以繼續。
+
+### Completion requires verification evidence
+- 任務完成不得僅以程式碼已產生或修改結束作為依據。AI 必須將設計或需求中的完成條件，逐項對應至實際執行的測試、型別檢查、建置、手動驗證或其他適當證據。
+- 驗證層級應依風險與公開契約選擇最低但足夠的層級，並遵守本文件的 `Risk → Test → Test layer` 規範；不要求為了 coverage 而增加無產品風險對應的測試。
+- 相關驗證失敗時，不得宣稱任務已完成。若受環境、工具或外部依賴限制而無法執行，必須列出未執行的命令、原因、替代驗證、未涵蓋部分與剩餘風險。
+- 交付說明至少應包含：已完成的行為、實際執行的驗證及結果、未能驗證的部分，以及仍需使用者決策或後續處理的風險。
+
 
 ## Definition of Done
-每次任務完成與提交 (Commit) 前，必須滿足以下所有條件：
-1. 程式碼中無 Hard-coding（測試參數與環境變數必須從 `src/core/env.ts` 或 `data/*.json` 動態讀取，重複字串需提取）。
-2. 所有被修改或新增的 Public API 均已補齊 JSDoc 註釋（包含 `@param`, `@returns`, `@throws`）。
-3. 執行 `tsc --noEmit` 且退出碼為 0（確保無任何隱式 any 型別，若型別不可預測，強制使用 unknown 搭配 Type Guard）。
-4. 若有修改資料夾結構，執行 `bun run structure`，更新 `structure.md`。
+每次任務完成與提交 (Commit) 前，必須依變更範圍滿足所有適用條件：
+1. 涉及程式碼或測試時，程式碼中不得有 Hard-coding（測試參數與環境變數必須從 `src/core/env.ts` 或 `data/*.json` 動態讀取，重複字串需提取）。
+2. 修改或新增 Public API 時，必須補齊 JSDoc 註釋（包含 `@param`, `@returns`, `@throws`）。
+3. 涉及 TypeScript 程式碼或測試時，執行 `tsc --noEmit` 且退出碼為 0（確保無任何隱式 any 型別，若型別不可預測，強制使用 unknown 搭配 Type Guard）。
+4. 修改資料夾結構時，執行 `bun run structure`，更新 `structure.md`。
 
 
 ## When writing Backend API logic
