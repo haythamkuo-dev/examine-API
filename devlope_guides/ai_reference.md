@@ -3,11 +3,11 @@
 本文件是 devlope_guides/ai_design_doc_writing.md 的詳細章節與案例參考。它不是設計書等級分流規範、另一套架構規範，也不是可直接套用到所有專案的後端模板。文件的目的，是在撰寫設計書時，協助 AI 或開發者判斷：
 
 - 哪些章節與這個變更真的有關。
-- 每個章節應該寫到哪一層，才足以讓實作、測試與 review 對齊。
+- 每個章節應該寫到哪一層，才足以讓設計書、實作、測試與設計書審查對齊。
 - 如何把既有專案的核心邏輯、資料流與邊界完整保留下來。
 - 如何明確區分「沿用」、「包裝」、「擴充」、「改變既有行為」與「新增」。
 
-本文件中的路徑、命名與流程，以目前專案的 Bun、TypeScript、React、Vite、Tailwind CSS 與 React Router 架構為準。若未來專案架構改變，應先更新 AGENTS.md、structure.md 與本文件的專案對照，再使用本文件產生新的設計書。
+本文件中的路徑、命名與流程，以目前專案的 Bun、TypeScript、React、Vite、Tailwind CSS 與 React Router 架構為準。若未來專案架構改變，應先更新 AGENTS.md、structure.md 與本文件的專案對照，再使用本文件產生新的設計書。branch、diff、PR 與程式碼審核不屬於本文件的內容範圍，依 [ai_code_review_guide.md](ai_code_review_guide.md) 執行。
 
 ## 文件之間的關係與從屬
 
@@ -15,13 +15,14 @@
 
 | 文件 | 責任 | 使用時機 |
 | --- | --- | --- |
-| AGENTS.md | 專案共用規範、目錄邊界、測試規則與完成定義 | 所有開發與 review 的最高優先來源 |
+| AGENTS.md | 專案共用規範、目錄邊界、測試規則與完成定義 | 所有開發、設計書與 Code Review 的最高優先來源 |
+| devlope_guides/ai_code_review_guide.md | branch、diff、PR 與程式碼審核的 Review 模式、Gate、issue 處理與輸出 | 審核程式碼變更時使用，不負責設計書內容 |
 | structure.md | 實際檔案與資料夾結構快照 | 確認檔案位置與架構現況 |
 | devlope_guides/ai_design_doc_writing.md | 設計書等級分流、寫作流程、內容深度與產出格式 | 開始撰寫或審查設計書；等級判定以此為準 |
 | devlope_guides/ai_reference.md | 各類章節的詳細寫法、案例與本專案對照 | 依已選定的等級判斷章節是否適用、補足實作細節 |
 | example.md | 設計書的示範內容與核心推理方式 | 理解完整設計書應如何描述決策與影響 |
 
-本文件不能覆寫 `AGENTS.md` 的規範，也不能取代 `ai_design_doc_writing.md` 的設計書等級判定。若本文件的說法與 `AGENTS.md`、設計書撰寫指引、專案現況或可驗證的程式碼不一致，應依文件權責處理衝突，並回頭修正本文件的過時內容。
+本文件不能覆寫 `AGENTS.md` 的規範，也不能取代 `ai_design_doc_writing.md` 的設計書等級判定。本文件只提供設計書章節、案例與自查參考，不定義 branch／PR 的 Code Review Gate。若本文件的說法與 `AGENTS.md`、設計書撰寫指引、專案現況或可驗證的程式碼不一致，應依文件權責處理衝突，並回頭修正本文件的過時內容。
 
 ## 目前專案架構對照
 
@@ -164,7 +165,7 @@
 | 錯誤與可觀察性 | AppError、error envelope、logger、錯誤清理 | 使用者看到什麼？server 記錄什麼？哪些細節不能外洩？ |
 | 測試與驗證 | API、domain、service、page 的最小測試層級 | 每個新風險由哪一層證明？是否不必要地重複測試內部實作？ |
 
-如果某一列不受影響，寫「不適用」並給原因。不要省略整個面向，因為省略會讓 review 無法區分「已判斷無影響」與「漏寫」。
+如果某一列不受影響，寫「不適用」並給原因。不要省略整個面向，因為省略會讓設計書審查無法區分「已判斷無影響」與「漏寫」。
 
 ## 更改既有行為的描述要求
 
@@ -549,9 +550,9 @@ AppError 的 code、HTTP status 與公開訊息要保持一致。錯誤訊息清
 
 不要只為了 coverage 百分比、每個 branch 或測試數量增加案例。測試必須對應具體產品行為、API contract、資料轉換、錯誤邊界或已知回歸風險。
 
-### 驗證 gate 的引用
+### 專案驗證 gate 的引用
 
-驗證命令與適用條件必須引用 `AGENTS.md` 的「Build, Test, and Verification Commands」。本文件只負責把章節風險映射到測試層級：
+本節的 gate 是 `AGENTS.md` 定義的專案測試、型別檢查與建置驗證 gate，不是 `ai_code_review_guide.md` 的 Code Review Gate。驗證命令與適用條件必須引用 `AGENTS.md` 的「Build, Test, and Verification Commands」。本文件只負責把章節風險映射到測試層級：
 
 - Domain、payload、簽名或 mapping：說明需要的 domain-level evidence。
 - Service、validation 或 preset：說明需要的 service/validation evidence。
@@ -574,7 +575,9 @@ AppError 的 code、HTTP status 與公開訊息要保持一致。錯誤訊息清
 
 不要把「之後再看看」當成待決策事項。若沒有阻塞，直接記錄假設與理由。
 
-## Review 使用方式
+## 設計書 Review 使用方式
+
+本節只處理設計書完成後的自我檢查與內容審查。branch、diff、PR 與程式碼審核的流程、Gate 狀態、issue 處理與輸出，依 [ai_code_review_guide.md](ai_code_review_guide.md) 執行，本節不重複定義。
 
 ### 設計書自我檢查
 
@@ -595,11 +598,11 @@ AppError 的 code、HTTP status 與公開訊息要保持一致。錯誤訊息清
 
 目前專案的最高規範來源是根目錄 `AGENTS.md`；設計書等級與撰寫流程依 `ai_design_doc_writing.md`，本文件只提供章節與案例參考。專案並沒有把不存在的 checklist.md 當成必然檔案。
 
-若未來新增 checklist.md，它應該只負責可勾選的 release 或 review gate，不能複製這份文件的架構解釋。設計書引用 checklist 時，必須確認檔案實際存在，並說明它與 AGENTS.md 的從屬關係。
+若未來新增 checklist.md，它應該只負責可勾選的設計書自查或 release checklist，不能複製這份文件的架構解釋。若 checklist 需要支援 branch／PR Code Review，只能引用 [ai_code_review_guide.md](ai_code_review_guide.md)，不得複製或重新定義其中的 Gate、狀態與 issue 處理流程。設計書引用 checklist 時，必須確認檔案實際存在，並說明它與 `AGENTS.md` 的從屬關係。
 
-### Review 問題
+### 設計書 Review 問題
 
-Review 時優先問：
+設計書 Review 時優先問：
 
 - 這個變更改的是哪一個公開行為，而不只是哪些檔案？
 - 既有 domain、service、route、page 或 preset 的核心邏輯是否被完整沿用？
