@@ -3,7 +3,7 @@ import {
   type CliEnv,
   type PayoutChannel,
 } from '../core/env';
-import { createUniqueReference, generateSign, maskRequestHeaders } from '../utils';
+import { generateSign, maskRequestHeaders } from '../utils';
 import type { PayoutPayload } from '../domains/payout';
 import { createPayoutPayload, createPayoutRequest } from '../domains/payout';
 import type { CommandRequest, CommandResult } from '../runner';
@@ -49,7 +49,7 @@ export type PayoutFieldSchema =
 export type PayoutFieldMap = Record<string, PayoutFieldSchema>;
 
 export type PayoutCommonValues = {
-  merchantReference: string;
+  merchantReference?: string;
 };
 
 export type PayoutChannelValues = Record<string, unknown>;
@@ -136,27 +136,18 @@ const pruneOptionalFields = (value: unknown): unknown => {
   return shouldPruneValue(value) ? undefined : value;
 };
 
-const sanitizeMerchantReference = (
-  merchantReference: string,
-  makeId: (prefix: string) => string,
-): string => {
-  return createUniqueReference(merchantReference, makeId, 'TEST_ORDER_');
-};
-
 const buildPayloadFromForm = (
   env: CliEnv,
   values: PayoutFormValues,
-  merchantReference: string,
+  makeId: (prefix: string) => string,
 ): PayoutPayload => {
-  const payload = clone(
-    createPayoutPayload(env, values.channel, () => merchantReference),
-  );
-
-  payload[merchantReferenceKey] = merchantReference;
+  const payload = clone(createPayoutPayload(env, values.channel, makeId));
+  const merchantReference = payload[merchantReferenceKey];
 
   const mergedPayload = {
     ...payload,
     ...(clone(values.channelValues) as Omit<PayoutPayload, 'merchant_reference'>),
+    merchant_reference: merchantReference,
   };
 
   const { sign: _existingSign, ...payloadWithoutSign } = mergedPayload;
@@ -186,17 +177,14 @@ export const buildPayoutRequestFromForm = (
   values: PayoutRequestValues,
   makeId: (prefix: string) => string,
 ): CommandRequest => {
-  const merchantReference = sanitizeMerchantReference(
-    values.commonValues.merchantReference,
-    makeId,
-  );
-  const request = createPayoutRequest(env, values.channel, () => merchantReference, {
+  const payload = buildPayloadFromForm(env, values, makeId);
+  const request = createPayoutRequest(env, values.channel, () => payload[merchantReferenceKey], {
     apiKey: values.apiKey?.trim() || undefined,
   });
 
   return {
     ...request,
-    payload: buildPayloadFromForm(env, values, merchantReference),
+    payload,
   };
 };
 
@@ -214,14 +202,7 @@ export const buildPayoutPreviewResponse = (
   values: PayoutRequestValues,
   makeId: (prefix: string) => string,
 ): PayoutPreviewResponse => {
-  const previewValues: PayoutRequestValues = {
-    ...values,
-    commonValues: {
-      ...values.commonValues,
-      merchantReference: makeId('TEST_ORDER_'),
-    },
-  };
-  const request = buildPayoutRequestFromForm(env, previewValues, makeId);
+  const request = buildPayoutRequestFromForm(env, values, makeId);
 
   return {
     request: {

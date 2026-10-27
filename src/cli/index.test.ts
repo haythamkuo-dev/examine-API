@@ -199,7 +199,7 @@ describe('request builders', () => {
     expect(request.headers?.Authorization).toBe('ApiKey manual-deposit-token');
     expect(request.payload).toMatchObject({
       product_no: 'DEP-LEONPAY-CREDITCARD-USD',
-      merchant_ref: 'TEST_ORDER_217',
+      merchant_ref: 'TEST_ORDER_fixed-id',
       amount: { amount: '99.00', currency_code: 'USD' },
       return_url: 'https://webhook.site/8760c026-c3c4-4ee8-8194-192321a7676b',
       payment_order: {
@@ -217,7 +217,7 @@ describe('request builders', () => {
       generateSign(
         {
           product_no: 'DEP-LEONPAY-CREDITCARD-USD',
-          merchant_ref: 'TEST_ORDER_217',
+          merchant_ref: 'TEST_ORDER_fixed-id',
           amount: { amount: '99.00', currency_code: 'USD' },
           return_url: 'https://webhook.site/8760c026-c3c4-4ee8-8194-192321a7676b',
           payment_order: {
@@ -376,7 +376,7 @@ describe('request builders', () => {
     expect(promptCalls).toEqual(['prompt', 'confirm']);
     expect(executedRequests).toHaveLength(1);
     expect(executedRequests[0]?.headers?.Authorization).toBe('ApiKey manual-deposit-token');
-    expect(JSON.parse(output[0] || '{}').payload.merchant_ref).toBe('TEST_ORDER_217');
+    expect(JSON.parse(output[0] || '{}').payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
   test('deposit create with --yes skips confirmation prompt', async () => {

@@ -1,5 +1,6 @@
 import { DEPOSIT_CHANNELS, type CliEnv, type DepositChannel } from '../core/env';
 import { createPresetBackedService } from '../core/createPresetBackedService';
+import { createJsonPresetStorage } from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
 import {
@@ -13,7 +14,12 @@ import {
   type DepositMerchantRefResponse,
   type DepositRequestValues,
 } from './web';
-import { loadDepositPresets, toDepositDefaultsResponse, updateDepositPreset } from './presets';
+import {
+  loadDepositPresets,
+  toDepositDefaultsResponse,
+  toDepositPersistentProjection,
+  updateDepositPreset,
+} from './presets';
 
 export type DepositServiceDeps = {
   getEnvForTarget: (target: TargetEnvironment) => CliEnv;
@@ -40,12 +46,24 @@ export const getRequestedDepositChannel = (url: URL): DepositChannel => {
  * @returns The deposit service API used by the HTTP layer.
  */
 export const createDepositService = (deps: DepositServiceDeps) => {
-  const loadPresets = () =>
-    loadDepositPresets({
-      dirPath: deps.presetDirPath,
-      env: deps.getEnvForTarget('local'),
-      makeId: deps.makeId,
-    });
+  const storage = createJsonPresetStorage({
+    load: () =>
+      loadDepositPresets({
+        dirPath: deps.presetDirPath,
+        env: deps.getEnvForTarget('local'),
+        makeId: deps.makeId,
+      }),
+    save: ({ channel, values }) =>
+      updateDepositPreset({
+        dirPath: deps.presetDirPath,
+        channel,
+        values,
+        env: deps.getEnvForTarget('local'),
+        makeId: deps.makeId,
+      }),
+    toPersistentProjection: toDepositPersistentProjection,
+  });
+  const loadPresets = async () => (await storage.load()).presets;
 
   const service = createPresetBackedService<
     DepositChannel,
@@ -59,14 +77,7 @@ export const createDepositService = (deps: DepositServiceDeps) => {
     loadPresets,
     toDefaultsResponse: (channel, presets) =>
       toDepositDefaultsResponse(channel, deps.getEnvForTarget('local'), presets),
-    updatePreset: (channel, values) =>
-      updateDepositPreset({
-        dirPath: deps.presetDirPath,
-        channel,
-        values,
-        env: deps.getEnvForTarget('local'),
-        makeId: deps.makeId,
-      }),
+    updatePreset: async (channel, values) => (await storage.save({ channel, values })).presets,
     buildPreviewResponse: (values, target) =>
       buildDepositPreviewResponse(deps.getEnvForTarget(target), values, deps.makeId),
     buildRequestFromForm: (values, target) =>
@@ -112,13 +123,7 @@ export const createDepositService = (deps: DepositServiceDeps) => {
     values: DepositFormValues,
     target: TargetEnvironment,
   ): Promise<DepositDefaultsResponse & { ok: true }> => {
-    const presets = await updateDepositPreset({
-      dirPath: deps.presetDirPath,
-      channel,
-      values,
-      env: deps.getEnvForTarget('local'),
-      makeId: deps.makeId,
-    });
+    const presets = (await storage.save({ channel, values })).presets;
 
     return {
       ok: true,

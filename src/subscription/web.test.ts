@@ -65,7 +65,7 @@ describe('subscription web helpers', () => {
     const touchAndGoIntervalCount = result.channels.touchAndGo.schema.interval_count;
     const internationalCreditCardIntervalCount = result.channels.internationalCreditCard.schema.interval_count;
 
-    expect(result.common.values.merchantRef).toBe('TEST_ORDER_fixed-id');
+    expect(result.common.values).not.toHaveProperty('merchantRef');
     expect(defaultIntervalCount?.kind).toBe('number');
     expect(rabbitLinePayIntervalCount?.kind).toBe('number');
     expect(touchAndGoIntervalCount?.kind).toBe('number');
@@ -120,7 +120,7 @@ describe('subscription web helpers', () => {
 
     expect(request.url).toBe('https://example.test/s2s/v1/subscriptions');
     expect(request.headers?.Authorization).toBe('ApiKey subscription-token');
-    expect(payload.merchant_ref).toBe('TEST_SUB_001');
+    expect(payload.merchant_ref).toBe('TEST_ORDER_fixed-id');
     expect(payload.return_url).toBe('https://merchant.example.com/subscription/return');
     expect(payload.sign).toBe(
       generateSign(
@@ -292,8 +292,8 @@ describe('subscription web helpers', () => {
 
     const savedCommon = await readFile(join(presetDirPath, 'common.json'), 'utf8');
     const savedChannel = await readFile(join(presetDirPath, 'channels', 'default.json'), 'utf8');
-    expect(presets.common.values.merchantRef).toBe('TEST_SUB_OVERRIDDEN');
-    expect(savedCommon).toContain('"merchant_ref": "TEST_SUB_OVERRIDDEN"');
+    expect(presets.common.values).not.toHaveProperty('merchantRef');
+    expect(savedCommon).not.toContain('merchant_ref');
     expect(savedCommon).toContain('"return_url": "https://merchant.example.com/subscription/updated"');
     expect(savedChannel).toContain('"product_name": "Updated subscription product"');
     expect(savedChannel).not.toContain('subs_plan_id');

@@ -53,7 +53,7 @@ const commonSchema: DepositFieldMap = {
   merchantRef: {
     kind: 'text',
     label: 'Merchant reference',
-    required: true,
+    required: false,
   },
   amount: {
     kind: 'text',
@@ -131,7 +131,6 @@ const createForm = (channel: typeof primaryChannel, overrides?: Partial<DepositF
   channel,
   commonValues: {
     productNo: `PROD-${channel}`,
-    merchantRef: `MERCHANT-${channel}`,
     amount: '50.00',
     currencyCode: channel === secondaryChannel ? 'JPY' : 'ZAR',
     returnUrl: `https://merchant.example.com/${channel}`,
@@ -300,8 +299,8 @@ describe('DepositPage', () => {
     expect(view.getByLabelText('Channel')).toHaveValue(primaryChannel);
     expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();
     expect(view.getByRole('button', { name: 'Edit API key' })).toBeInTheDocument();
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
-    expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
+    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+    expect(view.getByLabelText('Merchant reference')).toHaveAttribute('readonly');
   });
 
   test('wraps request fields in a scroll container with a max height', async () => {
@@ -370,13 +369,35 @@ describe('DepositPage', () => {
 
     expect(channelValues.approvalRequired).toBe(true);
     expect(channelValues.collects[0]?.enabled).toBe(false);
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue(`PREVIEW-${primaryChannel}`);
+    expect(view.getByLabelText('Merchant reference')).toHaveValue(`PREVIEW-${primaryChannel}`);
     expect(view.getAllByText(new RegExp(`"merchant_ref": "PREVIEW-${primaryChannel}"`))).toHaveLength(1);
     expect(view.queryByText('deposit:preview:test')).toBeNull();
     expect(view.queryByText('https://gateway.example.test/deposit')).toBeNull();
   });
 
-  test('loads channel-specific defaults and restores prior channel drafts when switching channels', async () => {
+  test('does not restore persisted form values on initial load', async () => {
+    setRouteHandlers({
+      'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
+    });
+    sessionStorage.setItem(
+      `examine-api:draft:deposit:${primaryChannel}:local`,
+      JSON.stringify({
+        version: 2,
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        values: createForm(primaryChannel, {
+          commonValues: { amount: '99.00' },
+        }),
+      }),
+    );
+
+    const view = renderDepositPage();
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Amount *')).toHaveValue('50.00');
+    });
+  });
+
+  test('loads channel-specific defaults without restoring merchant candidates when switching channels', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
       [`GET /api/deposit/defaults?channel=${primaryChannel}`]: async () =>
@@ -417,7 +438,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('MERCHANT-SECONDARY');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
     });
 
     expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue('PROD-SECONDARY');
@@ -431,7 +452,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-001');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
     });
 
     await act(async () => {
@@ -542,17 +563,17 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-002');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-002');
     });
 
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-002');
+    expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-002');
     const productNoField = view.getByRole('textbox', { name: /Product number/ });
     expect(productNoField).toHaveProperty('readOnly', true);
     expect(view.getByText('ReadOnly')).toBeInTheDocument();
     expect(productNoField).toHaveValue(`PROD-${primaryChannel}`);
   });
 
-  test('keeps the existing merchant reference when generation fails', async () => {
+  test('does not restore a server merchant reference when generation fails', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
       'POST /api/deposit/merchant-ref': async () =>
@@ -568,10 +589,10 @@ describe('DepositPage', () => {
     });
 
     await view.findByText('generator unavailable');
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
+    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
   });
 
-  test('keeps the generated merchant reference when reloading defaults', async () => {
+  test('does not restore the generated merchant reference when reloading defaults', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
       [`GET /api/deposit/defaults?channel=${primaryChannel}`]: async () =>
@@ -597,7 +618,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-003');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-003');
     });
 
     await act(async () => {
@@ -605,10 +626,10 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-003');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
     });
 
-    expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue(`PROD-${primaryChannel}`);
+    expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue('PROD-RELOADED');
   });
 
   test('resets the api key to the backend default when the environment changes', async () => {
@@ -648,7 +669,7 @@ describe('DepositPage', () => {
     expect(productDefaultsCall).toBeDefined();
   });
 
-  test('new draft resets the merchant reference to the backend default', async () => {
+  test('new draft clears the merchant reference instead of restoring a backend value', async () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
       [`GET /api/deposit/defaults?channel=${primaryChannel}`]: async () =>
@@ -673,7 +694,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-004');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-004');
     });
 
     await act(async () => {
@@ -681,7 +702,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('MERCHANT-NEW-DRAFT');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
     });
   });
 
@@ -693,7 +714,7 @@ describe('DepositPage', () => {
 
     const view = renderDepositPage();
 
-    await view.findByRole('heading', { name: 'Deposit' });
+    await view.findByRole('button', { name: 'Send request' });
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Send request' }));
     });
@@ -733,9 +754,9 @@ describe('DepositPage', () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
       'POST /api/deposit/preview': async (request) =>
-        jsonResponse(createPreviewResponse(`PREVIEW-${request.body?.commonValues.merchantRef}`)),
+        jsonResponse(createPreviewResponse('PREVIEW-GENERATED')),
       'POST /api/deposit/create': async (request) => {
-        expect(request.body?.commonValues.merchantRef).toBe(`PREVIEW-MERCHANT-${primaryChannel}`);
+        expect(request.body?.commonValues.merchantRef).toBe('PREVIEW-GENERATED');
         return jsonResponse(createResponseBody);
       },
     });
@@ -743,14 +764,14 @@ describe('DepositPage', () => {
     const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit' });
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
+    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue(`PREVIEW-MERCHANT-${primaryChannel}`);
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('PREVIEW-GENERATED');
     });
 
     await act(async () => {
@@ -825,7 +846,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(firstView.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-ENV');
+      expect(firstView.getByLabelText('Merchant reference')).toHaveValue('GENERATED-ENV');
     });
 
     await act(async () => {
@@ -844,7 +865,7 @@ describe('DepositPage', () => {
 
     await secondView.findByRole('heading', { name: 'Deposit' });
     expect(secondView.getByText('環境: 產品')).toBeInTheDocument();
-    expect(secondView.getByLabelText('Merchant reference *')).toHaveValue(`MERCHANT-${primaryChannel}`);
+    expect(secondView.getByLabelText('Merchant reference')).toHaveValue('');
   });
 
   test('new draft resets the current merchant reference without affecting the local api key draft', async () => {
@@ -873,7 +894,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SAVE');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-SAVE');
     });
 
     await act(async () => {
@@ -881,7 +902,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('MERCHANT-RESET-SERVER');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
     });
     expect(view.getByText('typed-deposit-key')).toBeInTheDocument();
   });
@@ -955,7 +976,7 @@ describe('DepositPage', () => {
     const resultCard = resultHeading.parentElement?.parentElement?.parentElement;
     expect(resultCard).not.toBeNull();
     expect(within(resultCard as HTMLElement).getByText(errorMessage)).toBeInTheDocument();
-    expect(view.getByText(/Temporary session draft/).parentElement).not.toContainElement(
+    expect(view.getByText(/Form state stays in memory/).parentElement).not.toContainElement(
       view.getByText(errorMessage),
     );
   });

@@ -5,7 +5,7 @@ import {
   type DepositChannel,
   joinUrl,
 } from '../core/env';
-import { createUniqueReference, generateSign } from '../utils';
+import { generateSign } from '../utils';
 import type { CommandRequest } from '../runner';
 import type { DepositChannelValues, DepositCommonValues } from '../deposit/web';
 
@@ -512,6 +512,16 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
   },
 });
 
+/**
+ * Builds a legacy deposit payload with a domain-generated merchant reference.
+ *
+ * @param env Runtime environment containing endpoint and signing configuration.
+ * @param channel Deposit channel selected by the caller.
+ * @param makeId ID factory used to create the final merchant reference.
+ * @param overrides Optional legacy request overrides; merchant reference is ignored.
+ * @returns A signed deposit payload.
+ * @throws {TypeError} When the selected channel template cannot be composed.
+ */
 export const createDepositPayload = (
   env: CliEnv,
   channel: DepositChannel,
@@ -521,7 +531,7 @@ export const createDepositPayload = (
   const template = createDepositTemplates(env)[channel];
   const payload: DepositPayload = {
     product_no: overrides.productNo || template.product_no,
-    merchant_ref: overrides.merchantRef || makeId('TEST_ORDER_'),
+    merchant_ref: makeId('TEST_ORDER_'),
     amount: {
       amount: overrides.amount || template.amount.amount,
       currency_code: overrides.currencyCode || template.amount.currency_code,
@@ -588,6 +598,16 @@ export const createDepositRequest = (
 
 const cloneUnknown = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
+/**
+ * Builds a structured deposit payload with the final merchant reference assigned after channel values.
+ *
+ * @param env Runtime environment containing endpoint and signing configuration.
+ * @param channel Deposit channel selected by the caller.
+ * @param makeId ID factory used to create the final merchant reference.
+ * @param overrides Structured form values and optional transport overrides.
+ * @returns A signed structured deposit payload.
+ * @throws {TypeError} When the selected channel template cannot be composed.
+ */
 export const createStructuredDepositPayload = (
   env: CliEnv,
   channel: DepositChannel,
@@ -596,7 +616,7 @@ export const createStructuredDepositPayload = (
 ): DepositPayload => {
   const template = createDepositTemplates(env)[channel];
   const channelValues = cloneUnknown(overrides.channelValues || {});
-  const merchantRef = createUniqueReference(overrides.commonValues.merchantRef, makeId, 'TEST_ORDER_');
+  const merchantRef = makeId('TEST_ORDER_');
   const payload = {
     product_no: overrides.commonValues.productNo || template.product_no,
     merchant_ref: merchantRef,
@@ -605,6 +625,7 @@ export const createStructuredDepositPayload = (
       currency_code: overrides.commonValues.currencyCode || template.amount.currency_code,
     },
     ...(channelValues as Record<string, unknown>),
+    merchant_ref: merchantRef,
   } as DepositPayload;
   const signFields = ['amount.amount', 'amount.currency_code', 'merchant_ref', 'product_no'];
 

@@ -103,11 +103,12 @@ const buildSubscriptionPayload = (
   env: CliEnv,
   channel: SubscriptionChannel,
   overrides: SubscriptionRequestOverrides,
+  makeId: (prefix: string) => string,
   planIdOverride?: string,
 ): SubscriptionPayload => ({
   ...(clone(overrides.channelValues) as Omit<SubscriptionPayload, 'merchant_ref' | 'return_url' | 'sign'>),
   subs_plan_id: resolveDraftSubscriptionPlanId(env, channel, overrides, planIdOverride),
-  merchant_ref: overrides.commonValues.merchantRef,
+  merchant_ref: makeId('TEST_ORDER_'),
   return_url: overrides.commonValues.returnUrl,
 });
 
@@ -146,8 +147,13 @@ export function createSubscriptionPayload(
           (arg2 as LegacySubscriptionOverrides | undefined)?.planId,
         ] as const)
       : ([arg1, arg2 as SubscriptionRequestOverrides, undefined] as const);
+  const makeReference = typeof arg1 === 'function' ? arg1 : arg3;
 
-  const payload = buildSubscriptionPayload(env, channel, overrides, planIdOverride);
+  if (!makeReference) {
+    throw new TypeError('Subscription merchant reference generator is required');
+  }
+
+  const payload = buildSubscriptionPayload(env, channel, overrides, makeReference, planIdOverride);
 
   return {
     ...payload,

@@ -17,7 +17,7 @@ const pageTitle = 'Deposit';
 const previewEmptyState = 'Run a preview to inspect the exact request body, URL, and masked headers.';
 const resultEmptyState = 'Send a request to capture the raw response, status code, and any diagnostic hint.';
 const draftNotice =
-  'Temporary session draft. Changes stay in this tab session and reset when you start a new draft.';
+  'Form state stays in memory only and resets on reload or new draft. Generated merchant references follow the same lifecycle.';
 
 /**
  * Renders the deposit operator page for editing defaults, previewing payloads, and sending test requests.

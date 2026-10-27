@@ -42,7 +42,7 @@ describe('payout web helpers', () => {
   test('creates seed payout presets for all channels', async () => {
     const result = await createSeedPayoutPresets({ dirPath: presetDirPath, makeId });
 
-    expect(result.common.values.merchantReference).toBe('TEST_ORDER_fixed-id');
+    expect(result.common.values).not.toHaveProperty('merchantReference');
     expect(result.channels.co_bank.values.product_no).toBe('PAY-FUTUREPAY_COLLECT-BANKTRANSFERCO-COP');
     expect(result.channels.imps.values.amount).toEqual({ amount: '100.00', currency_code: 'INR' });
   });
@@ -90,7 +90,7 @@ describe('payout web helpers', () => {
     const request = buildPayoutRequestFromForm(env, values, makeId);
     expect(request.url).toBe('https://example.test/s2s/v1/payout/orders/in/imps');
     expect(request.headers?.Authorization).toBe('ApiKey india-bangladesh-token');
-    expect((request.payload as Record<string, unknown>).merchant_reference).toBe('TEST_IMPS_001');
+    expect((request.payload as Record<string, unknown>).merchant_reference).toBe('TEST_ORDER_fixed-id');
   });
 
   test('preview generates a fresh merchant reference even when the form already has one', async () => {
@@ -155,7 +155,7 @@ describe('payout web helpers', () => {
     expect(beneficiary.contact_number).toBeUndefined();
     expect(beneficiary.address).toBeUndefined();
     expect(payoutInfo.remitter).toBeUndefined();
-    expect(payload.merchant_reference).toBe('TEST_BT_ORDER_125');
+    expect(payload.merchant_reference).toBe('TEST_ORDER_fixed-id');
     expect(payload.sign).toBe(
       generateSign(payload, ['amount.amount', 'amount.currency_code', 'merchant_reference', 'product_no'], 'sign-key'),
     );
@@ -211,8 +211,8 @@ describe('payout web helpers', () => {
 
     const savedCommon = await readFile(join(presetDirPath, 'common.json'), 'utf8');
     const savedChannel = await readFile(join(presetDirPath, 'channels', 'co_wallet.json'), 'utf8');
-    expect(presets.common.values.merchantReference).toBe('TEST_ORDER_OVERRIDDEN');
-    expect(savedCommon).toContain('"merchant_reference": "TEST_ORDER_OVERRIDDEN"');
+    expect(presets.common.values).not.toHaveProperty('merchantReference');
+    expect(savedCommon).not.toContain('merchant_reference');
     expect(savedChannel).toContain('"narration": "Updated payout narration"');
   });
 });

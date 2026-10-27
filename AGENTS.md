@@ -1,6 +1,7 @@
 ### Instruction Source of Truth
 - 根目錄 `AGENTS.md` 是本專案共用規範的唯一來源。`CLAUDE.md` 僅可補充明確的 Claude-specific 行為，不得複製或改寫本檔的共用規範；若兩者衝突，以本檔為準。
 - 所有適用於整個專案的強制規範、測試工具與生命週期要求、驗證命令及完成 gate 都只在本檔維護。`devlope_guides/ai_design_doc_writing.md` 與 `devlope_guides/ai_reference.md` 均從屬於本檔；Writing Guide 只在不違反本檔的前提下負責設計書等級分流與要求 AI 選擇適用 gate，Reference 只提供章節與案例參考，不得另立專案級規範或設計書等級門檻。
+- `devlope_guides/ai_code_review_guide.md` 是本專案 Code Review 的強制流程指引，從屬於本檔。凡任務涉及 branch、diff、PR 或程式碼審核，AI 必須先讀取並完整遵循該指引，依適用模式完成分析、issue 處理、輸出與紀錄；若與本檔衝突，以本檔為準。
 
 ### 🏗️ Technical Stack & Scope
 - Backend: Bun + TypeScript (處理 API 邏輯與數據持久化)。
@@ -94,6 +95,13 @@
 2. 修改或新增 Public API 時，必須補齊 JSDoc 註釋（包含 `@param`, `@returns`, `@throws`）。
 3. 涉及 TypeScript 程式碼或測試時，執行 `tsc --noEmit` 且退出碼為 0（確保無任何隱式 any 型別，若型別不可預測，強制使用 unknown 搭配 Type Guard）。
 4. 修改資料夾結構時，執行 `bun run structure`，更新 `structure.md`。
+
+## Code Review
+
+- 強制流程：[Code Review 指引](devlope_guides/ai_code_review_guide.md)。
+- 適用時機：凡 AI 需要審核 branch、diff、PR 或程式碼變更時，必須先讀取並遵循該指引。指南負責 Review 流程與輸出；`AGENTS.md` 負責專案架構、測試工具、驗證命令與完成 gate；兩者衝突時以 `AGENTS.md` 為準。
+- `Gate Review`：依序完成七個 Gate；Gate 1 至 Gate 6 進行靜態分析，前六個 Gate 通過後才執行 Gate 7 的本機單元測試，並依 Gate 狀態處理 issue。
+- `PR Reviewer` 全域審核：先完成 Gate 1 至 Gate 6 的完整靜態分析與 issue 處理，再執行 Gate 7；此模式不使用 Gate 狀態逐 Gate 輸出，但每項 issue 都必須標記主要 Gate。
 
 
 ## When writing Backend API logic

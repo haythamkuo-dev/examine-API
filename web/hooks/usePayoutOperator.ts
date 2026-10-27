@@ -25,7 +25,6 @@ import type {
   RequestBuilderFieldOverride,
   SharedFieldSchema,
 } from '../pages/requestBuilder';
-import { clearSessionDraft, readSessionDraft, writeSessionDraft } from './sessionDraft';
 import { usePersistentApiKey } from './usePersistentApiKey';
 
 const optionalFieldMarker = '非必填';
@@ -45,7 +44,13 @@ const shouldPreservePayoutApiKey = (
   !specialPayoutChannels.has(nextChannel as PayoutFormValues['channel']) &&
   (!currentChannel || !specialPayoutChannels.has(currentChannel));
 
-const isBlankMerchantReference = (value: string): boolean => !value.trim();
+const stripTransientMerchantReference = (values: PayoutFormValues): PayoutFormValues => {
+  const { merchantReference: _merchantReference, ...commonValues } = values.commonValues;
+  return {
+    ...values,
+    commonValues,
+  };
+};
 
 /**
  * Normalizes payout create API responses into a panel-friendly result object.
@@ -167,26 +172,13 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
   const createLogContext = buildApiLogContext(createEndpoint, mode);
   const generateLogContext = buildApiLogContext(merchantReferenceEndpoint, mode);
 
-  const buildDraftScope = (channel: PayoutFormValues['channel']) => ({
-    domain: 'payout' as const,
-    channel,
-    targetEnvironment: mode,
-  });
-
-  const commitForm = (nextForm: PayoutFormValues) => {
-    setForm(nextForm);
-    writeSessionDraft(buildDraftScope(nextForm.channel), nextForm);
-  };
-
   const updateForm = (updater: (current: PayoutFormValues) => PayoutFormValues) => {
     setForm((current) => {
       if (!current) {
         return current;
       }
 
-      const nextForm = updater(current);
-      writeSessionDraft(buildDraftScope(nextForm.channel), nextForm);
-      return nextForm;
+      return updater(current);
     });
   };
 
@@ -194,8 +186,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     response: PayoutDefaultsResponse,
     options?: { preserveApiKey?: boolean },
   ) => {
-    const draft = readSessionDraft<PayoutFormValues>(buildDraftScope(response.form.channel));
-    const nextForm = draft || response.form;
+    const nextForm = stripTransientMerchantReference(response.form);
 
     setChannels(response.availableChannels);
     if (options?.preserveApiKey) {
@@ -211,16 +202,12 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
   const loadDefaults = async (
     channel?: string,
-    options?: { clearDraft?: boolean; preserveApiKey?: boolean },
+    options?: { preserveApiKey?: boolean },
   ) => {
     setLoading('defaults');
     setError(null);
     setPreview(null);
     setResult(null);
-
-    if (channel && options?.clearDraft) {
-      clearSessionDraft(buildDraftScope(channel as PayoutFormValues['channel']));
-    }
 
     try {
       const response = await fetchPayoutDefaults(mode, channel);
@@ -258,27 +245,6 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
         ...current,
         channelValues: updatePathValue(current.channelValues, path, nextValue),
       }));
-  };
-
-  const ensureMerchantReference = async (
-    values: PayoutFormValues,
-  ): Promise<PayoutFormValues> => {
-    if (!isBlankMerchantReference(values.commonValues.merchantReference)) {
-      return values;
-    }
-
-    const response = await generatePayoutMerchantReference(mode);
-    const nextValues: PayoutFormValues = {
-      ...values,
-      commonValues: {
-        ...values.commonValues,
-        merchantReference: response.merchantReference,
-      },
-    };
-
-    commitForm(nextValues);
-
-    return nextValues;
   };
 
   const submitPreview = async () => {
@@ -324,9 +290,8 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
     setError(null);
 
     try {
-      const nextForm = await ensureMerchantReference(form);
       const response = await createPayoutRequest(mode, {
-        ...nextForm,
+        ...form,
         apiKey: apiKeyRef.current,
       });
       setResult({
@@ -439,7 +404,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
           {
             label: 'New draft',
             tone: 'ghost' as const,
-            onClick: () => void loadDefaults(form.channel, { clearDraft: true, preserveApiKey: true }),
+            onClick: () => void loadDefaults(form.channel, { preserveApiKey: true }),
           },
           { label: 'Preview request', tone: 'secondary' as const, onClick: () => void submitPreview() },
           { label: 'Send request', tone: 'primary' as const, onClick: () => void submitCreate() },

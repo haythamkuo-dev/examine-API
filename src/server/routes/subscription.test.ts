@@ -92,7 +92,7 @@ describe('subscription API routes', () => {
     ]);
     expect(body.apiKey).toBe('payout-token');
     expect(body.resolvedPlanId).toBe('PLAN-STAGE-DEFAULT');
-    expect(commonValues.merchantRef).toBe('Click button to acquire a merchant ref');
+    expect(commonValues).not.toHaveProperty('merchantRef');
   });
 
   test('GET /api/subscription/defaults returns channel-specific defaults with a draft plan id field', async () => {
@@ -248,7 +248,7 @@ describe('subscription API routes', () => {
     expect(payload.subs_plan_id).toBe('mk_general_01ksse4ja1th.ksqLSyDPzAQbdZu_DOAvvfPlZythxXGj');
   });
 
-  test('POST /api/subscription/create proxies upstream status and preserves the provided merchant ref', async () => {
+  test('POST /api/subscription/create proxies upstream status and replaces the provided merchant ref', async () => {
     let upstreamBody: SubscriptionUpstreamBody | null = null;
     let upstreamAuthorization = '';
 
@@ -281,7 +281,7 @@ describe('subscription API routes', () => {
     expect(upstreamAuthorization).toBe('ApiKey payout-token');
     expect(upstreamBody).not.toBeNull();
     const capturedUpstreamBody = upstreamBody as unknown as SubscriptionUpstreamBody;
-    expect(capturedUpstreamBody.merchant_ref).toBe('TEST_SUB_ORDER_125');
+    expect(capturedUpstreamBody.merchant_ref).toBe('TEST_ORDER_fixed-id');
     expect(capturedUpstreamBody.subs_plan_id).toBe('PLAN-STAGE-DEFAULT');
   });
 

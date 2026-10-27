@@ -21,7 +21,6 @@ import {
   updatePathValue,
 } from '../pages/helper/operatorShared';
 import type { RequestBuilderFieldOverride } from '../pages/requestBuilder';
-import { clearSessionDraft, readSessionDraft, writeSessionDraft } from './sessionDraft';
 import { usePersistentApiKey } from './usePersistentApiKey';
 
 const defaultsEndpoint = '/api/deposit/defaults';
@@ -40,83 +39,17 @@ const shouldPreserveDepositApiKey = (
   !specialDepositChannels.has(nextChannel as DepositFormValues['channel']) &&
   (!currentChannel || !specialDepositChannels.has(currentChannel));
 
-const isPlainObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const mergeDepositDraftValue = (defaults: unknown, draft: unknown): unknown => {
-  if (isPlainObject(defaults)) {
-    if (!isPlainObject(draft)) {
-      return defaults;
-    }
-
-    const merged: Record<string, unknown> = { ...defaults };
-    for (const [key, value] of Object.entries(draft)) {
-      merged[key] = key in defaults ? mergeDepositDraftValue(defaults[key], value) : value;
-    }
-    return merged;
-  }
-
-  if (Array.isArray(defaults)) {
-    return Array.isArray(draft) ? draft : defaults;
-  }
-
-  return draft === undefined || draft === null ? defaults : draft;
-};
-
-const isEditableDepositAmount = (value: unknown): value is string => {
-  if (typeof value !== 'string') {
-    return false;
-  }
-
-  const trimmedValue = value.trim();
-  return trimmedValue === '' || /^\d+(?:\.\d+)?$/.test(trimmedValue);
-};
-
 /**
- * Reconciles a persisted deposit draft with the latest server defaults.
+ * Removes the runtime-only merchant reference from server-provided defaults.
  *
- * @param defaults Current server-provided form values and channel shape.
- * @param draft Persisted browser draft, which may have an older or partial shape.
- * @returns A form containing valid draft edits, server fields that were missing from the draft, and a validated amount fallback.
- * @throws {TypeError} If the server defaults do not contain the required deposit form objects.
+ * @param values Server-provided deposit form defaults.
+ * @returns Defaults safe to place in page-local form state.
  */
-export const mergeDepositFormWithDefaults = (
-  defaults: DepositFormValues,
-  draft: unknown,
-): DepositFormValues => {
-  if (
-    !isPlainObject(defaults) ||
-    !isPlainObject(defaults.commonValues) ||
-    !isPlainObject(defaults.channelValues)
-  ) {
-    throw new TypeError('Deposit defaults must include common and channel values.');
-  }
-
-  if (!isPlainObject(draft)) {
-    return defaults;
-  }
-
-  const draftCommonValues = isPlainObject(draft.commonValues) ? draft.commonValues : {};
-  const draftAmount = draftCommonValues.amount;
-  const draftStringValue = (key: string, fallback: string): string =>
-    typeof draftCommonValues[key] === 'string' ? draftCommonValues[key] : fallback;
-
+export const stripTransientMerchantReference = (values: DepositFormValues): DepositFormValues => {
+  const { merchantRef: _merchantRef, ...commonValues } = values.commonValues;
   return {
-    ...defaults,
-    commonValues: {
-      ...defaults.commonValues,
-      productNo: draftStringValue('productNo', defaults.commonValues.productNo),
-      merchantRef: draftStringValue('merchantRef', defaults.commonValues.merchantRef),
-      amount: isEditableDepositAmount(draftAmount)
-        ? draftAmount.trim()
-        : defaults.commonValues.amount,
-      currencyCode: draftStringValue('currencyCode', defaults.commonValues.currencyCode),
-      returnUrl: draftStringValue('returnUrl', defaults.commonValues.returnUrl),
-    },
-    channelValues: mergeDepositDraftValue(
-      defaults.channelValues,
-      isPlainObject(draft.channelValues) ? draft.channelValues : undefined,
-    ) as DepositFormValues['channelValues'],
+    ...values,
+    commonValues,
   };
 };
 
@@ -142,26 +75,13 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
   const createLogContext = buildApiLogContext(createEndpoint, mode);
   const generateLogContext = buildApiLogContext(merchantRefEndpoint, mode);
 
-  const buildDraftScope = (channel: DepositFormValues['channel']) => ({
-    domain: 'deposit' as const,
-    channel,
-    targetEnvironment: mode,
-  });
-
-  const commitForm = (nextForm: DepositFormValues) => {
-    setForm(nextForm);
-    writeSessionDraft(buildDraftScope(nextForm.channel), nextForm);
-  };
-
   const updateForm = (updater: (current: DepositFormValues) => DepositFormValues) => {
     setForm((current) => {
       if (!current) {
         return current;
       }
 
-      const nextForm = updater(current);
-      writeSessionDraft(buildDraftScope(nextForm.channel), nextForm);
-      return nextForm;
+      return updater(current);
     });
   };
 
@@ -169,8 +89,7 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
     response: DepositDefaultsResponse,
     options?: { preserveApiKey?: boolean },
   ) => {
-    const draft = readSessionDraft<unknown>(buildDraftScope(response.form.channel));
-    const nextForm = mergeDepositFormWithDefaults(response.form, draft);
+    const nextForm = stripTransientMerchantReference(response.form);
 
     setChannels(response.availableChannels);
     if (options?.preserveApiKey) {
@@ -186,16 +105,12 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
 
   const loadDefaults = async (
     channel?: string,
-    options?: { clearDraft?: boolean; preserveApiKey?: boolean },
+    options?: { preserveApiKey?: boolean },
   ) => {
     setLoading('defaults');
     setError(null);
     setPreview(null);
     setApiResult(null);
-
-    if (channel && options?.clearDraft) {
-      clearSessionDraft(buildDraftScope(channel as DepositFormValues['channel']));
-    }
 
     try {
       const response = await fetchDepositDefaults(mode, channel);
@@ -392,7 +307,7 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
           {
             label: 'New draft',
             tone: 'ghost' as const,
-            onClick: () => void loadDefaults(form.channel, { clearDraft: true, preserveApiKey: true }),
+            onClick: () => void loadDefaults(form.channel, { preserveApiKey: true }),
           },
           { label: 'Preview request', tone: 'secondary' as const, onClick: () => void submitPreview() },
           { label: 'Send request', tone: 'primary' as const, onClick: () => void submitCreate() },

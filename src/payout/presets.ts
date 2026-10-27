@@ -6,6 +6,7 @@ import {
   type CliEnv,
   type PayoutChannel,
 } from '../core/env';
+import type { PersistentPresetProjection } from '../core/presetStorage';
 import type {
   PayoutChannelValues,
   PayoutCommonValues,
@@ -64,7 +65,7 @@ export type PayoutPresetSource = {
 };
 
 const COMMON_SCHEMA: PayoutFieldMap = {
-  merchantReference: textField('Merchant reference', true),
+  merchantReference: textField('Merchant reference'),
 };
 
 const prettifyLabel = (value: string): string =>
@@ -109,9 +110,7 @@ const getSeedCommonConfig = (
   makeId: (prefix: string) => string,
 ): PayoutCommonConfig => ({
   schema: clone(COMMON_SCHEMA),
-  values: {
-    merchantReference: makeId('TEST_ORDER_'),
-  },
+  values: {},
 });
 
 const getChannelPayloadFilePath = (dirPath: string, channel: PayoutChannel): string =>
@@ -140,9 +139,7 @@ const fromCommonFile = (source: Record<string, unknown> | null): Partial<PayoutC
   },
 });
 
-const toCommonFile = (config: PayoutCommonConfig): Record<string, string> => ({
-  [merchantReferenceKey]: config.values.merchantReference || '',
-});
+const toCommonFile = (_config: PayoutCommonConfig): Record<string, string> => ({});
 
 const getSeedChannelConfig = async (
   dirPath: string,
@@ -186,9 +183,7 @@ const normalizeCommonConfig = (
   seed: PayoutCommonConfig,
 ): PayoutCommonConfig => ({
   schema: (source.schema as PayoutFieldMap) || seed.schema,
-  values: {
-    merchantReference: source.values?.merchantReference || seed.values.merchantReference,
-  },
+  values: {},
 });
 
 const normalizeChannelConfig = (
@@ -222,9 +217,7 @@ const buildFormValues = (
   store: PayoutPresetStore,
 ): PayoutFormValues => ({
   channel,
-  commonValues: {
-    merchantReference: store.common.values.merchantReference || '',
-  },
+  commonValues: {},
   channelValues: clone(store.channels[channel].values),
 });
 
@@ -246,6 +239,27 @@ export const toPayoutDefaultsResponse = (
   commonSchema: clone(store.common.schema),
   channelSchema: clone(store.channels[channel].schema),
   form: buildFormValues(channel, store),
+});
+
+/**
+ * Maps a normalized payout store to the persistent projection used by storage adapters.
+ *
+ * @param store Normalized payout preset store, including legacy compatibility values.
+ * @returns Persistent payout values without the runtime-only merchant reference.
+ */
+export const toPayoutPersistentProjection = (
+  store: PayoutPresetStore,
+): PersistentPresetProjection<PayoutChannel> => ({
+  commonValues: {},
+  channels: Object.fromEntries(
+    PAYOUT_CHANNELS.map((channel) => [
+      channel,
+      {
+        channelCommonValues: {},
+        channelValues: clone(store.channels[channel].values) as Record<string, unknown>,
+      },
+    ]),
+  ) as Record<PayoutChannel, { channelCommonValues: Record<string, unknown>; channelValues: Record<string, unknown> }>,
 });
 
 /**
@@ -322,10 +336,6 @@ export const updatePayoutPreset = async ({
 }): Promise<PayoutPresetStore> => {
   const presets = await loadPayoutPresets({ dirPath, makeId });
 
-  presets.common.values = {
-    ...presets.common.values,
-    merchantReference: values.commonValues.merchantReference,
-  };
   presets.channels[channel] = {
     ...presets.channels[channel],
     values: clone(values.channelValues),

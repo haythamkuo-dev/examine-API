@@ -63,14 +63,13 @@ describe('validateDepositForm', () => {
     expect(error).toBeUndefined();
   });
 
-  test('returns an error when a required common field is blank', async () => {
+  test('accepts a missing merchant reference because it is generated per operation', async () => {
     const presets = await loadDepositPresets({ dirPath: presetDirPath, env, makeId });
     const defaults = toDepositDefaultsResponse('southafrica_cards', env, presets);
 
-    defaults.form.commonValues.merchantRef = '   ';
     const error = validateDepositForm(defaults.form, defaults.commonSchema, defaults.channelSchema);
 
-    expect(error).toBe('merchantRef is required');
+    expect(error).toBeUndefined();
   });
 
   test('returns a nested error path when a required channel field is blank', async () => {

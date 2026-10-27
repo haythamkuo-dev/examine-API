@@ -51,7 +51,7 @@ describe('deposit web helpers', () => {
         },
       },
     });
-    expect(result.common.values.merchantRef).toBe('TEST_ORDER_fixed-id');
+    expect(result.common.values).not.toHaveProperty('merchantRef');
     expect(result.common.values.returnUrl).toBe('https://merchant.example.com/deposit');
   });
 
@@ -388,7 +388,7 @@ describe('deposit web helpers', () => {
     const request = buildDepositRequestFromForm(env, values, makeId);
     expect(request.url).toBe('https://example.test/s2s/v1/intents/deposit');
     expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect((request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_217');
+    expect((request.payload as Record<string, unknown>).merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
   test('preview generates a fresh merchant reference even when the form already has one', () => {
@@ -542,8 +542,9 @@ describe('deposit web helpers', () => {
 
     const savedCommon = await readFile(join(dirPath, 'common.json'), 'utf8');
     const savedChannel = await readFile(join(dirPath, 'channels', 'linepay.json'), 'utf8');
+    const savedCommonPreset = JSON.parse(savedCommon) as { values?: Record<string, unknown> };
     expect(presets.channels.linepay.commonValues.productNo).toBe('DEP-LINEPAY-CUSTOM');
-    expect(savedCommon).toContain('"merchantRef": "TEST_ORDER_OVERRIDDEN"');
+    expect(savedCommonPreset.values).not.toHaveProperty('merchantRef');
     expect(savedChannel).toContain('"productNo": "DEP-LINEPAY-CUSTOM"');
   });
 });

@@ -240,7 +240,7 @@ describe('deposit API routes', () => {
     expect(body.channel).toBe('southafrica_cards');
     expect(body.availableChannels).toEqual([...DEPOSIT_CHANNELS]);
     expect(body.apiKey).toBe('payout-token');
-    expect(commonValues.merchantRef).toBe('Click button to acquire a merchant ref');
+    expect(commonValues).not.toHaveProperty('merchantRef');
   });
 
   test('GET /api/deposit/defaults returns the PIX Brazil defaults and required shopper email field', async () => {
@@ -845,7 +845,7 @@ describe('deposit API routes', () => {
     expect(body.apiKey).toBe('product-deposit-token');
   });
 
-  test('POST /api/deposit/create proxies upstream status and preserves the provided merchant ref', async () => {
+  test('POST /api/deposit/create proxies upstream status and replaces the provided merchant ref', async () => {
     let upstreamBody: DepositUpstreamBody | null = null;
     let upstreamAuthorization = '';
 
@@ -881,7 +881,7 @@ describe('deposit API routes', () => {
     expect(upstreamAuthorization).toBe('ApiKey payout-token');
     expect(upstreamBody).not.toBeNull();
     const capturedUpstreamBody = upstreamBody as unknown as DepositUpstreamBody;
-    expect(capturedUpstreamBody.merchant_ref).toBe('TEST_DEPOSIT_ORDER_125');
+    expect(capturedUpstreamBody.merchant_ref).toBe('TEST_ORDER_fixed-id');
   });
 
   test('POST /api/deposit/create returns only the normalized upstream error envelope', async () => {

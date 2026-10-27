@@ -68,10 +68,16 @@
 │       │   └── touchAndGo.json
 │       └── common.json
 ├── devlope_guides
+│   ├── ai_code_review_guide.md
 │   ├── ai_design_doc_writing.md
+│   ├── ai_reference.md
+│   ├── issue
+│   ├── review
 │   ├── scripts
 │   │   └── query_merchant_turnover.sh
 │   └── todos
+│       └── 2026-10-22-preset-database-migration.md
+├── example.md
 ├── index.html
 ├── index.ts
 ├── package.json
@@ -79,7 +85,8 @@
 │   ├── cli
 │   │   ├── depositPrompt.ts
 │   │   ├── index.test.ts
-│   │   └── index.ts
+│   │   ├── index.ts
+│   │   └── presetAudit.ts
 │   ├── core
 │   │   ├── codeFormatValidation.ts
 │   │   ├── createPresetBackedService.test.ts
@@ -87,6 +94,10 @@
 │   │   ├── env.ts
 │   │   ├── formValidation.ts
 │   │   ├── output.ts
+│   │   ├── presetAudit.test.ts
+│   │   ├── presetAudit.ts
+│   │   ├── presetStorage.test.ts
+│   │   ├── presetStorage.ts
 │   │   └── targetEnvironment.ts
 │   ├── deposit
 │   │   ├── failureHint.ts
@@ -148,7 +159,6 @@
     ├── App.test.tsx
     ├── App.tsx
     ├── hooks
-    │   ├── sessionDraft.ts
     │   ├── useDepositOperator.test.ts
     │   ├── useDepositOperator.ts
     │   ├── usePayoutOperator.ts
@@ -188,4 +198,4 @@
     │       └── modal.tsx
     └── styles.css
 
-28 directories, 161 files
+30 directories, 169 files

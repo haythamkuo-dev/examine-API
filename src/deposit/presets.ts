@@ -6,6 +6,7 @@ import {
   type CliEnv,
   type DepositChannel,
 } from '../core/env';
+import type { PersistentPresetProjection } from '../core/presetStorage';
 import type {
   DepositChannelValues,
   DepositCommonValues,
@@ -85,7 +86,7 @@ export type DepositPresetSource = {
 
 const COMMON_SCHEMA: DepositFieldMap = {
   productNo: textField('Product number', true),
-  merchantRef: textField('Merchant reference', true),
+  merchantRef: textField('Merchant reference'),
   amount: textField('Amount', true),
   currencyCode: textField('Currency code', true),
   returnUrl: textField('Return URL', true),
@@ -384,7 +385,6 @@ const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 const getSeedCommonConfig = (env: CliEnv, makeId: (prefix: string) => string): DepositCommonConfig => ({
   schema: clone(COMMON_SCHEMA),
   values: {
-    merchantRef: makeId('TEST_ORDER_'),
     returnUrl: env.callbackUrlDeposit || 'https://example.com/deposit-return',
   },
 });
@@ -993,7 +993,7 @@ export const createSeedDepositPresets = (
   channels: getSeedChannelConfigs(env),
 });
 
-const COMMON_VALUE_KEYS = ['merchantRef', 'returnUrl'] as const;
+const COMMON_VALUE_KEYS = ['returnUrl'] as const;
 const CHANNEL_COMMON_KEYS = ['productNo', 'amount', 'currencyCode'] as const;
 type ChannelCommonKey = (typeof CHANNEL_COMMON_KEYS)[number];
 
@@ -1005,7 +1005,6 @@ const normalizeCommonValues = (
   source: Partial<DepositCommonValues>,
   fallback: Partial<DepositCommonValues>,
 ): Partial<DepositCommonValues> => ({
-  merchantRef: source.merchantRef || fallback.merchantRef,
   returnUrl: source.returnUrl || fallback.returnUrl,
 });
 
@@ -1022,7 +1021,7 @@ const normalizeCommonConfig = (
   source: Partial<DepositCommonConfig>,
   seed: DepositCommonConfig,
 ): DepositCommonConfig => ({
-  schema: (source.schema as DepositFieldMap) || seed.schema,
+  schema: seed.schema,
   values: normalizeCommonValues(source.values || {}, seed.values),
 });
 
@@ -1058,7 +1057,6 @@ const buildFormValues = (
   channel,
   commonValues: {
     productNo: store.channels[channel].commonValues.productNo || '',
-    merchantRef: store.common.values.merchantRef || '',
     amount: store.channels[channel].commonValues.amount || '',
     currencyCode: store.channels[channel].commonValues.currencyCode || '',
     returnUrl: store.common.values.returnUrl || '',
@@ -1077,6 +1075,29 @@ export const toDepositDefaultsResponse = (
   commonSchema: clone(store.common.schema),
   channelSchema: clone(store.channels[channel].schema),
   form: buildFormValues(channel, store),
+});
+
+/**
+ * Maps a normalized deposit store to the persistent projection used by storage adapters.
+ *
+ * @param store Normalized deposit preset store, including legacy compatibility values.
+ * @returns Persistent deposit values without the runtime-only merchant reference.
+ */
+export const toDepositPersistentProjection = (
+  store: DepositPresetStore,
+): PersistentPresetProjection<DepositChannel> => ({
+  commonValues: Object.fromEntries(
+    Object.entries(store.common.values).filter(([key]) => key !== 'merchantRef'),
+  ),
+  channels: Object.fromEntries(
+    DEPOSIT_CHANNELS.map((channel) => [
+      channel,
+      {
+        channelCommonValues: clone(store.channels[channel].commonValues) as Record<string, unknown>,
+        channelValues: clone(store.channels[channel].values) as Record<string, unknown>,
+      },
+    ]),
+  ) as Record<DepositChannel, { channelCommonValues: Record<string, unknown>; channelValues: Record<string, unknown> }>,
 });
 
 const getCommonFilePath = (dirPath: string) => join(dirPath, 'common.json');
@@ -1131,7 +1152,11 @@ export const saveDepositPresets = async ({
   dirPath: string;
   presets: DepositPresetStore;
 }): Promise<void> => {
-  await writeJson(getCommonFilePath(dirPath), presets.common);
+  const { merchantRef: _merchantRef, ...persistentCommonValues } = presets.common.values;
+  await writeJson(getCommonFilePath(dirPath), {
+    ...presets.common,
+    values: persistentCommonValues,
+  });
 
   await Promise.all(
     DEPOSIT_CHANNELS.map((channel) => writeJson(getChannelFilePath(dirPath, channel), presets.channels[channel])),
@@ -1186,7 +1211,11 @@ export const updateDepositPreset = async ({
     values: clone(values.channelValues),
   };
 
-  await writeJson(getCommonFilePath(dirPath), presets.common);
+  const { merchantRef: _merchantRef, ...persistentCommonValues } = presets.common.values;
+  await writeJson(getCommonFilePath(dirPath), {
+    ...presets.common,
+    values: persistentCommonValues,
+  });
   await writeJson(getChannelFilePath(dirPath, channel), presets.channels[channel]);
 
   return presets;

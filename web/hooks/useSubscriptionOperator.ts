@@ -27,7 +27,6 @@ import {
   normalizeOperatorError,
   parseOperatorError,
 } from '../pages/helper/operatorError';
-import { clearSessionDraft, readSessionDraft, writeSessionDraft } from './sessionDraft';
 import { usePersistentApiKey } from './usePersistentApiKey';
 
 const defaultsEndpoint = '/api/subscription/defaults';
@@ -35,10 +34,17 @@ const previewEndpoint = '/api/subscription/preview';
 const createEndpoint = '/api/subscription/create';
 const merchantRefEndpoint = '/api/subscription/merchant-ref';
 const merchantRefFieldKey = 'merchantRef';
-const isBlankMerchantRef = (value: string): boolean => !value.trim();
 const missingPlanMessageFallback = 'Subscription plan configuration is missing for the selected channel.';
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const stripTransientMerchantReference = (values: SubscriptionFormValues): SubscriptionFormValues => {
+  const { merchantRef: _merchantRef, ...commonValues } = values.commonValues;
+  return {
+    ...values,
+    commonValues,
+  };
+};
 
 /**
  * Normalizes subscription create API responses into a panel-friendly result object.
@@ -116,26 +122,13 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
   const createLogContext = buildApiLogContext(createEndpoint, mode);
   const generateLogContext = buildApiLogContext(merchantRefEndpoint, mode);
 
-  const buildDraftScope = (channel: SubscriptionFormValues['channel']) => ({
-    domain: 'subscription' as const,
-    channel,
-    targetEnvironment: mode,
-  });
-
-  const commitForm = (nextForm: SubscriptionFormValues) => {
-    setForm(nextForm);
-    writeSessionDraft(buildDraftScope(nextForm.channel), nextForm);
-  };
-
   const updateForm = (updater: (current: SubscriptionFormValues) => SubscriptionFormValues) => {
     setForm((current) => {
       if (!current) {
         return current;
       }
 
-      const nextForm = updater(current);
-      writeSessionDraft(buildDraftScope(nextForm.channel), nextForm);
-      return nextForm;
+      return updater(current);
     });
   };
 
@@ -143,8 +136,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     response: SubscriptionDefaultsResponse,
     options?: { preserveApiKey?: boolean },
   ) => {
-    const draft = readSessionDraft<SubscriptionFormValues>(buildDraftScope(response.form.channel));
-    const nextForm = draft || response.form;
+    const nextForm = stripTransientMerchantReference(response.form);
 
     setChannels(response.availableChannels);
     if (options?.preserveApiKey) {
@@ -161,7 +153,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
 
   const loadDefaults = async (
     channel?: string,
-    options?: { clearDraft?: boolean; preserveApiKey?: boolean },
+    options?: { preserveApiKey?: boolean },
   ) => {
     const requestId = latestDefaultsRequestIdRef.current + 1;
     latestDefaultsRequestIdRef.current = requestId;
@@ -170,10 +162,6 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     setHasMissingPlanConfig(false);
     setPreview(null);
     setApiResult(null);
-
-    if (channel && options?.clearDraft) {
-      clearSessionDraft(buildDraftScope(channel as SubscriptionFormValues['channel']));
-    }
 
     try {
       const response = await fetchSubscriptionDefaults(mode, channel);
@@ -231,27 +219,6 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
       }));
   };
 
-  const ensureMerchantRef = async (
-    values: SubscriptionFormValues,
-  ): Promise<SubscriptionFormValues> => {
-    if (!isBlankMerchantRef(values.commonValues.merchantRef)) {
-      return values;
-    }
-
-    const response = await generateSubscriptionMerchantRef(mode);
-    const nextValues: SubscriptionFormValues = {
-      ...values,
-      commonValues: {
-        ...values.commonValues,
-        merchantRef: response.merchantRef,
-      },
-    };
-
-    commitForm(nextValues);
-
-    return nextValues;
-  };
-
   const submitPreview = async () => {
     if (!form) return;
 
@@ -294,9 +261,8 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
     setLoading('create');
 
     try {
-      const nextForm = await ensureMerchantRef(form);
       const response = await createSubscriptionRequest(mode, {
-        ...nextForm,
+        ...form,
         apiKey: apiKeyRef.current,
       });
       setApiResult({
@@ -405,7 +371,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
           {
             label: 'New draft',
             tone: 'ghost' as const,
-            onClick: () => void loadDefaults(form.channel, { clearDraft: true, preserveApiKey: true }),
+            onClick: () => void loadDefaults(form.channel, { preserveApiKey: true }),
           },
           ...(canSubmit
             ? [

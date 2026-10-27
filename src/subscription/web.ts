@@ -3,7 +3,7 @@ import {
   type CliEnv,
   type SubscriptionChannel,
 } from '../core/env';
-import { createUniqueReference, generateSign, maskRequestHeaders } from '../utils';
+import { generateSign, maskRequestHeaders } from '../utils';
 import {
   createSubscriptionPayload,
   createSubscriptionRequest,
@@ -63,7 +63,7 @@ export type SubscriptionFieldSchema =
 export type SubscriptionFieldMap = Record<string, SubscriptionFieldSchema>;
 
 export type SubscriptionCommonValues = {
-  merchantRef: string;
+  merchantRef?: string;
   returnUrl: string;
 };
 
@@ -123,33 +123,18 @@ const subscriptionSignFields = ['merchant_no', 'merchant_ref', 'order_id', 'stat
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
-const sanitizeMerchantReference = (
-  merchantReference: string,
-  makeId: (prefix: string) => string,
-): string => {
-  return createUniqueReference(merchantReference, makeId, 'TEST_ORDER_');
-};
-
 const buildPayloadFromForm = (
   env: CliEnv,
   values: SubscriptionFormValues,
-  merchantRef: string,
+  makeId: (prefix: string) => string,
 ): SubscriptionPayload => {
-  const normalizedValues: SubscriptionFormValues = {
-    ...values,
-    commonValues: {
-      ...values.commonValues,
-      merchantRef,
-    },
-  };
   const payload = clone(
     createSubscriptionPayload(env, values.channel, {
-      commonValues: normalizedValues.commonValues,
-      channelValues: normalizedValues.channelValues,
-    }, () => merchantRef),
+      commonValues: values.commonValues,
+      channelValues: values.channelValues,
+    }, makeId),
   );
 
-  payload.merchant_ref = merchantRef;
   payload.return_url = values.commonValues.returnUrl;
 
   const { sign: _existingSign, ...payloadWithoutSign } = payload;
@@ -173,23 +158,16 @@ export const buildSubscriptionRequestFromForm = (
   values: SubscriptionRequestValues,
   makeId: (prefix: string) => string,
 ): CommandRequest => {
-  const merchantRef = sanitizeMerchantReference(values.commonValues.merchantRef, makeId);
-  const normalizedValues: SubscriptionRequestValues = {
-    ...values,
-    commonValues: {
-      ...values.commonValues,
-      merchantRef,
-    },
-  };
+  const payload = buildPayloadFromForm(env, values, makeId);
   const request = createSubscriptionRequest(env, values.channel, {
     apiKey: values.apiKey?.trim() || undefined,
-    commonValues: normalizedValues.commonValues,
-    channelValues: normalizedValues.channelValues,
-  }, () => merchantRef);
+    commonValues: values.commonValues,
+    channelValues: values.channelValues,
+  }, () => payload.merchant_ref);
 
   return {
     ...request,
-    payload: buildPayloadFromForm(env, normalizedValues, merchantRef),
+    payload,
   };
 };
 
@@ -206,14 +184,7 @@ export const buildSubscriptionPreviewResponse = (
   values: SubscriptionRequestValues,
   makeId: (prefix: string) => string,
 ): SubscriptionPreviewResponse => {
-  const previewValues: SubscriptionRequestValues = {
-    ...values,
-    commonValues: {
-      ...values.commonValues,
-      merchantRef: makeId('TEST_ORDER_'),
-    },
-  };
-  const request = buildSubscriptionRequestFromForm(env, previewValues, makeId);
+  const request = buildSubscriptionRequestFromForm(env, values, makeId);
 
   return {
     request: {

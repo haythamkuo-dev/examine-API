@@ -40,7 +40,7 @@
 | 前端入口 | web/main.tsx | React、BrowserRouter、basename、全域樣式與根層 providers |
 | 前端路由 | web/App.tsx | /deposit、/payout、/subscription 與 AppShell |
 | 前端畫面 | web/pages/ | 使用者可觀察的表單、結果、錯誤與操作狀態 |
-| 前端狀態與操作 | web/hooks/ | API 呼叫、表單狀態、session draft 與頁面操作流程 |
+| 前端狀態與操作 | web/hooks/ | API 呼叫、表單狀態、in-memory operation state 與頁面操作流程 |
 | 前端 API transport | web/pages/helper/operatorApi.ts | fetch、request/response 型別與 API 邊界 |
 | 表單組裝 | web/pages/requestBuilder.tsx | schema-driven nested form 的欄位呈現與值轉換 |
 | 設定與資料 | src/core/env.ts、data/ | channel、環境、token、API key、preset JSON 與資料來源 |
@@ -54,7 +54,7 @@
 
 - data/deposit/、data/payout/、data/subscription/ 下的 common.json 與 channels/*.json，用來保存可重用的 preset。
 - 後端功能服務負責讀取、合併、驗證與寫回 preset；實際讀寫邏輯以各功能的 presets.ts 與共享 preset service 為準。
-- 前端 draft 使用 sessionStorage 暫存，版本與還原行為由 web/hooks/sessionDraft.ts 管理。
+- 前端表單與 operation state 只存在頁面記憶體，重新整理後不恢復；merchant reference candidate 也只存在目前操作的 in-memory state。
 - 若設計書涉及 API 測試資料，應說明隔離 fixture 與資料來源；具體 setup、重置與原始 data 保護規範依 `AGENTS.md`。
 
 如果未來真的要導入資料庫，這會是獨立的架構變更，必須另外說明資料遷移、回復、並行寫入與部署風險，不應在一般功能設計書中直接套用資料庫章節。
@@ -78,7 +78,7 @@
 文件等級必須先依 `ai_design_doc_writing.md` 的「文件等級分流」判定。本節不是另一份完整設計書門檻，以下只列出常見影響面，供已判定為完整設計書時選擇章節，或協助回到撰寫指引檢查影響：
 
 - API contract、domain payload、簽名欄位、channel mapping、merchant reference 或 target environment。
-- preset 的 JSON shape、預設值、讀寫規則或 session draft 還原規則。
+- preset 的 JSON shape、預設值、讀寫規則或前端表單狀態的 reload reset 規則。
 - 同時涉及後端 route、前端 page/hook 與外部上游請求。
 - 共用 `_shared.ts`、`createPresetBackedService`、`AppError` 或共用表單組裝邏輯。
 - 既有成功、失敗、重試、loading、disabled 或結果呈現行為。
@@ -117,7 +117,7 @@
 
 結論不應只寫「新增一個 service」或「修改前端畫面」。應寫出實際邊界，例如：
 
-> 由 src/domains/ 保持 request payload 與簽名規則不變，讓功能 service 在 preset 驗證後產生 request，再由 route handler 轉換 HTTP 結果；前端只透過既有 API transport 呼叫 preview/create，並在 hook 中管理 loading、錯誤與 session draft。
+> 由 src/domains/ 保持 request payload 與簽名規則不變，讓功能 service 在 preset 驗證後產生 request，再由 route handler 轉換 HTTP 結果；前端只透過既有 API transport 呼叫 preview/create，並在 hook 中管理 loading、錯誤與 in-memory operation state。
 
 ### 完成定義
 
@@ -160,7 +160,7 @@
 | 上游 gateway 與簽名 | src/domains/ request builder、channel、merchant reference、簽名欄位 | request 是否仍符合上游契約？哪些欄位不能由 UI 重新定義？ |
 | Preset 與 JSON 相容性 | data/*/common.json、channels/*.json、preset merge | 舊 preset 能否讀取？新欄位預設值在哪裡產生？寫回是否會破壞舊資料？ |
 | Secret 與安全性 | src/core/env.ts、token、API key、錯誤訊息 | secret 是否只在必要邊界使用？是否可能出現在 response、log 或畫面？ |
-| React 狀態與互動 | page、hook、request builder、session draft | loading、錯誤、disabled、重試、重新整理後的 draft 是否一致？ |
+| React 狀態與互動 | page、hook、request builder、in-memory operation state | loading、錯誤、disabled、重試、重新整理後的表單狀態是否一致？ |
 | Runtime 與部署 | src/server/index.ts、vite.config.ts、API proxy、basename、target environment | 本地與部署環境的 base path、proxy、環境選擇是否仍正確？ |
 | 錯誤與可觀察性 | AppError、error envelope、logger、錯誤清理 | 使用者看到什麼？server 記錄什麼？哪些細節不能外洩？ |
 | 測試與驗證 | API、domain、service、page 的最小測試層級 | 每個新風險由哪一層證明？是否不必要地重複測試內部實作？ |
@@ -177,7 +177,7 @@
 | API output/error | 現有 response shape、狀態碼與 envelope | 新的 response、錯誤碼或訊息 | React hook、外部整合、測試 | 保留欄位、轉換層或同步修改 caller |
 | Preset | 舊 JSON 欄位與讀寫規則 | 新 JSON shape 或 default | 已存在的 data/ 檔案、測試 fixture | backward-compatible read、寫回策略、版本欄位 |
 | Domain request | 現有 payload、channel、簽名與 merchant ref | 新的 request 或規則 | 上游 gateway、runner、domain 測試 | 明確列出可接受的破壞性變更 |
-| UI operation | 現有表單、按鈕、loading、結果 | 新的互動與畫面狀態 | 使用者、page 測試、session draft | 保留舊操作、遷移 draft 或提示重設 |
+| UI operation | 現有表單、按鈕、loading、結果 | 新的互動與畫面狀態 | 使用者、page 測試、in-memory operation state | 保留舊操作或提示重設 |
 
 若無法填出「目前行為」，先讀程式碼與測試，不要直接假設新設計是原本的延伸。
 
@@ -282,14 +282,14 @@ preview 或 execute request
 - 寫回時是否保留未知欄位。
 - 何時需要更新 data/ fixture、測試資料或文件。
 
-### session draft 與伺服器 preset 的差異
+### 前端 operation state 與伺服器 preset 的差異
 
 不要把兩種資料混成同一種儲存模型：
 
 - server preset 是 API 操作使用的可重用設定，位於 data/ 並由後端 service 管理。
-- session draft 是瀏覽器暫存的未完成表單狀態，由 web/hooks/sessionDraft.ts 管理。
+- 前端 operation state 是目前頁面的未完成表單狀態，由 web/hooks/ 管理，只存在記憶體中，重新整理後重置。
 
-若修改表單欄位，需同時檢查 draft 版本、欄位遷移、無效值清除與重新整理後的 UI 行為。
+若修改表單欄位，需同時檢查欄位初始化、無效值清除與重新整理後重新取得 defaults 的 UI 行為。
 
 ### 測試資料規則
 
@@ -368,7 +368,7 @@ API response / React UI
 - 哪些資料在步驟之間傳遞。
 - 哪些步驟可以重複、重試或取消。
 - 上游 timeout、非 2xx、格式錯誤與本地 validation 如何區分。
-- 失敗後 preset 或 session draft 是否已經被寫入。
+- 失敗後 preset 或 in-memory operation state 是否已經被更新。
 
 ### Preview 與 Execute
 
@@ -420,8 +420,8 @@ src/runner.ts 是外部 HTTP 請求邊界。若修改 runner 或其呼叫方式�
 - validation error 顯示在哪裡。
 - API error 與上游 error 是否有不同提示。
 - 成功後顯示什麼結果，是否清除或保留表單。
-- 失敗後能否重試，是否保留 draft。
-- 重新整理頁面後 session draft 是否恢復。
+- 失敗後能否重試，是否保留目前頁面的表單 state。
+- 重新整理頁面後表單 operation state 是否重置。
 - empty state、disabled state 與無效 preset 如何呈現。
 
 ### React Router 與路由新增
@@ -501,7 +501,7 @@ AppError 的 code、HTTP status 與公開訊息要保持一致。錯誤訊息清
 - API route 的 method、path、request、response、status 與 error envelope。
 - src/{feature}/web.ts 與 operatorApi 的前後端型別。
 - data/ preset 的讀取、預設值、寫回與未知欄位處理。
-- sessionStorage draft 的版本與欄位遷移。
+- 前端表單 operation state 的欄位初始化與 reload reset 行為。
 - channel、merchant reference、簽名與上游 gateway contract。
 - X-Target-Environment 或其他 target environment 的選擇與驗證。
 - Vite base path、/api proxy 與 production server path。

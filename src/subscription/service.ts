@@ -1,5 +1,6 @@
 import { SUBSCRIPTION_CHANNELS, type CliEnv, type SubscriptionChannel } from '../core/env';
 import { createPresetBackedService } from '../core/createPresetBackedService';
+import { createJsonPresetStorage } from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
 import {
@@ -16,6 +17,7 @@ import {
 import {
   loadSubscriptionPresets,
   toSubscriptionDefaultsResponse,
+  toSubscriptionPersistentProjection,
   updateSubscriptionPreset,
 } from './presets';
 
@@ -44,12 +46,24 @@ export const getRequestedSubscriptionChannel = (url: URL): SubscriptionChannel =
  * @returns The subscription service API used by the HTTP layer.
  */
 export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
-  const loadPresets = () =>
-    loadSubscriptionPresets({
-      dirPath: deps.presetDirPath,
-      env: deps.getEnvForTarget('local'),
-      makeId: deps.makeId,
-    });
+  const storage = createJsonPresetStorage({
+    load: () =>
+      loadSubscriptionPresets({
+        dirPath: deps.presetDirPath,
+        env: deps.getEnvForTarget('local'),
+        makeId: deps.makeId,
+      }),
+    save: ({ channel, values }) =>
+      updateSubscriptionPreset({
+        dirPath: deps.presetDirPath,
+        channel,
+        values,
+        env: deps.getEnvForTarget('local'),
+        makeId: deps.makeId,
+      }),
+    toPersistentProjection: toSubscriptionPersistentProjection,
+  });
+  const loadPresets = async () => (await storage.load()).presets;
 
   const service = createPresetBackedService<
     SubscriptionChannel,
@@ -63,14 +77,7 @@ export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
     loadPresets,
     toDefaultsResponse: (channel, presets) =>
       toSubscriptionDefaultsResponse(channel, deps.getEnvForTarget('local'), 'local', presets),
-    updatePreset: (channel, values) =>
-      updateSubscriptionPreset({
-        dirPath: deps.presetDirPath,
-        channel,
-        values,
-        env: deps.getEnvForTarget('local'),
-        makeId: deps.makeId,
-      }),
+    updatePreset: async (channel, values) => (await storage.save({ channel, values })).presets,
     buildPreviewResponse: (values, target) =>
       buildSubscriptionPreviewResponse(deps.getEnvForTarget(target), values, deps.makeId),
     buildRequestFromForm: (values, target) =>
@@ -116,13 +123,7 @@ export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
     values: SubscriptionFormValues,
     target: TargetEnvironment,
   ): Promise<SubscriptionDefaultsResponse & { ok: true }> => {
-    const presets = await updateSubscriptionPreset({
-      dirPath: deps.presetDirPath,
-      channel,
-      values,
-      env: deps.getEnvForTarget('local'),
-      makeId: deps.makeId,
-    });
+    const presets = (await storage.save({ channel, values })).presets;
 
     return {
       ok: true,

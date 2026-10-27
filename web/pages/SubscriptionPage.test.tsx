@@ -31,7 +31,7 @@ const commonSchema: SubscriptionFieldMap = {
   merchantRef: {
     kind: 'text',
     label: 'Merchant reference',
-    required: true,
+    required: false,
   },
   returnUrl: {
     kind: 'text',
@@ -51,7 +51,6 @@ const channelSchema: SubscriptionFieldMap = {
 const createForm = (overrides?: Partial<SubscriptionFormValues>): SubscriptionFormValues => ({
   channel: overrides?.channel ?? channel,
   commonValues: {
-    merchantRef: 'merchant-sub-default',
     returnUrl: 'https://merchant.example.com/subscription',
     ...(overrides?.commonValues ?? {}),
   },
@@ -161,6 +160,30 @@ describe('normalizeCreateResult', () => {
 });
 
 describe('SubscriptionPage', () => {
+  test('does not restore persisted form values on initial load', async () => {
+    setRouteHandlers({
+      'GET /api/subscription/defaults': async () => jsonResponse(createDefaultsResponse()),
+    });
+    sessionStorage.setItem(
+      `examine-api:draft:subscription:${channel}:local`,
+      JSON.stringify({
+        version: 2,
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        values: createForm({
+          commonValues: { returnUrl: 'https://edited.example.com/subscription' },
+        }),
+      }),
+    );
+
+    const view = renderSubscriptionPage();
+
+    await waitFor(() => {
+      expect(view.getByLabelText('Return URL *')).toHaveValue(
+        'https://merchant.example.com/subscription',
+      );
+    });
+  });
+
   test('renders preview API failures in the API result panel', async () => {
     const errorMessage = 'product_name is invalid';
 
@@ -193,7 +216,7 @@ describe('SubscriptionPage', () => {
       expect(resultCard).not.toBeNull();
       expect(within(resultCard as HTMLElement).getByText(errorMessage)).toBeInTheDocument();
       expect(within(resultCard as HTMLElement).getByText(/PREVIEW Status 400/)).toBeInTheDocument();
-      expect(view.getByText(/Temporary session draft/).parentElement).not.toContainElement(
+      expect(view.getByText(/Form state stays in memory/).parentElement).not.toContainElement(
         view.getByText(errorMessage),
       );
     });
@@ -224,8 +247,8 @@ describe('SubscriptionPage', () => {
     const view = renderSubscriptionPage();
 
     await view.findByRole('heading', { name: 'Subscription' });
-    await view.findByLabelText('Merchant reference *');
-    expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
+    await view.findByLabelText('Merchant reference');
+    expect(view.getByLabelText('Merchant reference')).toHaveAttribute('readonly');
     expect(view.getByText('plan-default')).toBeInTheDocument();
     expect(view.getByRole('button', { name: 'Edit Plan ID' })).toBeInTheDocument();
     expect(view.getByText('subscription-default-key')).toBeInTheDocument();
@@ -242,12 +265,12 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-001');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-SUB-001');
       expect(view.getByText('Merchant reference generated.')).toBeInTheDocument();
     });
   });
 
-  test('uses environment-scoped drafts and resets to backend defaults on new draft', async () => {
+  test('does not restore merchant references across environment changes, reloads, or new drafts', async () => {
     setRouteHandlers({
       'GET /api/subscription/defaults': async () => jsonResponse(createDefaultsResponse()),
       [`GET /api/subscription/defaults?channel=${channel}`]: async () =>
@@ -267,13 +290,14 @@ describe('SubscriptionPage', () => {
     const view = renderSubscriptionPage();
 
     await view.findByRole('heading', { name: 'Subscription' });
+    await view.findByRole('button', { name: 'Generate' });
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Generate' }));
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-002');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-SUB-002');
     });
 
     await act(async () => {
@@ -284,14 +308,14 @@ describe('SubscriptionPage', () => {
       expect(view.getByText('環境: 產品')).toBeInTheDocument();
     });
 
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-reset-server');
+    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Reload defaults' }));
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-reset-server');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
     });
 
     await act(async () => {
@@ -299,7 +323,7 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-reset-server');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
     });
   });
 
@@ -331,7 +355,7 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-003');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-SUB-003');
     });
 
     await act(async () => {
@@ -342,7 +366,7 @@ describe('SubscriptionPage', () => {
       expect(view.getByText('generator unavailable')).toBeInTheDocument();
     });
 
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-SUB-003');
+    expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-SUB-003');
   });
 
   test('preview replaces the current merchant reference with the backend-generated value and create reuses it', async () => {
@@ -365,12 +389,12 @@ describe('SubscriptionPage', () => {
             url: 'https://gateway.example.test/subscription',
             headers: { Authorization: 'ApiKey ****-token' },
             payload: {
-              merchant_ref: `preview-generated-${request.body?.commonValues.merchantRef}`,
+              merchant_ref: 'preview-generated-subscription',
             },
           },
         }),
       'POST /api/subscription/create': async (request) => {
-        expect(request.body?.commonValues.merchantRef).toBe('preview-generated-subscription-preview-start');
+        expect(request.body?.commonValues.merchantRef).toBe('preview-generated-subscription');
 
         return jsonResponse({
           requestName: 'subscription:create:default',
@@ -390,8 +414,8 @@ describe('SubscriptionPage', () => {
     const view = renderSubscriptionPage();
 
     await view.findByRole('heading', { name: 'Subscription' });
-    await view.findByLabelText('Merchant reference *');
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue('subscription-preview-start');
+    await view.findByLabelText('Merchant reference');
+    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
 
     await updateApiKeyFromModal(view, 'typed-subscription-key');
 
@@ -407,7 +431,7 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('preview-generated-subscription-preview-start');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('preview-generated-subscription');
     });
     expect(view.queryByText('Preview completed.')).toBeNull();
     expect(view.queryByText('subscription:preview:test')).toBeNull();

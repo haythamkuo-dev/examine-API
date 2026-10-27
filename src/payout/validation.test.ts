@@ -33,14 +33,13 @@ describe('validatePayoutForm', () => {
     expect(error).toBeUndefined();
   });
 
-  test('returns an error when a required common field is blank', async () => {
+  test('accepts a missing merchant reference because it is generated per operation', async () => {
     const presets = await loadPayoutPresets({ dirPath: presetDirPath, makeId });
     const defaults = toPayoutDefaultsResponse('co_bank', env, presets);
 
-    defaults.form.commonValues.merchantReference = '   ';
     const error = validatePayoutForm(defaults.form, defaults.commonSchema, defaults.channelSchema);
 
-    expect(error).toBe('merchantReference is required');
+    expect(error).toBeUndefined();
   });
 
   test('returns an error when product_no does not match the payout product code format', async () => {

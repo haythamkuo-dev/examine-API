@@ -64,7 +64,7 @@ export type DepositFieldMap = Record<string, DepositFieldSchema>;
 
 export type DepositCommonValues = {
   productNo: string;
-  merchantRef: string;
+  merchantRef?: string;
   amount: string;
   currencyCode: string;
   returnUrl: string;
@@ -129,6 +129,15 @@ export const DEFAULT_DEPOSIT_COLLECT: DepositCollectOverride = {
   origin: 'https://www.amazon.com/',
 };
 
+/**
+ * Builds a structured deposit request from editable form values.
+ *
+ * @param env Runtime environment containing endpoint and credential settings.
+ * @param values Deposit form values from the web UI.
+ * @param makeId ID factory used by the domain to create the final merchant reference.
+ * @returns The runner-compatible deposit request.
+ * @throws {TypeError} When the form payload shape cannot be composed into a deposit request.
+ */
 export const buildDepositRequestFromForm = (
   env: CliEnv,
   values: DepositRequestValues,
@@ -140,6 +149,15 @@ export const buildDepositRequestFromForm = (
     channelValues: values.channelValues,
   });
 
+/**
+ * Creates legacy deposit form values for CLI compatibility.
+ *
+ * @param channel Deposit channel selected by the caller.
+ * @param commonValues Optional legacy common values; merchant reference is ignored as runtime-only input.
+ * @param collect Optional collect payload template.
+ * @returns A deposit form with compatible channel values and no persisted merchant reference.
+ * @throws {TypeError} When the supplied collect value cannot be represented as form data.
+ */
 export const createLegacyDepositFormValues = (
   channel: DepositChannel,
   commonValues: Partial<DepositCommonValues> = {},
@@ -148,7 +166,6 @@ export const createLegacyDepositFormValues = (
   channel,
   commonValues: {
     productNo: commonValues.productNo || '',
-    merchantRef: commonValues.merchantRef || '',
     amount: commonValues.amount || '',
     currencyCode: commonValues.currencyCode || '',
     returnUrl: commonValues.returnUrl || '',
@@ -160,19 +177,21 @@ export const createLegacyDepositFormValues = (
   },
 });
 
+/**
+ * Builds a masked deposit preview without sending a third-party request.
+ *
+ * @param env Runtime environment containing endpoint and credential settings.
+ * @param values Deposit form values from the web UI.
+ * @param makeId ID factory used by the domain to create the final merchant reference.
+ * @returns A preview-safe representation of the outbound request.
+ * @throws {TypeError} When the form payload shape cannot be composed into a deposit request.
+ */
 export const buildDepositPreviewResponse = (
   env: CliEnv,
   values: DepositRequestValues,
   makeId: (prefix: string) => string,
 ): DepositPreviewResponse => {
-  const previewValues: DepositRequestValues = {
-    ...values,
-    commonValues: {
-      ...values.commonValues,
-      merchantRef: makeId('TEST_ORDER_'),
-    },
-  };
-  const request = buildDepositRequestFromForm(env, previewValues, makeId);
+  const request = buildDepositRequestFromForm(env, values, makeId);
 
   return {
     request: {

@@ -109,7 +109,7 @@ describe('payout API routes', () => {
     expect(body.channel).toBe('co_bank');
     expect(body.availableChannels).toEqual(['co_bank', 'co_wallet', 'imps', 'bd_wallet']);
     expect(body.apiKey).toBe('payout-token');
-    expect(commonValues.merchantReference).toBe('Click button to acquire a merchant ref');
+    expect(commonValues).not.toHaveProperty('merchantReference');
   });
 
   test('POST /api/payout/merchant-reference returns a generated merchant reference', async () => {
@@ -199,7 +199,7 @@ describe('payout API routes', () => {
     expect(upstreamAuthorization).toBe('ApiKey manual-payout-token');
   });
 
-  test('POST /api/payout/create proxies upstream status, prunes optional remitter fields, and preserves the provided merchant ref', async () => {
+  test('POST /api/payout/create proxies upstream status, prunes optional remitter fields, and replaces the provided merchant ref', async () => {
     let upstreamBody: PayoutUpstreamBody | null = null;
     let upstreamAuthorization = '';
 
@@ -250,7 +250,7 @@ describe('payout API routes', () => {
     expect(upstreamAuthorization).toBe('ApiKey india-bangladesh-token');
     expect(upstreamBody).not.toBeNull();
     const capturedUpstreamBody = upstreamBody as unknown as PayoutUpstreamBody;
-    expect(capturedUpstreamBody.merchant_reference).toBe('TEST_BD_001');
+    expect(capturedUpstreamBody.merchant_reference).toBe('TEST_ORDER_fixed-id');
     expect(capturedUpstreamBody.payout_info?.remitter).toBeUndefined();
   });
 

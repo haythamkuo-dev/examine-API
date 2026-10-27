@@ -46,7 +46,7 @@ const commonSchema: PayoutFieldMap = {
   merchantReference: {
     kind: 'text',
     label: 'Merchant reference',
-    required: true,
+    required: false,
   },
 };
 
@@ -110,7 +110,6 @@ const channelSchema: PayoutFieldMap = {
 const createForm = (channel: typeof primaryChannel, overrides?: Partial<PayoutFormValues>): PayoutFormValues => ({
   channel,
   commonValues: {
-    merchantReference: `merchant-${channel}`,
     ...(overrides?.commonValues ?? {}),
   },
   channelValues: {
@@ -261,6 +260,29 @@ describe('normalizeCreateResult', () => {
 });
 
 describe('PayoutPage', () => {
+  test('does not restore persisted form values on initial load', async () => {
+    sessionStorage.setItem(
+      `examine-api:draft:payout:${primaryChannel}:local`,
+      JSON.stringify({
+        version: 2,
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        values: createForm(primaryChannel, {
+          channelValues: {
+            beneficiary: {
+              required_name: 'Updated beneficiary',
+            },
+          },
+        }),
+      }),
+    );
+
+    const view = renderPayoutPage();
+
+    await waitFor(() => {
+      expect(view.getByLabelText(/Required name/)).toHaveValue(`Beneficiary ${primaryChannel}`);
+    });
+  });
+
   test('translates payout channel labels without changing channel values', async () => {
     setRouteHandler(defaultsEndpoint, () => jsonResponse(createDefaultsResponse('co_bank')));
 
@@ -284,7 +306,7 @@ describe('PayoutPage', () => {
       expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
     });
 
-    expect(view.getByLabelText('Merchant reference *')).toHaveAttribute('readonly');
+    expect(view.getByLabelText('Merchant reference')).toHaveAttribute('readonly');
     expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();
     expect(view.getByRole('button', { name: 'Edit API key' })).toBeInTheDocument();
 
@@ -293,7 +315,7 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-001');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-PAYOUT-001');
       expect(view.getByText('Merchant reference generated.')).toBeInTheDocument();
     });
   });
@@ -329,7 +351,7 @@ describe('PayoutPage', () => {
       expect(resultCard).not.toBeNull();
       expect(within(resultCard as HTMLElement).getByText(previewErrorMessage)).toBeInTheDocument();
       expect(within(resultCard as HTMLElement).getByText(/PREVIEW Status 400/)).toBeInTheDocument();
-      expect(view.getByText(/Temporary session draft/).parentElement).not.toContainElement(
+      expect(view.getByText(/Form state stays in memory/).parentElement).not.toContainElement(
         view.getByText(previewErrorMessage),
       );
     });
@@ -337,7 +359,7 @@ describe('PayoutPage', () => {
     expect(view.getByText(/Run a preview to inspect the exact request body/)).toBeInTheDocument();
   });
 
-  test('restores the channel-specific merchant reference draft when returning to a previous channel', async () => {
+  test('does not restore merchant candidates when returning to a previous channel', async () => {
     setRouteHandler(merchantReferenceEndpoint, () =>
       jsonResponse(createMerchantReferenceResponse('GENERATED-PAYOUT-002')),
     );
@@ -400,7 +422,7 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-002');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-PAYOUT-002');
     });
 
     await updateApiKeyFromModal(view, 'typed-payout-key');
@@ -412,7 +434,7 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-secondary-server');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
     });
 
     await waitFor(() => {
@@ -432,7 +454,7 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-002');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
     });
 
     await act(async () => {
@@ -567,7 +589,7 @@ describe('PayoutPage', () => {
     expect(previewCall?.body?.apiKey).toBe(`api-key-${primaryChannel}`);
   });
 
-  test('new draft resets the generated merchant reference to backend defaults', async () => {
+  test('new draft clears the generated merchant reference instead of restoring a backend value', async () => {
     setRouteHandler(merchantReferenceEndpoint, () =>
       jsonResponse(createMerchantReferenceResponse('GENERATED-PAYOUT-003')),
     );
@@ -602,7 +624,7 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('GENERATED-PAYOUT-003');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-PAYOUT-003');
     });
 
     await act(async () => {
@@ -610,11 +632,11 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-reset-server');
+      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
     });
   });
 
-  test('keeps the current merchant reference when backend generation fails', async () => {
+  test('does not restore a server merchant reference when backend generation fails', async () => {
     setRouteHandler(merchantReferenceEndpoint, () =>
       textResponse('generator unavailable', {
         status: 500,
@@ -636,7 +658,7 @@ describe('PayoutPage', () => {
       expect(view.getByText('generator unavailable')).toBeInTheDocument();
     });
 
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-co_bank');
+    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
   });
 
   test('shows a success banner after create succeeds', async () => {
@@ -697,13 +719,13 @@ describe('PayoutPage', () => {
           url: 'https://gateway.example.test/payout',
           headers: { Authorization: 'ApiKey ****-token' },
           payload: {
-            merchant_reference: `preview-generated-${body?.commonValues.merchantReference}`,
+            merchant_reference: 'preview-generated-payout',
           },
         },
       }),
     );
     setRouteHandler(createEndpoint, ({ body }) => {
-      expect(body?.commonValues.merchantReference).toBe('preview-generated-merchant-preview-start');
+      expect(body?.commonValues.merchantReference).toBe('preview-generated-payout');
 
       return jsonResponse({
         requestName: 'payout:create:co_bank',
@@ -725,7 +747,7 @@ describe('PayoutPage', () => {
       expect(view.getByRole('button', { name: 'Preview request' })).toBeEnabled();
     });
 
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue('merchant-preview-start');
+    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
 
     await updateApiKeyFromModal(view, 'preview-payout-key');
 
@@ -738,7 +760,7 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-    expect(view.getByLabelText('Merchant reference *')).toHaveValue('preview-generated-merchant-preview-start');
+    expect(view.getByLabelText('Merchant reference')).toHaveValue('preview-generated-payout');
     expect(view.queryByText('payout:preview:test')).toBeNull();
     expect(view.queryByText('https://gateway.example.test/payout')).toBeNull();
     });

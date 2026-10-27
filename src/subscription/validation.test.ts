@@ -33,14 +33,13 @@ describe('validateSubscriptionForm', () => {
     expect(error).toBeUndefined();
   });
 
-  test('returns an error when a required common field is blank', async () => {
+  test('accepts a missing merchant reference because it is generated per operation', async () => {
     const presets = await loadSubscriptionPresets({ dirPath: presetDirPath, env, makeId });
     const defaults = toSubscriptionDefaultsResponse('default', env, 'local', presets);
 
-    defaults.form.commonValues.merchantRef = '   ';
     const error = validateSubscriptionForm(defaults.form, defaults.commonSchema, defaults.channelSchema);
 
-    expect(error).toBe('merchantRef is required');
+    expect(error).toBeUndefined();
   });
 
   test('accepts non-empty draft subs_plan_id values without enforcing a prefix format', async () => {

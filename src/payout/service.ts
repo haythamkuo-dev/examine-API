@@ -1,5 +1,6 @@
 import { PAYOUT_CHANNELS, type CliEnv, type PayoutChannel } from '../core/env';
 import { createPresetBackedService } from '../core/createPresetBackedService';
+import { createJsonPresetStorage } from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
 import {
@@ -13,7 +14,12 @@ import {
   type PayoutMerchantReferenceResponse,
   type PayoutRequestValues,
 } from './web';
-import { loadPayoutPresets, toPayoutDefaultsResponse, updatePayoutPreset } from './presets';
+import {
+  loadPayoutPresets,
+  toPayoutDefaultsResponse,
+  toPayoutPersistentProjection,
+  updatePayoutPreset,
+} from './presets';
 
 export type PayoutServiceDeps = {
   getEnvForTarget: (target: TargetEnvironment) => CliEnv;
@@ -40,11 +46,22 @@ export const getRequestedPayoutChannel = (url: URL): PayoutChannel => {
  * @returns The payout service API used by the HTTP layer.
  */
 export const createPayoutService = (deps: PayoutServiceDeps) => {
-  const loadPresets = () =>
-    loadPayoutPresets({
-      dirPath: deps.presetDirPath,
-      makeId: deps.makeId,
-    });
+  const storage = createJsonPresetStorage({
+    load: () =>
+      loadPayoutPresets({
+        dirPath: deps.presetDirPath,
+        makeId: deps.makeId,
+      }),
+    save: ({ channel, values }) =>
+      updatePayoutPreset({
+        dirPath: deps.presetDirPath,
+        channel,
+        values,
+        makeId: deps.makeId,
+      }),
+    toPersistentProjection: toPayoutPersistentProjection,
+  });
+  const loadPresets = async () => (await storage.load()).presets;
 
   const service = createPresetBackedService<
     PayoutChannel,
@@ -58,13 +75,7 @@ export const createPayoutService = (deps: PayoutServiceDeps) => {
     loadPresets,
     toDefaultsResponse: (channel, presets) =>
       toPayoutDefaultsResponse(channel, deps.getEnvForTarget('local'), presets),
-    updatePreset: (channel, values) =>
-      updatePayoutPreset({
-        dirPath: deps.presetDirPath,
-        channel,
-        values,
-        makeId: deps.makeId,
-      }),
+    updatePreset: async (channel, values) => (await storage.save({ channel, values })).presets,
     buildPreviewResponse: (values, target) =>
       buildPayoutPreviewResponse(deps.getEnvForTarget(target), values, deps.makeId),
     buildRequestFromForm: (values, target) =>
@@ -110,12 +121,7 @@ export const createPayoutService = (deps: PayoutServiceDeps) => {
     values: PayoutFormValues,
     target: TargetEnvironment,
   ): Promise<PayoutDefaultsResponse & { ok: true }> => {
-    const presets = await updatePayoutPreset({
-      dirPath: deps.presetDirPath,
-      channel,
-      values,
-      makeId: deps.makeId,
-    });
+    const presets = (await storage.save({ channel, values })).presets;
 
     return {
       ok: true,

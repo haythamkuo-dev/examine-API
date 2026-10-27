@@ -23,7 +23,7 @@
 | --- | --- | --- |
 | Domain 與功能服務 | `src/domains/`、`src/deposit/`、`src/payout/`、`src/subscription/` | 業務型別、payload、validation、preset 與操作流程由哪一層負責 |
 | API 與錯誤邊界 | `src/server/`、`src/server/routes/` | HTTP contract、錯誤映射與 service 邊界是否清楚 |
-| Preset 與資料 | `data/`、各功能 `presets.ts`、session draft | 資料來源、合併、讀寫與相容性如何處理 |
+| Preset 與資料 | `data/`、各功能 `presets.ts`、前端 operation state | 資料來源、合併、讀寫與短暫狀態如何處理 |
 | Web 與路由 | `web/main.tsx`、`web/App.tsx`、`web/pages/`、`web/hooks/` | 使用者操作、路由、表單狀態與結果如何呈現 |
 | Runtime wiring | `src/server/index.ts`、`src/core/`、`vite.config.ts` | 設定、依賴注入、環境與部署邊界如何組裝 |
 | 測試與驗證 | `src/**/*.test.ts`、`tests/`、`web/**/*.test.tsx` | 風險應由哪個最低測試層級與 `AGENTS.md` gate 證明 |
@@ -77,7 +77,7 @@
 - 同時跨越 domain、service、server route 與 web page。
 - 新增或改變 API route、request/response type、錯誤 code 或 target environment 行為。
 - 新增或改變 Deposit、Payout、Subscription 的 channel、payload、簽名、merchant reference 或外部 gateway 行為。
-- 新增或改變 data JSON 結構、preset 讀寫、sessionStorage draft 或資料相容性。
+- 新增或改變 data JSON 結構、preset 讀寫、前端 operation state 或資料相容性。
 - 新增 React route、頁面操作流程、表單 schema、共用 hook 或 shared component。
 - 改變 server/web 入口、Vite 設定或設定注入路徑。
 - 存在兩種以上合理解法，且取捨會影響產品行為、外部契約、測試隔離、效能或維護成本。

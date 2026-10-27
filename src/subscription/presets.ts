@@ -7,6 +7,7 @@ import {
   type CliEnv,
   type SubscriptionChannel,
 } from '../core/env';
+import type { PersistentPresetProjection } from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type {
   SubscriptionChannelValues,
@@ -77,7 +78,7 @@ export type SubscriptionPresetSource = {
 };
 
 const COMMON_SCHEMA: SubscriptionFieldMap = {
-  merchantRef: textField('Merchant reference', true),
+  merchantRef: textField('Merchant reference'),
   returnUrl: textField('Return URL', true),
 };
 
@@ -134,7 +135,6 @@ const getSeedCommonConfig = (
 ): SubscriptionCommonConfig => ({
   schema: clone(COMMON_SCHEMA),
   values: {
-    merchantRef: makeId('TEST_ORDER_'),
     returnUrl: env.callbackUrlSubscription || 'https://merchant.example.com/subscription/callback',
   },
 });
@@ -168,7 +168,6 @@ const fromCommonFile = (source: Record<string, unknown> | null): Partial<Subscri
 });
 
 const toCommonFile = (config: SubscriptionCommonConfig): Record<string, string> => ({
-  [merchantReferenceKey]: config.values.merchantRef || '',
   [returnUrlKey]: config.values.returnUrl || '',
 });
 
@@ -218,7 +217,6 @@ const normalizeCommonConfig = (
 ): SubscriptionCommonConfig => ({
   schema: (source.schema as SubscriptionFieldMap) || seed.schema,
   values: {
-    merchantRef: source.values?.merchantRef || seed.values.merchantRef,
     returnUrl: source.values?.returnUrl || seed.values.returnUrl,
   },
 });
@@ -256,7 +254,6 @@ const buildFormValues = (
 ): SubscriptionFormValues => ({
   channel,
   commonValues: {
-    merchantRef: store.common.values.merchantRef || '',
     returnUrl: store.common.values.returnUrl || '',
   },
   channelValues: {
@@ -290,6 +287,29 @@ export const toSubscriptionDefaultsResponse = (
     form: buildFormValues(channel, resolvedPlanId, store),
   };
 };
+
+/**
+ * Maps a normalized subscription store to the persistent projection used by storage adapters.
+ *
+ * @param store Normalized subscription preset store, including legacy compatibility values.
+ * @returns Persistent subscription values without the runtime-only merchant reference.
+ */
+export const toSubscriptionPersistentProjection = (
+  store: SubscriptionPresetStore,
+): PersistentPresetProjection<SubscriptionChannel> => ({
+  commonValues: Object.fromEntries(
+    Object.entries(store.common.values).filter(([key]) => key !== 'merchantRef'),
+  ),
+  channels: Object.fromEntries(
+    SUBSCRIPTION_CHANNELS.map((channel) => [
+      channel,
+      {
+        channelCommonValues: {},
+        channelValues: clone(stripReadonlyChannelValues(store.channels[channel].values)) as Record<string, unknown>,
+      },
+    ]),
+  ) as Record<SubscriptionChannel, { channelCommonValues: Record<string, unknown>; channelValues: Record<string, unknown> }>,
+});
 
 /**
  * Loads subscription presets from disk and normalizes them against the channel source data.
@@ -349,7 +369,6 @@ export const updateSubscriptionPreset = async ({
   const source: SubscriptionPresetSource = {
     common: {
       values: {
-        merchantRef: values.commonValues.merchantRef,
         returnUrl: values.commonValues.returnUrl,
       },
     },
