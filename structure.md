@@ -40,6 +40,7 @@
 │   │   │   ├── international_credit_cards.json
 │   │   │   ├── linepay.json
 │   │   │   ├── linepay_invoice.json
+│   │   │   ├── loki-intercard-usd.json
 │   │   │   ├── mx_spei_usd.json
 │   │   │   ├── my_boost_usd.json
 │   │   │   ├── my_fpx_usd.json
@@ -76,7 +77,8 @@
 │   ├── scripts
 │   │   └── query_merchant_turnover.sh
 │   └── todos
-│       └── 2026-10-22-preset-database-migration.md
+│       ├── 2026-10-22-preset-database-migration.md
+│       └── 2026-10-28-add-loki-my-deposit-channel.md
 ├── example.md
 ├── index.html
 ├── index.ts
@@ -198,4 +200,4 @@
     │       └── modal.tsx
     └── styles.css
 
-30 directories, 169 files
+30 directories, 171 files

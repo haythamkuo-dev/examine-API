@@ -380,6 +380,14 @@ const SPEI_SCHEMA: DepositFieldMap = {
   }),
 };
 
+const EMAIL_COLLECT_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {
+      shopper_email: textField('Shopper email', true),
+    }),
+  }),
+};
+
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const getSeedCommonConfig = (env: CliEnv, makeId: (prefix: string) => string): DepositCommonConfig => ({
@@ -937,6 +945,17 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
     commonValues: { productNo: 'DEP-CMONEY-INTERCARD-USD', amount: '100.00', currencyCode: 'USD' },
     schema: {},
     values: {},
+  },
+  'loki-intercard-usd': {
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDMY-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(EMAIL_COLLECT_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    },
   },
   'ez-intercard-usd': {
     commonValues: { productNo: 'DEP-EZPAY-INTERCARD-USD', amount: '99.99', currencyCode: 'USD' },

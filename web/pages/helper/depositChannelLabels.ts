@@ -36,6 +36,7 @@ export const DEPOSIT_CHANNEL_LABELS: Partial<Record<DepositChannel, string>> = {
   'WECHAT-6016': '鴻運-6016-CNY',
   'WECHAT-6016-USD': '鴻運-6016-USD',
   'cmoney-intercard': 'cmoney-國際信用卡',
+  'loki-intercard-usd': 'loki-MY',
   'ez-intercard-usd': 'ezpay-usd',
   'ez-intercard-hkd': 'ezpay-hkd',
   'ez-intercard-jpy': 'ezpay-jpy',

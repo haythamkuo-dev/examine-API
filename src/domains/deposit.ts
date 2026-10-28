@@ -468,6 +468,16 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
   'WECHAT-6016': { product_no: 'DEP-HONGYUNPAY-WECHAT6016-CNY', amount: { amount: '150.00', currency_code: 'CNY' }, return_url: env.callbackUrlDeposit },
   'WECHAT-6016-USD': { product_no: 'DEP-HONGYUNPAY-WECHAT6016-USD', amount: { amount: '100.00', currency_code: 'USD' }, return_url: env.callbackUrlDeposit },
   'cmoney-intercard': { product_no: 'DEP-CMONEY-INTERCARD-USD', amount: { amount: '100.00', currency_code: 'USD' }, return_url: env.callbackUrlDeposit },
+  'loki-intercard-usd': {
+    product_no: 'DEP-LOKI-INTERCARDMY-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        shopper_email: 'test@example.com',
+      },
+    },
+  },
   'ez-intercard-usd': {
     product_no: 'DEP-EZPAY-INTERCARD-USD',
     amount: { amount: '99.99', currency_code: 'USD' },

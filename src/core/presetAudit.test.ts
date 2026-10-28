@@ -16,7 +16,7 @@ describe('preset audit', () => {
       },
     });
 
-    expect(report.summary).toEqual({ ready: 46, deferred: 2, invalid: 0 });
+    expect(report.summary).toEqual({ ready: 47, deferred: 2, invalid: 0 });
     expect(report.complete).toBe(false);
     expect(report.entries.filter((entry) => entry.status === 'deferred')).toEqual([
       expect.objectContaining({
