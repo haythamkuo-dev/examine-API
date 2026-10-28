@@ -272,6 +272,12 @@ describe('DepositPage', () => {
     expect(getDepositChannelLabel('my_boost_usd')).toBe('馬來西亞-boost-USD');
     expect(getDepositChannelLabel('my_tng_usd2')).toBe('馬來西亞-tng-collect-美金');
     expect(getDepositChannelLabel('loki-intercard-usd')).toBe('loki-MY');
+    expect(getDepositChannelLabel('loki-intercard-sg-usd')).toBe('loki-SG');
+    expect(getDepositChannelLabel('loki-intercard-vn-usd')).toBe('loki-VN');
+    expect(getDepositChannelLabel('loki-intercard-th-usd')).toBe('loki-TH');
+    expect(getDepositChannelLabel('loki-intercard-ph-usd')).toBe('loki-PH');
+    expect(getDepositChannelLabel('loki-intercard-id-usd')).toBe('loki-ID');
+    expect(getDepositChannelLabel('loki-intercard-hk-usd')).toBe('loki-HK');
     expect(getDepositChannelLabel('th_kplus_usd')).toBe('泰國-kplus-USD');
     expect(getDepositChannelLabel('my_fpx_usd')).toBe('馬來西亞-FPX');
     expect(getDepositChannelLabel('mx_spei_usd')).toBe('墨西哥-SPEI-USD');

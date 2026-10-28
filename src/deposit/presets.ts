@@ -957,6 +957,72 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       },
     },
   },
+  'loki-intercard-sg-usd': {
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDSG-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(EMAIL_COLLECT_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    },
+  },
+  'loki-intercard-vn-usd': {
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDVN-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(EMAIL_COLLECT_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    },
+  },
+  'loki-intercard-th-usd': {
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDTH-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(EMAIL_COLLECT_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    },
+  },
+  'loki-intercard-ph-usd': {
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDPH-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(EMAIL_COLLECT_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    },
+  },
+  'loki-intercard-id-usd': {
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDID-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(EMAIL_COLLECT_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    },
+  },
+  'loki-intercard-hk-usd': {
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDHK-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(EMAIL_COLLECT_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    },
+  },
   'ez-intercard-usd': {
     commonValues: { productNo: 'DEP-EZPAY-INTERCARD-USD', amount: '99.99', currencyCode: 'USD' },
     schema: clone(EZ_INTERCARD_SCHEMA),

@@ -1,0 +1,29 @@
+{
+  "commonValues": {
+    "productNo": "DEP-LOKI-INTERCARDTH-USD",
+    "amount": "10.00",
+    "currencyCode": "USD"
+  },
+  "schema": {
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "collect": {
+          "kind": "object",
+          "label": "Collect payload",
+          "fields": {
+            "shopper_email": { "kind": "text", "label": "Shopper email", "required": true }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "payment_order": {
+      "collect": {
+        "shopper_email": "test@example.com"
+      }
+    }
+  }
+}

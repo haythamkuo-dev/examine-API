@@ -40,7 +40,13 @@
 │   │   │   ├── international_credit_cards.json
 │   │   │   ├── linepay.json
 │   │   │   ├── linepay_invoice.json
+│   │   │   ├── loki-intercard-hk-usd.json
+│   │   │   ├── loki-intercard-id-usd.json
+│   │   │   ├── loki-intercard-ph-usd.json
+│   │   │   ├── loki-intercard-sg-usd.json
+│   │   │   ├── loki-intercard-th-usd.json
 │   │   │   ├── loki-intercard-usd.json
+│   │   │   ├── loki-intercard-vn-usd.json
 │   │   │   ├── mx_spei_usd.json
 │   │   │   ├── my_boost_usd.json
 │   │   │   ├── my_fpx_usd.json
@@ -78,7 +84,13 @@
 │   │   └── query_merchant_turnover.sh
 │   └── todos
 │       ├── 2026-10-22-preset-database-migration.md
-│       └── 2026-10-28-add-loki-my-deposit-channel.md
+│       ├── 2026-10-28-add-loki-hk-deposit-channel.md
+│       ├── 2026-10-28-add-loki-id-deposit-channel.md
+│       ├── 2026-10-28-add-loki-my-deposit-channel.md
+│       ├── 2026-10-28-add-loki-ph-deposit-channel.md
+│       ├── 2026-10-28-add-loki-sg-deposit-channel.md
+│       ├── 2026-10-28-add-loki-th-deposit-channel.md
+│       └── 2026-10-28-add-loki-vn-deposit-channel.md
 ├── example.md
 ├── index.html
 ├── index.ts
@@ -200,4 +212,4 @@
     │       └── modal.tsx
     └── styles.css
 
-30 directories, 171 files
+30 directories, 183 files

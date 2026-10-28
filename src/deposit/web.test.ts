@@ -108,6 +108,78 @@ describe('deposit web helpers', () => {
         },
       },
     });
+    expect(result.channels['loki-intercard-sg-usd'].commonValues).toEqual({
+      productNo: 'DEP-LOKI-INTERCARDSG-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(result.channels['loki-intercard-sg-usd'].values).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    });
+    expect(result.channels['loki-intercard-vn-usd'].commonValues).toEqual({
+      productNo: 'DEP-LOKI-INTERCARDVN-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(result.channels['loki-intercard-vn-usd'].values).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    });
+    expect(result.channels['loki-intercard-th-usd'].commonValues).toEqual({
+      productNo: 'DEP-LOKI-INTERCARDTH-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(result.channels['loki-intercard-th-usd'].values).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    });
+    expect(result.channels['loki-intercard-ph-usd'].commonValues).toEqual({
+      productNo: 'DEP-LOKI-INTERCARDPH-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(result.channels['loki-intercard-ph-usd'].values).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    });
+    expect(result.channels['loki-intercard-id-usd'].commonValues).toEqual({
+      productNo: 'DEP-LOKI-INTERCARDID-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(result.channels['loki-intercard-id-usd'].values).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    });
+    expect(result.channels['loki-intercard-hk-usd'].commonValues).toEqual({
+      productNo: 'DEP-LOKI-INTERCARDHK-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(result.channels['loki-intercard-hk-usd'].values).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    });
     expect(result.channels.th_kplus_usd.commonValues).toEqual({
       productNo: 'DEP-SINGLEPAYMENT-KPLUS-USD',
       amount: '45.00',
@@ -329,6 +401,126 @@ describe('deposit web helpers', () => {
     expect(request.headers?.Authorization).toBe('ApiKey default-token');
     expect(payload).toMatchObject({
       product_no: 'DEP-LOKI-INTERCARDMY-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'USD' },
+      payment_order: {
+        collect: { shopper_email: 'test@example.com' },
+      },
+    });
+  });
+
+  test('builds the Loki SG intercard request with the normal merchant token', () => {
+    const defaults = toDepositDefaultsResponse(
+      'loki-intercard-sg-usd',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-LOKI-INTERCARDSG-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'USD' },
+      payment_order: {
+        collect: { shopper_email: 'test@example.com' },
+      },
+    });
+  });
+
+  test('builds the Loki VN intercard request with the normal merchant token', () => {
+    const defaults = toDepositDefaultsResponse(
+      'loki-intercard-vn-usd',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-LOKI-INTERCARDVN-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'USD' },
+      payment_order: {
+        collect: { shopper_email: 'test@example.com' },
+      },
+    });
+  });
+
+  test('builds the Loki TH intercard request with the normal merchant token', () => {
+    const defaults = toDepositDefaultsResponse(
+      'loki-intercard-th-usd',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-LOKI-INTERCARDTH-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'USD' },
+      payment_order: {
+        collect: { shopper_email: 'test@example.com' },
+      },
+    });
+  });
+
+  test('builds the Loki PH intercard request with the normal merchant token', () => {
+    const defaults = toDepositDefaultsResponse(
+      'loki-intercard-ph-usd',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-LOKI-INTERCARDPH-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'USD' },
+      payment_order: {
+        collect: { shopper_email: 'test@example.com' },
+      },
+    });
+  });
+
+  test('builds the Loki ID intercard request with the normal merchant token', () => {
+    const defaults = toDepositDefaultsResponse(
+      'loki-intercard-id-usd',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-LOKI-INTERCARDID-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'USD' },
+      payment_order: {
+        collect: { shopper_email: 'test@example.com' },
+      },
+    });
+  });
+
+  test('builds the Loki HK intercard request with the normal merchant token', () => {
+    const defaults = toDepositDefaultsResponse(
+      'loki-intercard-hk-usd',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-LOKI-INTERCARDHK-USD',
       merchant_ref: 'TEST_ORDER_fixed-id',
       amount: { amount: '10.00', currency_code: 'USD' },
       payment_order: {

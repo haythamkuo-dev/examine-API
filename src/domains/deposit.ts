@@ -478,6 +478,66 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  'loki-intercard-sg-usd': {
+    product_no: 'DEP-LOKI-INTERCARDSG-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        shopper_email: 'test@example.com',
+      },
+    },
+  },
+  'loki-intercard-vn-usd': {
+    product_no: 'DEP-LOKI-INTERCARDVN-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        shopper_email: 'test@example.com',
+      },
+    },
+  },
+  'loki-intercard-th-usd': {
+    product_no: 'DEP-LOKI-INTERCARDTH-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        shopper_email: 'test@example.com',
+      },
+    },
+  },
+  'loki-intercard-ph-usd': {
+    product_no: 'DEP-LOKI-INTERCARDPH-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        shopper_email: 'test@example.com',
+      },
+    },
+  },
+  'loki-intercard-id-usd': {
+    product_no: 'DEP-LOKI-INTERCARDID-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        shopper_email: 'test@example.com',
+      },
+    },
+  },
+  'loki-intercard-hk-usd': {
+    product_no: 'DEP-LOKI-INTERCARDHK-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        shopper_email: 'test@example.com',
+      },
+    },
+  },
   'ez-intercard-usd': {
     product_no: 'DEP-EZPAY-INTERCARD-USD',
     amount: { amount: '99.99', currency_code: 'USD' },

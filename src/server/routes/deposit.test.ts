@@ -395,6 +395,186 @@ describe('deposit API routes', () => {
     expect((collectFields.shopper_email as Record<string, unknown>).required).toBe(true);
   });
 
+  test('GET /api/deposit/defaults returns the Loki SG intercard defaults and required shopper email field', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-intercard-sg-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-intercard-sg-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-INTERCARDSG-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    });
+    expect((collectFields.shopper_email as Record<string, unknown>).required).toBe(true);
+  });
+
+  test('GET /api/deposit/defaults returns the Loki VN intercard defaults and required shopper email field', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-intercard-vn-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-intercard-vn-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-INTERCARDVN-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    });
+    expect((collectFields.shopper_email as Record<string, unknown>).required).toBe(true);
+  });
+
+  test('GET /api/deposit/defaults returns the Loki TH intercard defaults and required shopper email field', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-intercard-th-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-intercard-th-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-INTERCARDTH-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    });
+    expect((collectFields.shopper_email as Record<string, unknown>).required).toBe(true);
+  });
+
+  test('GET /api/deposit/defaults returns the Loki PH intercard defaults and required shopper email field', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-intercard-ph-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-intercard-ph-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-INTERCARDPH-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    });
+    expect((collectFields.shopper_email as Record<string, unknown>).required).toBe(true);
+  });
+
+  test('GET /api/deposit/defaults returns the Loki ID intercard defaults and required shopper email field', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-intercard-id-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-intercard-id-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-INTERCARDID-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    });
+    expect((collectFields.shopper_email as Record<string, unknown>).required).toBe(true);
+  });
+
+  test('GET /api/deposit/defaults returns the Loki HK intercard defaults and required shopper email field', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-intercard-hk-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-intercard-hk-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-INTERCARDHK-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      payment_order: {
+        collect: {
+          shopper_email: 'test@example.com',
+        },
+      },
+    });
+    expect((collectFields.shopper_email as Record<string, unknown>).required).toBe(true);
+  });
+
   test('GET /api/deposit/defaults returns the Mexico SPEI USD defaults with only shopper email required', async () => {
     const response = await context.requestApi('/api/deposit/defaults?channel=mx_spei_usd');
 
