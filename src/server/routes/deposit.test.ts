@@ -134,9 +134,11 @@ const createFpxBody = (): DepositApiRequestBody => ({
   channelValues: {
     payment_order: {
       collect: {
-        shopper_email: 'customer@example.com',
-        telephone_number: '60123456789',
-        product_name: 'FPX USD Test Checkout',
+        product_name: 'Test',
+        origin: 'https://tangchaoshop.com/fail',
+        shopper_reference: '1',
+        shopper_email: 'test@example.com',
+        telephone_number: '+60123456789',
       },
     },
   },
@@ -347,6 +349,10 @@ describe('deposit API routes', () => {
     const form = body.form as Record<string, unknown>;
     const commonValues = form.commonValues as Record<string, unknown>;
     const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
 
     expect(body.channel).toBe('my_fpx_usd');
     expect(commonValues).toMatchObject({
@@ -357,11 +363,20 @@ describe('deposit API routes', () => {
     expect(channelValues).toEqual({
       payment_order: {
         collect: {
-          shopper_email: 'customer@example.com',
-          telephone_number: '60123456789',
-          product_name: 'FPX USD Test Checkout',
+          product_name: 'Test',
+          origin: 'https://tangchaoshop.com/fail',
+          shopper_reference: '1',
+          shopper_email: 'test@example.com',
+          telephone_number: '+60123456789',
         },
       },
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      origin: { required: true },
+      shopper_reference: { required: true },
+      shopper_email: { required: true },
+      telephone_number: { required: true },
     });
   });
 
@@ -929,8 +944,10 @@ describe('deposit API routes', () => {
       return_url: 'https://merchant.example.com/deposit/result',
       payment_order: {
         collect: {
-          shopper_email: 'customer@example.com',
-          telephone_number: '60123456789',
+          origin: 'https://tangchaoshop.com/fail',
+          shopper_reference: '1',
+          shopper_email: 'test@example.com',
+          telephone_number: '+60123456789',
           product_name: 'Edited FPX Checkout',
         },
       },

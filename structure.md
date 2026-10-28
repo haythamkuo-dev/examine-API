@@ -90,7 +90,8 @@
 │       ├── 2026-10-28-add-loki-ph-deposit-channel.md
 │       ├── 2026-10-28-add-loki-sg-deposit-channel.md
 │       ├── 2026-10-28-add-loki-th-deposit-channel.md
-│       └── 2026-10-28-add-loki-vn-deposit-channel.md
+│       ├── 2026-10-28-add-loki-vn-deposit-channel.md
+│       └── 2026-10-28-update-fpx-collect-fields.md
 ├── example.md
 ├── index.html
 ├── index.ts
@@ -212,4 +213,4 @@
     │       └── modal.tsx
     └── styles.css
 
-30 directories, 183 files
+30 directories, 184 files

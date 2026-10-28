@@ -371,6 +371,18 @@ const DUITNOW_QR_SCHEMA: DepositFieldMap = {
   }),
 };
 
+const FPX_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {
+      product_name: textField('Product name', true),
+      origin: textField('Origin', true),
+      shopper_reference: textField('Shopper reference', true),
+      shopper_email: textField('Shopper email', true),
+      telephone_number: textField('Telephone number', true),
+    }),
+  }),
+};
+
 const SPEI_SCHEMA: DepositFieldMap = {
   payment_order: objectField('Payment order', {
     collect: objectField('Collect payload', {
@@ -802,13 +814,15 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       amount: '10.00',
       currencyCode: 'USD',
     },
-    schema: clone(DUITNOW_QR_SCHEMA),
+    schema: clone(FPX_SCHEMA),
     values: {
       payment_order: {
         collect: {
-          shopper_email: 'customer@example.com',
-          telephone_number: '60123456789',
-          product_name: 'FPX USD Test Checkout',
+          product_name: 'Test',
+          origin: 'https://tangchaoshop.com/fail',
+          shopper_reference: '1',
+          shopper_email: 'test@example.com',
+          telephone_number: '+60123456789',
         },
       },
     },

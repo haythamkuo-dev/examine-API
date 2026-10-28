@@ -378,9 +378,11 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
     return_url: env.callbackUrlDeposit,
     payment_order: {
       collect: {
-        shopper_email: 'customer@example.com',
-        telephone_number: '60123456789',
-        product_name: 'FPX USD Test Checkout',
+        product_name: 'Test',
+        origin: 'https://tangchaoshop.com/fail',
+        shopper_reference: '1',
+        shopper_email: 'test@example.com',
+        telephone_number: '+60123456789',
       },
     },
   },
