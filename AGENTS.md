@@ -3,6 +3,12 @@
 - 所有適用於整個專案的強制規範、測試工具與生命週期要求、驗證命令及完成 gate 都只在本檔維護。`devlope_guides/ai_design_doc_writing.md` 與 `devlope_guides/ai_reference.md` 均從屬於本檔；Writing Guide 只在不違反本檔的前提下負責設計書等級分流與要求 AI 選擇適用 gate，Reference 只提供章節與案例參考，不得另立專案級規範或設計書等級門檻。
 - `devlope_guides/ai_code_review_guide.md` 是本專案 Code Review 的強制流程指引，從屬於本檔。凡任務涉及 branch、diff、PR 或程式碼審核，AI 必須先讀取並完整遵循該指引，依適用模式完成分析、issue 處理、輸出與紀錄；若與本檔衝突，以本檔為準。
 
+### 設計文件產出政策
+- 預設不產出設計文件。除非使用者在當前任務中明確要求生成、撰寫、更新或補充設計文件（設計書），變更規模、跨層範圍、風險或 `devlope_guides/ai_design_doc_writing.md` 的分流條件，均不得單獨觸發設計文件產出。
+- 未明確要求時，AI 不得新增或修改 `devlope_guides/todos/` 中的設計文件。必要的方案、影響、風險與驗證資訊可以直接放在對話或交付說明中，但不應另存為設計文件。
+- 只有在使用者明確要求設計文件時，才讀取並遵循 `devlope_guides/ai_design_doc_writing.md` 的文件等級、產出位置與確認流程。使用者若只是詢問是否需要設計文件，視為詢問，不等於要求產出。
+- 既有設計文件仍可作為實作與審查的參考；Code Review 任務依 `ai_code_review_guide.md` 執行，除非使用者另有明確要求，不會因此自動產出設計文件。
+
 ### 🏗️ Technical Stack & Scope
 - Backend: Bun + TypeScript (處理 API 邏輯與數據持久化)。
 - Frontend: React + Vite + Tailwind CSS + React-Router-dom。
