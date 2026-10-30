@@ -14,8 +14,6 @@
           "label": "Collect payload",
           "fields": {
             "product_name": { "kind": "text", "label": "Product name", "required": true },
-            "origin": { "kind": "text", "label": "Origin", "required": true },
-            "shopper_reference": { "kind": "text", "label": "Shopper reference", "required": true },
             "shopper_email": { "kind": "text", "label": "Shopper email", "required": true },
             "telephone_number": { "kind": "text", "label": "Telephone number", "required": true }
           }
@@ -26,11 +24,9 @@
   "values": {
     "payment_order": {
       "collect": {
-        "product_name": "Test",
-        "origin": "https://tangchaoshop.com/fail",
-        "shopper_reference": "1",
-        "shopper_email": "test@example.com",
-        "telephone_number": "+60123456789"
+        "shopper_email": "customer@example.com",
+        "telephone_number": "60123456789",
+        "product_name": "Bank Transfer Checkout"
       }
     }
   }

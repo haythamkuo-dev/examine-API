@@ -24,9 +24,9 @@
   "values": {
     "payment_order": {
       "collect": {
-        "shopper_email": "duitnow.test@example.com",
+        "shopper_email": "customer@example.com",
         "telephone_number": "60321414552",
-        "product_name": "DuitNow QR Test"
+        "product_name": "QR Checkout"
       }
     }
   }

@@ -77,11 +77,9 @@ describe('deposit web helpers', () => {
     expect(result.channels.my_fpx_usd.values).toEqual({
       payment_order: {
         collect: {
-          product_name: 'Test',
-          origin: 'https://tangchaoshop.com/fail',
-          shopper_reference: '1',
-          shopper_email: 'test@example.com',
-          telephone_number: '+60123456789',
+          shopper_email: 'customer@example.com',
+          telephone_number: '60123456789',
+          product_name: 'Bank Transfer Checkout',
         },
       },
     });

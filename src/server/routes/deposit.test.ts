@@ -114,9 +114,9 @@ const createDuitnowBody = (): DepositApiRequestBody => ({
   channelValues: {
     payment_order: {
       collect: {
-        shopper_email: 'duitnow.test@example.com',
+        shopper_email: 'customer@example.com',
         telephone_number: '60321414552',
-        product_name: 'DuitNow QR Test',
+        product_name: 'QR Checkout',
       },
     },
   },
@@ -134,11 +134,9 @@ const createFpxBody = (): DepositApiRequestBody => ({
   channelValues: {
     payment_order: {
       collect: {
-        product_name: 'Test',
-        origin: 'https://tangchaoshop.com/fail',
-        shopper_reference: '1',
-        shopper_email: 'test@example.com',
-        telephone_number: '+60123456789',
+        shopper_email: 'customer@example.com',
+        telephone_number: '60123456789',
+        product_name: 'Bank Transfer Checkout',
       },
     },
   },
@@ -332,9 +330,9 @@ describe('deposit API routes', () => {
     expect(channelValues).toEqual({
       payment_order: {
         collect: {
-          shopper_email: 'duitnow.test@example.com',
+          shopper_email: 'customer@example.com',
           telephone_number: '60321414552',
-          product_name: 'DuitNow QR Test',
+          product_name: 'QR Checkout',
         },
       },
     });
@@ -363,18 +361,14 @@ describe('deposit API routes', () => {
     expect(channelValues).toEqual({
       payment_order: {
         collect: {
-          product_name: 'Test',
-          origin: 'https://tangchaoshop.com/fail',
-          shopper_reference: '1',
-          shopper_email: 'test@example.com',
-          telephone_number: '+60123456789',
+          shopper_email: 'customer@example.com',
+          telephone_number: '60123456789',
+          product_name: 'Bank Transfer Checkout',
         },
       },
     });
     expect(collectFields).toMatchObject({
       product_name: { required: true },
-      origin: { required: true },
-      shopper_reference: { required: true },
       shopper_email: { required: true },
       telephone_number: { required: true },
     });
@@ -914,7 +908,7 @@ describe('deposit API routes', () => {
       amount: { amount: '12.50', currency_code: 'USD' },
       payment_order: {
         collect: {
-          shopper_email: 'duitnow.test@example.com',
+          shopper_email: 'customer@example.com',
           telephone_number: '60321414552',
           product_name: 'Edited DuitNow QR',
         },
@@ -944,10 +938,8 @@ describe('deposit API routes', () => {
       return_url: 'https://merchant.example.com/deposit/result',
       payment_order: {
         collect: {
-          origin: 'https://tangchaoshop.com/fail',
-          shopper_reference: '1',
-          shopper_email: 'test@example.com',
-          telephone_number: '+60123456789',
+          shopper_email: 'customer@example.com',
+          telephone_number: '60123456789',
           product_name: 'Edited FPX Checkout',
         },
       },
