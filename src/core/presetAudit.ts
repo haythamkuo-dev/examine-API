@@ -66,6 +66,9 @@ const auditFiles = [
   ...createFeatureFiles('subscription', SUBSCRIPTION_CHANNELS),
 ];
 
+const isTopLevelJsonObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
 const createEntry = async (
   file: PresetAuditFile,
   dataDirPath: string,
@@ -74,7 +77,11 @@ const createEntry = async (
   const filePath = join(dataDirPath, file.relativePath);
 
   try {
-    JSON.parse(await readFileText(filePath));
+    const parsed: unknown = JSON.parse(await readFileText(filePath));
+    if (!isTopLevelJsonObject(parsed)) {
+      throw new TypeError('Preset JSON must be a top-level object');
+    }
+
     return {
       feature: file.feature,
       sourceFile: file.relativePath,
