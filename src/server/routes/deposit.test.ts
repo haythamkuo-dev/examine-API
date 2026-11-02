@@ -188,6 +188,33 @@ const createKplusBody = (): DepositApiRequestBody => ({
   },
 });
 
+const createTmnBody = (): DepositApiRequestBody => ({
+  channel: 'th_tmn_usd',
+  commonValues: {
+    productNo: 'DEP-SINGLEPAYMENT-TMN-USD',
+    merchantRef: 'TEST-TMN-USD-000001',
+    amount: '100.00',
+    currencyCode: 'USD',
+    returnUrl: 'https://merchant.example.com/deposit/result',
+  },
+  channelValues: {
+    payment_order: {
+      country_code: 'TH',
+      product_detail: 'Test TrueMoney Wallet USD order for %s',
+      singlepayment_tmn: {
+        shopper_email: 'payer.usd@example.com',
+        holder_name: 'Test USD Payer',
+        origin: 'https://merchant.example.com',
+        shopper_reference: 'TEST-TMN-PAYER-USD-000001',
+        browser_info: {
+          os_type: 'ANDROID',
+          terminal_type: 'WAP',
+        },
+      },
+    },
+  },
+});
+
 describe('deposit API routes', () => {
   let context: ApiTestServerContext;
 
@@ -651,6 +678,39 @@ describe('deposit API routes', () => {
     });
   });
 
+  test('GET /api/deposit/defaults returns the Thailand TrueMoney USD defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=th_tmn_usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const paymentOrder = channelValues.payment_order as Record<string, unknown>;
+    const tmnValues = paymentOrder.singlepayment_tmn as Record<string, unknown>;
+
+    expect(body.channel).toBe('th_tmn_usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-SINGLEPAYMENT-TMN-USD',
+      amount: '100.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toMatchObject({
+      payment_order: {
+        country_code: 'TH',
+        product_detail: 'Test TrueMoney Wallet USD order for %s',
+      },
+    });
+    expect(tmnValues).toMatchObject({
+      shopper_email: 'payer.usd@example.com',
+      holder_name: 'Test USD Payer',
+      origin: 'https://merchant.example.com',
+      shopper_reference: 'TEST-TMN-PAYER-USD-000001',
+      browser_info: { os_type: 'ANDROID', terminal_type: 'WAP' },
+    });
+  });
+
   test('GET /api/deposit/defaults returns the Malaysia Boost USD defaults and schema', async () => {
     const response = await context.requestApi('/api/deposit/defaults?channel=my_boost_usd');
 
@@ -994,6 +1054,35 @@ describe('deposit API routes', () => {
           shopper_email: 'shopper@example.com',
           holder_name: 'Test User',
           browser_info: { os_type: 'ANDROID', terminal_type: 'WEB' },
+        },
+      },
+    });
+  });
+
+  test('POST /api/deposit/preview builds the Thailand TrueMoney USD payload', async () => {
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(createTmnBody()),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as { request: { payload: Record<string, unknown> } };
+    expect(body.request.payload).toMatchObject({
+      product_no: 'DEP-SINGLEPAYMENT-TMN-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '100.00', currency_code: 'USD' },
+      return_url: 'https://merchant.example.com/deposit/result',
+      payment_order: {
+        country_code: 'TH',
+        product_detail: 'Test TrueMoney Wallet USD order for %s',
+        singlepayment_tmn: {
+          shopper_email: 'payer.usd@example.com',
+          holder_name: 'Test USD Payer',
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'TEST-TMN-PAYER-USD-000001',
+          browser_info: { os_type: 'ANDROID', terminal_type: 'WAP' },
         },
       },
     });

@@ -198,6 +198,24 @@ describe('deposit web helpers', () => {
         },
       },
     });
+    expect(result.channels.th_tmn_usd.commonValues).toEqual({
+      productNo: 'DEP-SINGLEPAYMENT-TMN-USD',
+      amount: '100.00',
+      currencyCode: 'USD',
+    });
+    expect(result.channels.th_tmn_usd.values).toMatchObject({
+      payment_order: {
+        country_code: 'TH',
+        product_detail: 'Test TrueMoney Wallet USD order for %s',
+        singlepayment_tmn: {
+          shopper_email: 'payer.usd@example.com',
+          holder_name: 'Test USD Payer',
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'TEST-TMN-PAYER-USD-000001',
+          browser_info: { os_type: 'ANDROID', terminal_type: 'WAP' },
+        },
+      },
+    });
     expect(result.channels.my_boost_usd.commonValues).toEqual({
       productNo: 'DEP-SINGLEPAYMENT-BOOST-USD',
       amount: '45.00',
@@ -367,6 +385,35 @@ describe('deposit web helpers', () => {
           shopper_email: 'shopper@example.com',
           holder_name: 'Test User',
           browser_info: { os_type: 'ANDROID', terminal_type: 'WEB' },
+        },
+      },
+    });
+  });
+
+  test('builds the Thailand TrueMoney USD request with the provider-specific payload key', () => {
+    const defaults = toDepositDefaultsResponse(
+      'th_tmn_usd',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-SINGLEPAYMENT-TMN-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '100.00', currency_code: 'USD' },
+      return_url: 'https://merchant.example.com/deposit',
+      payment_order: {
+        country_code: 'TH',
+        product_detail: 'Test TrueMoney Wallet USD order for %s',
+        singlepayment_tmn: {
+          shopper_email: 'payer.usd@example.com',
+          holder_name: 'Test USD Payer',
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'TEST-TMN-PAYER-USD-000001',
+          browser_info: { os_type: 'ANDROID', terminal_type: 'WAP' },
         },
       },
     });

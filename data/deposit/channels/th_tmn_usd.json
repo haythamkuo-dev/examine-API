@@ -1,0 +1,83 @@
+{
+  "commonValues": {
+    "amount": "100.00",
+    "currencyCode": "USD",
+    "productNo": "DEP-SINGLEPAYMENT-TMN-USD"
+  },
+  "schema": {
+    "payment_order": {
+      "fields": {
+        "country_code": {
+          "kind": "text",
+          "label": "Country code",
+          "required": true
+        },
+        "product_detail": {
+          "kind": "textarea",
+          "label": "Product detail",
+          "required": true
+        },
+        "singlepayment_tmn": {
+          "fields": {
+            "browser_info": {
+              "fields": {
+                "os_type": {
+                  "kind": "text",
+                  "label": "OS type",
+                  "required": true
+                },
+                "terminal_type": {
+                  "kind": "text",
+                  "label": "Terminal type",
+                  "required": true
+                }
+              },
+              "kind": "object",
+              "label": "Browser info"
+            },
+            "holder_name": {
+              "kind": "text",
+              "label": "Holder name",
+              "required": true
+            },
+            "origin": {
+              "kind": "text",
+              "label": "Origin",
+              "required": true
+            },
+            "shopper_email": {
+              "kind": "text",
+              "label": "Shopper email",
+              "required": true
+            },
+            "shopper_reference": {
+              "kind": "text",
+              "label": "Shopper reference",
+              "required": true
+            }
+          },
+          "kind": "object",
+          "label": "TrueMoney"
+        }
+      },
+      "kind": "object",
+      "label": "Payment order"
+    }
+  },
+  "values": {
+    "payment_order": {
+      "country_code": "TH",
+      "product_detail": "Test TrueMoney Wallet USD order for %s",
+      "singlepayment_tmn": {
+        "browser_info": {
+          "os_type": "ANDROID",
+          "terminal_type": "WAP"
+        },
+        "holder_name": "Test USD Payer",
+        "origin": "https://merchant.example.com",
+        "shopper_email": "payer.usd@example.com",
+        "shopper_reference": "TEST-TMN-PAYER-USD-000001"
+      }
+    }
+  }
+}

@@ -327,6 +327,23 @@ const KPLUS_SCHEMA: DepositFieldMap = {
   }),
 };
 
+const TMN_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    country_code: textField('Country code', true),
+    product_detail: textareaField('Product detail', true),
+    singlepayment_tmn: objectField('TrueMoney', {
+      shopper_email: textField('Shopper email', true),
+      holder_name: textField('Holder name', true),
+      origin: textField('Origin', true),
+      shopper_reference: textField('Shopper reference', true),
+      browser_info: objectField('Browser info', {
+        os_type: textField('OS type', true),
+        terminal_type: textField('Terminal type', true),
+      }),
+    }),
+  }),
+};
+
 const BOOST_SCHEMA: DepositFieldMap = {
   payment_order: objectField('Payment order', {
     country_code: textField('Country code', true),
@@ -705,6 +722,30 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
           browser_info: {
             os_type: 'ANDROID',
             terminal_type: 'WEB',
+          },
+        },
+      },
+    },
+  },
+  th_tmn_usd: {
+    commonValues: {
+      productNo: 'DEP-SINGLEPAYMENT-TMN-USD',
+      amount: '100.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(TMN_SCHEMA),
+    values: {
+      payment_order: {
+        country_code: 'TH',
+        product_detail: 'Test TrueMoney Wallet USD order for %s',
+        singlepayment_tmn: {
+          shopper_email: 'payer.usd@example.com',
+          holder_name: 'Test USD Payer',
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'TEST-TMN-PAYER-USD-000001',
+          browser_info: {
+            os_type: 'ANDROID',
+            terminal_type: 'WAP',
           },
         },
       },

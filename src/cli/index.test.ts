@@ -91,6 +91,28 @@ describe('request builders', () => {
     });
   });
 
+  test('builds the Thailand TrueMoney USD deposit request with the normal merchant token', () => {
+    const request = createDepositRequest(env, 'th_tmn_usd', makeId);
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(request.payload).toMatchObject({
+      product_no: 'DEP-SINGLEPAYMENT-TMN-USD',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '100.00', currency_code: 'USD' },
+      payment_order: {
+        country_code: 'TH',
+        product_detail: 'Test TrueMoney Wallet USD order for %s',
+        singlepayment_tmn: {
+          shopper_email: 'payer.usd@example.com',
+          holder_name: 'Test USD Payer',
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'TEST-TMN-PAYER-USD-000001',
+          browser_info: { os_type: 'ANDROID', terminal_type: 'WAP' },
+        },
+      },
+    });
+  });
+
   test('builds the DUITNOW QR USD deposit request with the normal merchant token', () => {
     const request = createDepositRequest(env, 'duitnowqr_usd', makeId);
 

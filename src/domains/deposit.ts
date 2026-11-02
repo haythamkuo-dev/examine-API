@@ -296,6 +296,25 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  th_tmn_usd: {
+    product_no: 'DEP-SINGLEPAYMENT-TMN-USD',
+    amount: { amount: '100.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      country_code: 'TH',
+      product_detail: 'Test TrueMoney Wallet USD order for %s',
+      singlepayment_tmn: {
+        shopper_email: 'payer.usd@example.com',
+        holder_name: 'Test USD Payer',
+        origin: 'https://merchant.example.com',
+        shopper_reference: 'TEST-TMN-PAYER-USD-000001',
+        browser_info: {
+          os_type: 'ANDROID',
+          terminal_type: 'WAP',
+        },
+      },
+    },
+  },
   my_tng: {
     product_no: 'DEP-SINGLEPAYMENT-TNG-MYR',
     amount: { amount: '45.00', currency_code: 'MYR' },

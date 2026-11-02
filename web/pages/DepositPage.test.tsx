@@ -279,6 +279,7 @@ describe('DepositPage', () => {
     expect(getDepositChannelLabel('loki-intercard-id-usd')).toBe('loki-ID');
     expect(getDepositChannelLabel('loki-intercard-hk-usd')).toBe('loki-HK');
     expect(getDepositChannelLabel('th_kplus_usd')).toBe('泰國-kplus-USD');
+    expect(getDepositChannelLabel('th_tmn_usd')).toBe('泰國-TMN-USD');
     expect(getDepositChannelLabel('my_fpx_usd')).toBe('馬來西亞-FPX');
     expect(getDepositChannelLabel('mx_spei_usd')).toBe('墨西哥-SPEI-USD');
     expect(getDepositChannelLabel('ALIPAY-8000')).toBe('鴻運-8000-CNY');
