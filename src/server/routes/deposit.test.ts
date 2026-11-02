@@ -215,6 +215,30 @@ const createTmnBody = (): DepositApiRequestBody => ({
   },
 });
 
+const createHongyunWechat6013Body = (): DepositApiRequestBody => ({
+  channel: 'WECHAT-6013',
+  commonValues: {
+    productNo: 'DEP-HONGYUNPAY-WECHAT6013-CNY',
+    merchantRef: 'TEST-HY-6013-CNY-000001',
+    amount: '10.00',
+    currencyCode: 'CNY',
+    returnUrl: 'https://merchant.example.com/deposit/result',
+  },
+  channelValues: {},
+});
+
+const createHongyunWechat6038Body = (): DepositApiRequestBody => ({
+  channel: 'WECHAT-6038',
+  commonValues: {
+    productNo: 'DEP-HONGYUNPAY-WECHAT6038-CNY',
+    merchantRef: 'TEST-HY-6038-CNY-000001',
+    amount: '10.00',
+    currencyCode: 'CNY',
+    returnUrl: 'https://merchant.example.com/deposit/result',
+  },
+  channelValues: {},
+});
+
 describe('deposit API routes', () => {
   let context: ApiTestServerContext;
 
@@ -763,6 +787,44 @@ describe('deposit API routes', () => {
     expect(channelValues).toEqual({});
   });
 
+  test('GET /api/deposit/defaults returns the Hongyun WeChat 6013 CNY defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=WECHAT-6013');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('WECHAT-6013');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-HONGYUNPAY-WECHAT6013-CNY',
+      amount: '10.00',
+      currencyCode: 'CNY',
+    });
+    expect(channelValues).toEqual({});
+  });
+
+  test('GET /api/deposit/defaults returns the Hongyun WeChat 6038 CNY defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=WECHAT-6038');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('WECHAT-6038');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-HONGYUNPAY-WECHAT6038-CNY',
+      amount: '10.00',
+      currencyCode: 'CNY',
+    });
+    expect(channelValues).toEqual({});
+  });
+
   test('GET /api/deposit/defaults returns the Hongyun Alipay 6014 USD defaults', async () => {
     const response = await context.requestApi('/api/deposit/defaults?channel=ALIPAY-6014-USD');
 
@@ -1086,6 +1148,44 @@ describe('deposit API routes', () => {
         },
       },
     });
+  });
+
+  test('POST /api/deposit/preview builds the Hongyun WeChat 6013 CNY payload', async () => {
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(createHongyunWechat6013Body()),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as { request: { payload: Record<string, unknown> } };
+    expect(body.request.payload).toMatchObject({
+      product_no: 'DEP-HONGYUNPAY-WECHAT6013-CNY',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'CNY' },
+      return_url: 'https://merchant.example.com/deposit/result',
+    });
+    expect(body.request.payload).not.toHaveProperty('payment_order');
+  });
+
+  test('POST /api/deposit/preview builds the Hongyun WeChat 6038 CNY payload', async () => {
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(createHongyunWechat6038Body()),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as { request: { payload: Record<string, unknown> } };
+    expect(body.request.payload).toMatchObject({
+      product_no: 'DEP-HONGYUNPAY-WECHAT6038-CNY',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'CNY' },
+      return_url: 'https://merchant.example.com/deposit/result',
+    });
+    expect(body.request.payload).not.toHaveProperty('payment_order');
   });
 
   test('POST /api/deposit/preview requires a PIX shopper email', async () => {

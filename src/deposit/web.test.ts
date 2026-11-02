@@ -244,6 +244,18 @@ describe('deposit web helpers', () => {
       currencyCode: 'USD',
     });
     expect(result.channels['WECHAT-6016-USD'].values).toEqual({});
+    expect(result.channels['WECHAT-6013'].commonValues).toEqual({
+      productNo: 'DEP-HONGYUNPAY-WECHAT6013-CNY',
+      amount: '10.00',
+      currencyCode: 'CNY',
+    });
+    expect(result.channels['WECHAT-6013'].values).toEqual({});
+    expect(result.channels['WECHAT-6038'].commonValues).toEqual({
+      productNo: 'DEP-HONGYUNPAY-WECHAT6038-CNY',
+      amount: '10.00',
+      currencyCode: 'CNY',
+    });
+    expect(result.channels['WECHAT-6038'].values).toEqual({});
     expect(result.channels['ALIPAY-6014-USD'].commonValues).toEqual({
       productNo: 'DEP-HONGYUNPAY-ALIPAY6014-USD',
       amount: '120.00',
@@ -295,6 +307,44 @@ describe('deposit web helpers', () => {
       product_no: 'DEP-HONGYUNPAY-WECHAT6016-USD',
       merchant_ref: 'TEST_ORDER_fixed-id',
       amount: { amount: '100.00', currency_code: 'USD' },
+      return_url: 'https://merchant.example.com/deposit',
+    });
+    expect(payload).not.toHaveProperty('payment_order');
+  });
+
+  test('builds the Hongyun WeChat 6013 CNY request without provider-specific fields', () => {
+    const defaults = toDepositDefaultsResponse(
+      'WECHAT-6013',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-HONGYUNPAY-WECHAT6013-CNY',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'CNY' },
+      return_url: 'https://merchant.example.com/deposit',
+    });
+    expect(payload).not.toHaveProperty('payment_order');
+  });
+
+  test('builds the Hongyun WeChat 6038 CNY request without provider-specific fields', () => {
+    const defaults = toDepositDefaultsResponse(
+      'WECHAT-6038',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-HONGYUNPAY-WECHAT6038-CNY',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'CNY' },
       return_url: 'https://merchant.example.com/deposit',
     });
     expect(payload).not.toHaveProperty('payment_order');

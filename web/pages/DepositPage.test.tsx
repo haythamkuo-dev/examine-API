@@ -284,6 +284,8 @@ describe('DepositPage', () => {
     expect(getDepositChannelLabel('mx_spei_usd')).toBe('墨西哥-SPEI-USD');
     expect(getDepositChannelLabel('ALIPAY-8000')).toBe('鴻運-8000-CNY');
     expect(getDepositChannelLabel('ALIPAY-6014')).toBe('鴻運-6014-CNY');
+    expect(getDepositChannelLabel('WECHAT-6013')).toBe('鴻運-6013-CNY');
+    expect(getDepositChannelLabel('WECHAT-6038')).toBe('鴻運-6038-CNY');
     expect(getDepositChannelLabel('WECHAT-6016')).toBe('鴻運-6016-CNY');
     expect(getDepositChannelLabel('WECHAT-6016-USD')).toBe('鴻運-6016-USD');
     expect(getDepositChannelLabel('ALIPAY-6014-USD')).toBe('鴻運-6014-USD');

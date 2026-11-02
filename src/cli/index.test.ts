@@ -186,6 +186,30 @@ describe('request builders', () => {
     expect(request.payload).not.toHaveProperty('payment_order');
   });
 
+  test('builds the Hongyun WeChat 6013 CNY deposit request with the normal merchant token', () => {
+    const request = createDepositRequest(env, 'WECHAT-6013', makeId);
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(request.payload).toMatchObject({
+      product_no: 'DEP-HONGYUNPAY-WECHAT6013-CNY',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'CNY' },
+    });
+    expect(request.payload).not.toHaveProperty('payment_order');
+  });
+
+  test('builds the Hongyun WeChat 6038 CNY deposit request with the normal merchant token', () => {
+    const request = createDepositRequest(env, 'WECHAT-6038', makeId);
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(request.payload).toMatchObject({
+      product_no: 'DEP-HONGYUNPAY-WECHAT6038-CNY',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '10.00', currency_code: 'CNY' },
+    });
+    expect(request.payload).not.toHaveProperty('payment_order');
+  });
+
   test('builds the Hongyun Alipay 6014 USD deposit request with the normal merchant token', () => {
     const request = createDepositRequest(env, 'ALIPAY-6014-USD', makeId);
 

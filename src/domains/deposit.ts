@@ -484,6 +484,8 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
   'ALIPAY-8000': { product_no: 'DEP-HONGYUNPAY-ALIPAY8000-CNY', amount: { amount: '100.00', currency_code: 'CNY' }, return_url: env.callbackUrlDeposit },
   'ALIPAY-6014': { product_no: 'DEP-HONGYUNPAY-ALIPAY6014-CNY', amount: { amount: '120.00', currency_code: 'CNY' }, return_url: env.callbackUrlDeposit },
   'ALIPAY-6014-USD': { product_no: 'DEP-HONGYUNPAY-ALIPAY6014-USD', amount: { amount: '120.00', currency_code: 'USD' }, return_url: env.callbackUrlDeposit },
+  'WECHAT-6013': { product_no: 'DEP-HONGYUNPAY-WECHAT6013-CNY', amount: { amount: '10.00', currency_code: 'CNY' }, return_url: env.callbackUrlDeposit },
+  'WECHAT-6038': { product_no: 'DEP-HONGYUNPAY-WECHAT6038-CNY', amount: { amount: '10.00', currency_code: 'CNY' }, return_url: env.callbackUrlDeposit },
   'WECHAT-6016': { product_no: 'DEP-HONGYUNPAY-WECHAT6016-CNY', amount: { amount: '150.00', currency_code: 'CNY' }, return_url: env.callbackUrlDeposit },
   'WECHAT-6016-USD': { product_no: 'DEP-HONGYUNPAY-WECHAT6016-USD', amount: { amount: '100.00', currency_code: 'USD' }, return_url: env.callbackUrlDeposit },
   'cmoney-intercard': { product_no: 'DEP-CMONEY-INTERCARD-USD', amount: { amount: '100.00', currency_code: 'USD' }, return_url: env.callbackUrlDeposit },
