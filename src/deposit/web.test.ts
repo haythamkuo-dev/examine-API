@@ -212,7 +212,7 @@ describe('deposit web helpers', () => {
           holder_name: 'Test USD Payer',
           origin: 'https://merchant.example.com',
           shopper_reference: 'TEST-TMN-PAYER-USD-000001',
-          browser_info: { os_type: 'ANDROID', terminal_type: 'WAP' },
+          browser_info: { os_type: 'ANDROID', terminal_type: 'WEB' },
         },
       },
     });
@@ -413,7 +413,7 @@ describe('deposit web helpers', () => {
           holder_name: 'Test USD Payer',
           origin: 'https://merchant.example.com',
           shopper_reference: 'TEST-TMN-PAYER-USD-000001',
-          browser_info: { os_type: 'ANDROID', terminal_type: 'WAP' },
+          browser_info: { os_type: 'ANDROID', terminal_type: 'WEB' },
         },
       },
     });

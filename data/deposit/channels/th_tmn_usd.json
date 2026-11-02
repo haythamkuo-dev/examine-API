@@ -71,7 +71,7 @@
       "singlepayment_tmn": {
         "browser_info": {
           "os_type": "ANDROID",
-          "terminal_type": "WAP"
+          "terminal_type": "WEB"
         },
         "holder_name": "Test USD Payer",
         "origin": "https://merchant.example.com",

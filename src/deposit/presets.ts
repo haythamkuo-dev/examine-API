@@ -745,7 +745,7 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
           shopper_reference: 'TEST-TMN-PAYER-USD-000001',
           browser_info: {
             os_type: 'ANDROID',
-            terminal_type: 'WAP',
+            terminal_type: 'WEB',
           },
         },
       },
