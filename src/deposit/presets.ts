@@ -6,7 +6,10 @@ import {
   type CliEnv,
   type DepositChannel,
 } from '../core/env';
-import type { PersistentPresetProjection } from '../core/presetStorage';
+import {
+  stripTransientMerchantReferenceKeys,
+  type PersistentPresetProjection,
+} from '../core/presetStorage';
 import type {
   DepositChannelValues,
   DepositCommonValues,
@@ -1169,7 +1172,9 @@ const normalizeChannelConfig = (
 ): DepositChannelConfig => ({
   commonValues: normalizeChannelCommonValues(source.commonValues || {}, seed.commonValues),
   schema: (source.schema as DepositFieldMap) || seed.schema,
-  values: source.values ? clone(source.values) : clone(seed.values),
+  values: source.values
+    ? clone(stripTransientMerchantReferenceKeys(source.values))
+    : clone(seed.values),
 });
 
 export const normalizeDepositPresets = (
@@ -1231,8 +1236,8 @@ export const toDepositPersistentProjection = (
     DEPOSIT_CHANNELS.map((channel) => [
       channel,
       {
-        channelCommonValues: clone(store.channels[channel].commonValues) as Record<string, unknown>,
-        channelValues: clone(store.channels[channel].values) as Record<string, unknown>,
+        channelCommonValues: clone(stripTransientMerchantReferenceKeys(store.channels[channel].commonValues)),
+        channelValues: clone(stripTransientMerchantReferenceKeys(store.channels[channel].values)),
       },
     ]),
   ) as Record<DepositChannel, { channelCommonValues: Record<string, unknown>; channelValues: Record<string, unknown> }>,
@@ -1297,7 +1302,13 @@ export const saveDepositPresets = async ({
   });
 
   await Promise.all(
-    DEPOSIT_CHANNELS.map((channel) => writeJson(getChannelFilePath(dirPath, channel), presets.channels[channel])),
+    DEPOSIT_CHANNELS.map((channel) =>
+      writeJson(getChannelFilePath(dirPath, channel), {
+        ...presets.channels[channel],
+        commonValues: stripTransientMerchantReferenceKeys(presets.channels[channel].commonValues),
+        values: stripTransientMerchantReferenceKeys(presets.channels[channel].values),
+      }),
+    ),
   );
 };
 
@@ -1335,6 +1346,7 @@ export const updateDepositPreset = async ({
 }): Promise<DepositPresetStore> => {
   const presets = await loadDepositPresets({ dirPath, env, makeId });
   const splitValues = splitCommonValues(channel, values.commonValues);
+  const persistentChannelValues = clone(stripTransientMerchantReferenceKeys(values.channelValues));
 
   presets.common.values = {
     ...presets.common.values,
@@ -1346,7 +1358,7 @@ export const updateDepositPreset = async ({
       ...presets.channels[channel].commonValues,
       ...splitValues.channelOwned,
     },
-    values: clone(values.channelValues),
+    values: persistentChannelValues,
   };
 
   const { merchantRef: _merchantRef, ...persistentCommonValues } = presets.common.values;
@@ -1354,7 +1366,11 @@ export const updateDepositPreset = async ({
     ...presets.common,
     values: persistentCommonValues,
   });
-  await writeJson(getChannelFilePath(dirPath, channel), presets.channels[channel]);
+  await writeJson(getChannelFilePath(dirPath, channel), {
+    ...presets.channels[channel],
+    commonValues: stripTransientMerchantReferenceKeys(presets.channels[channel].commonValues),
+    values: persistentChannelValues,
+  });
 
   return presets;
 };

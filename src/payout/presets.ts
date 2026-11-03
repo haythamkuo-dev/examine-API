@@ -6,7 +6,10 @@ import {
   type CliEnv,
   type PayoutChannel,
 } from '../core/env';
-import type { PersistentPresetProjection } from '../core/presetStorage';
+import {
+  stripTransientMerchantReferenceKeys,
+  type PersistentPresetProjection,
+} from '../core/presetStorage';
 import type {
   PayoutChannelValues,
   PayoutCommonValues,
@@ -146,7 +149,7 @@ const getSeedChannelConfig = async (
   channel: PayoutChannel,
 ): Promise<PayoutChannelConfig> => {
   const payload = (await readJsonFile<Record<string, unknown>>(getChannelPayloadFilePath(dirPath, channel))) || {};
-  const { [merchantReferenceKey]: _merchantReference, ...channelValues } = payload;
+  const channelValues = stripTransientMerchantReferenceKeys(payload);
 
   return {
     schema: inferSchemaMap(channelValues),
@@ -191,7 +194,9 @@ const normalizeChannelConfig = (
   seed: PayoutChannelConfig,
 ): PayoutChannelConfig => ({
   schema: (source.schema as PayoutFieldMap) || seed.schema,
-  values: source.values ? clone(source.values) : clone(seed.values),
+  values: source.values
+    ? clone(stripTransientMerchantReferenceKeys(source.values))
+    : clone(seed.values),
 });
 
 /**
@@ -256,7 +261,7 @@ export const toPayoutPersistentProjection = (
       channel,
       {
         channelCommonValues: {},
-        channelValues: clone(store.channels[channel].values) as Record<string, unknown>,
+        channelValues: clone(stripTransientMerchantReferenceKeys(store.channels[channel].values)),
       },
     ]),
   ) as Record<PayoutChannel, { channelCommonValues: Record<string, unknown>; channelValues: Record<string, unknown> }>,
@@ -309,7 +314,12 @@ export const savePayoutPresets = async ({
   await writeJson(getCommonFilePath(dirPath), toCommonFile(presets.common));
 
   await Promise.all(
-    PAYOUT_CHANNELS.map((channel) => writeJson(getChannelPayloadFilePath(dirPath, channel), presets.channels[channel].values)),
+    PAYOUT_CHANNELS.map((channel) =>
+      writeJson(
+        getChannelPayloadFilePath(dirPath, channel),
+        stripTransientMerchantReferenceKeys(presets.channels[channel].values),
+      ),
+    ),
   );
 };
 
@@ -335,14 +345,15 @@ export const updatePayoutPreset = async ({
   makeId: (prefix: string) => string;
 }): Promise<PayoutPresetStore> => {
   const presets = await loadPayoutPresets({ dirPath, makeId });
+  const persistentChannelValues = clone(stripTransientMerchantReferenceKeys(values.channelValues));
 
   presets.channels[channel] = {
     ...presets.channels[channel],
-    values: clone(values.channelValues),
+    values: persistentChannelValues,
   };
 
   await writeJson(getCommonFilePath(dirPath), toCommonFile(presets.common));
-  await writeJson(getChannelPayloadFilePath(dirPath, channel), presets.channels[channel].values);
+  await writeJson(getChannelPayloadFilePath(dirPath, channel), persistentChannelValues);
 
   return presets;
 };

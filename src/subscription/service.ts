@@ -1,6 +1,6 @@
 import { SUBSCRIPTION_CHANNELS, type CliEnv, type SubscriptionChannel } from '../core/env';
 import { createPresetBackedService } from '../core/createPresetBackedService';
-import { createJsonPresetStorage } from '../core/presetStorage';
+import { createJsonPresetStorage, stripTransientMerchantReferenceKeys } from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
 import {
@@ -28,6 +28,10 @@ export type SubscriptionServiceDeps = {
   logger: Logger;
 };
 
+type SubscriptionPersistentFormValues = Omit<SubscriptionFormValues, 'commonValues'> & {
+  commonValues: Omit<SubscriptionFormValues['commonValues'], 'merchantRef'>;
+};
+
 /**
  * Resolves the requested subscription channel from the query string.
  *
@@ -46,13 +50,29 @@ export const getRequestedSubscriptionChannel = (url: URL): SubscriptionChannel =
  * @returns The subscription service API used by the HTTP layer.
  */
 export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
-  const storage = createJsonPresetStorage({
+  const storage = createJsonPresetStorage<
+    SubscriptionChannel,
+    SubscriptionFormValues,
+    Awaited<ReturnType<typeof loadSubscriptionPresets>>,
+    SubscriptionPersistentFormValues
+  >({
     load: () =>
       loadSubscriptionPresets({
         dirPath: deps.presetDirPath,
         env: deps.getEnvForTarget('local'),
         makeId: deps.makeId,
       }),
+    toPersistentInput: ({ channel, values }) => {
+      const { merchantRef: _merchantRef, ...commonValues } = values.commonValues;
+      return {
+        channel,
+        values: {
+          channel: values.channel,
+          commonValues,
+          channelValues: stripTransientMerchantReferenceKeys(values.channelValues),
+        },
+      };
+    },
     save: ({ channel, values }) =>
       updateSubscriptionPreset({
         dirPath: deps.presetDirPath,

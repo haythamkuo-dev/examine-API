@@ -1,6 +1,6 @@
 import { PAYOUT_CHANNELS, type CliEnv, type PayoutChannel } from '../core/env';
 import { createPresetBackedService } from '../core/createPresetBackedService';
-import { createJsonPresetStorage } from '../core/presetStorage';
+import { createJsonPresetStorage, stripTransientMerchantReferenceKeys } from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
 import {
@@ -28,6 +28,10 @@ export type PayoutServiceDeps = {
   logger: Logger;
 };
 
+type PayoutPersistentFormValues = Omit<PayoutFormValues, 'commonValues'> & {
+  commonValues: Omit<PayoutFormValues['commonValues'], 'merchantReference'>;
+};
+
 /**
  * Resolves the requested payout channel from the query string.
  *
@@ -46,12 +50,28 @@ export const getRequestedPayoutChannel = (url: URL): PayoutChannel => {
  * @returns The payout service API used by the HTTP layer.
  */
 export const createPayoutService = (deps: PayoutServiceDeps) => {
-  const storage = createJsonPresetStorage({
+  const storage = createJsonPresetStorage<
+    PayoutChannel,
+    PayoutFormValues,
+    Awaited<ReturnType<typeof loadPayoutPresets>>,
+    PayoutPersistentFormValues
+  >({
     load: () =>
       loadPayoutPresets({
         dirPath: deps.presetDirPath,
         makeId: deps.makeId,
       }),
+    toPersistentInput: ({ channel, values }) => {
+      const { merchantReference: _merchantReference, ...commonValues } = values.commonValues;
+      return {
+        channel,
+        values: {
+          channel: values.channel,
+          commonValues,
+          channelValues: stripTransientMerchantReferenceKeys(values.channelValues),
+        },
+      };
+    },
     save: ({ channel, values }) =>
       updatePayoutPreset({
         dirPath: deps.presetDirPath,

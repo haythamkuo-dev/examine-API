@@ -1,6 +1,6 @@
 import { DEPOSIT_CHANNELS, type CliEnv, type DepositChannel } from '../core/env';
 import { createPresetBackedService } from '../core/createPresetBackedService';
-import { createJsonPresetStorage } from '../core/presetStorage';
+import { createJsonPresetStorage, stripTransientMerchantReferenceKeys } from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
 import {
@@ -28,6 +28,10 @@ export type DepositServiceDeps = {
   logger: Logger;
 };
 
+type DepositPersistentFormValues = Omit<DepositFormValues, 'commonValues'> & {
+  commonValues: Omit<DepositFormValues['commonValues'], 'merchantRef'>;
+};
+
 /**
  * Resolves the requested deposit channel from the query string.
  *
@@ -46,13 +50,29 @@ export const getRequestedDepositChannel = (url: URL): DepositChannel => {
  * @returns The deposit service API used by the HTTP layer.
  */
 export const createDepositService = (deps: DepositServiceDeps) => {
-  const storage = createJsonPresetStorage({
+  const storage = createJsonPresetStorage<
+    DepositChannel,
+    DepositFormValues,
+    Awaited<ReturnType<typeof loadDepositPresets>>,
+    DepositPersistentFormValues
+  >({
     load: () =>
       loadDepositPresets({
         dirPath: deps.presetDirPath,
         env: deps.getEnvForTarget('local'),
         makeId: deps.makeId,
       }),
+    toPersistentInput: ({ channel, values }) => {
+      const { merchantRef: _merchantRef, ...commonValues } = values.commonValues;
+      return {
+        channel,
+        values: {
+          channel: values.channel,
+          commonValues,
+          channelValues: stripTransientMerchantReferenceKeys(values.channelValues),
+        },
+      };
+    },
     save: ({ channel, values }) =>
       updateDepositPreset({
         dirPath: deps.presetDirPath,

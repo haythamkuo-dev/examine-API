@@ -200,6 +200,7 @@ describe('payout web helpers', () => {
       await loadPayoutPresets({ dirPath: presetDirPath, makeId }),
     ).form;
     values.commonValues.merchantReference = 'TEST_ORDER_OVERRIDDEN';
+    values.channelValues.merchant_reference = 'TEST_CHANNEL_MERCHANT_REFERENCE';
     (values.channelValues.payout_info as Record<string, unknown>).narration = 'Updated payout narration';
 
     const presets = await updatePayoutPreset({
@@ -211,8 +212,10 @@ describe('payout web helpers', () => {
 
     const savedCommon = await readFile(join(presetDirPath, 'common.json'), 'utf8');
     const savedChannel = await readFile(join(presetDirPath, 'channels', 'co_wallet.json'), 'utf8');
+    const savedChannelValues = JSON.parse(savedChannel) as Record<string, unknown>;
     expect(presets.common.values).not.toHaveProperty('merchantReference');
     expect(savedCommon).not.toContain('merchant_reference');
+    expect(savedChannelValues).not.toHaveProperty('merchant_reference');
     expect(savedChannel).toContain('"narration": "Updated payout narration"');
   });
 });

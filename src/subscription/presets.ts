@@ -7,7 +7,10 @@ import {
   type CliEnv,
   type SubscriptionChannel,
 } from '../core/env';
-import type { PersistentPresetProjection } from '../core/presetStorage';
+import {
+  stripTransientMerchantReferenceKeys,
+  type PersistentPresetProjection,
+} from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type {
   SubscriptionChannelValues,
@@ -176,10 +179,11 @@ const getSeedChannelConfig = async (
   channel: SubscriptionChannel,
 ): Promise<SubscriptionChannelConfig> => {
   const payload = (await readJsonFile<Record<string, unknown>>(getChannelPayloadFilePath(dirPath, channel))) || {};
+  const channelValues = stripTransientMerchantReferenceKeys(stripReadonlyChannelValues(payload));
 
   return {
-    schema: inferSchemaMap(payload),
-    values: clone(stripReadonlyChannelValues(payload)),
+    schema: inferSchemaMap(channelValues),
+    values: clone(channelValues),
   };
 };
 
@@ -226,7 +230,9 @@ const normalizeChannelConfig = (
   seed: SubscriptionChannelConfig,
 ): SubscriptionChannelConfig => ({
   schema: (source.schema as SubscriptionFieldMap) || seed.schema,
-  values: source.values ? clone(source.values) : clone(seed.values),
+  values: source.values
+    ? clone(stripTransientMerchantReferenceKeys(source.values))
+    : clone(seed.values),
 });
 
 /**
@@ -305,7 +311,9 @@ export const toSubscriptionPersistentProjection = (
       channel,
       {
         channelCommonValues: {},
-        channelValues: clone(stripReadonlyChannelValues(store.channels[channel].values)) as Record<string, unknown>,
+        channelValues: clone(
+          stripTransientMerchantReferenceKeys(stripReadonlyChannelValues(store.channels[channel].values)),
+        ),
       },
     ]),
   ) as Record<SubscriptionChannel, { channelCommonValues: Record<string, unknown>; channelValues: Record<string, unknown> }>,
@@ -366,6 +374,9 @@ export const updateSubscriptionPreset = async ({
   env: CliEnv;
   makeId: (prefix: string) => string;
 }): Promise<SubscriptionPresetStore> => {
+  const persistentChannelValues = clone(
+    stripTransientMerchantReferenceKeys(stripReadonlyChannelValues(values.channelValues)),
+  );
   const source: SubscriptionPresetSource = {
     common: {
       values: {
@@ -374,7 +385,7 @@ export const updateSubscriptionPreset = async ({
     },
     channels: {
       [channel]: {
-        values: clone(stripReadonlyChannelValues(values.channelValues)),
+        values: persistentChannelValues,
       },
     },
   };
@@ -383,7 +394,7 @@ export const updateSubscriptionPreset = async ({
   const normalized = normalizeSubscriptionPresets(source, seed);
 
   await writeJson(getCommonFilePath(dirPath), toCommonFile(normalized.common));
-  await writeJson(getChannelPayloadFilePath(dirPath, channel), normalized.channels[channel].values);
+  await writeJson(getChannelPayloadFilePath(dirPath, channel), persistentChannelValues);
 
   return normalized;
 };
