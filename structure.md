@@ -22,8 +22,10 @@
 │   │   │   ├── ALIPAY-HKD.json
 │   │   │   ├── JCB-JPY.json
 │   │   │   ├── JCB-USD.json
+│   │   │   ├── WECHAT-6013.json
 │   │   │   ├── WECHAT-6016-USD.json
 │   │   │   ├── WECHAT-6016.json
+│   │   │   ├── WECHAT-6038.json
 │   │   │   ├── WECHAT-HKD.json
 │   │   │   ├── bdt_worldpay.json
 │   │   │   ├── cmoney-intercard.json
@@ -58,7 +60,8 @@
 │   │   │   ├── th_kplus_usd.json
 │   │   │   ├── th_rabbit_linepay.json
 │   │   │   ├── th_rabbit_linepay_usd.json
-│   │   │   └── th_rabbit_linepay_usd2.json
+│   │   │   ├── th_rabbit_linepay_usd2.json
+│   │   │   └── th_tmn_usd.json
 │   │   └── common.json
 │   ├── payout
 │   │   ├── channels
@@ -83,19 +86,13 @@
 │   ├── scripts
 │   │   └── query_merchant_turnover.sh
 │   └── todos
-│       ├── 2026-10-22-preset-database-migration.md
-│       ├── 2026-10-28-add-loki-hk-deposit-channel.md
-│       ├── 2026-10-28-add-loki-id-deposit-channel.md
-│       ├── 2026-10-28-add-loki-my-deposit-channel.md
-│       ├── 2026-10-28-add-loki-ph-deposit-channel.md
-│       ├── 2026-10-28-add-loki-sg-deposit-channel.md
-│       ├── 2026-10-28-add-loki-th-deposit-channel.md
-│       ├── 2026-10-28-add-loki-vn-deposit-channel.md
-│       └── 2026-10-28-update-fpx-collect-fields.md
+│       └── 2026-10-22-preset-database-migration.md
 ├── example.md
 ├── index.html
 ├── index.ts
 ├── package.json
+├── scripts
+│   └── database.ts
 ├── src
 │   ├── cli
 │   │   ├── depositPrompt.ts
@@ -106,8 +103,15 @@
 │   │   ├── codeFormatValidation.ts
 │   │   ├── createPresetBackedService.test.ts
 │   │   ├── createPresetBackedService.ts
+│   │   ├── database.integration.test.ts
+│   │   ├── database.test.ts
+│   │   ├── database.ts
+│   │   ├── databaseMigrations.test.ts
+│   │   ├── databaseMigrations.ts
 │   │   ├── env.ts
 │   │   ├── formValidation.ts
+│   │   ├── integrationDatabase.test.ts
+│   │   ├── integrationDatabase.ts
 │   │   ├── output.ts
 │   │   ├── presetAudit.test.ts
 │   │   ├── presetAudit.ts
@@ -160,6 +164,9 @@
 │   ├── utils.test.ts
 │   └── utils.ts
 ├── structure.md
+├── supabase
+│   └── migrations
+│       └── 20261103000000_create_preset_store.sql
 ├── tests
 │   ├── formValidation.test.ts
 │   ├── happydom.ts
@@ -213,4 +220,4 @@
     │       └── modal.tsx
     └── styles.css
 
-30 directories, 184 files
+33 directories, 188 files
