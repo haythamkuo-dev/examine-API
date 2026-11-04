@@ -1,21 +1,10 @@
 {
   "name": "examine_api",
   "type": "module",
-  "module": "index.ts",
-  "main": "./dist/index.js",
-  "bin": {
-    "examine-api": "./dist/index.js"
-  },
-  "files": [
-    "dist",
-    "README.md"
-  ],
   "scripts": {
-    "build": "bun build index.ts --outdir dist --format esm --target node --minify",
     "build:api": "bun build src/server/index.ts --outdir dist/server --format esm --target bun",
     "build:web": "vite build",
     "start:api": "bun run dist/server/index.js",
-    "prepublishOnly": "bun run build",
     "test": "bun run test:api && bun run test:web",
     "test:api": "bun test --isolate --preload ./tests/setup.ts ./src tests/formValidation.test.ts",
     "test:web": "bun test --isolate --preload ./tests/web-setup.ts ./web",
@@ -26,13 +15,6 @@
     "db:integration:teardown": "bun run scripts/database.ts integration-teardown",
     "dev:api": "bun --hot run src/server/index.ts",
     "dev:web": "vite",
-    "deposit": "bun run index.ts deposit create",
-    "payout": "bun run index.ts payout create",
-    "subscribe": "bun run index.ts subscription create",
-    "preview:deposit": "bun run index.ts deposit preview",
-    "preview:payout": "bun run index.ts payout preview",
-    "preview:subscription": "bun run index.ts subscription preview",
-    "audit:presets": "bun run src/cli/presetAudit.ts",
     "structure": "tree -a -L 4 -I 'node_modules|dist|design-system|.git|.claude|.github|.codex|.DS_Store|.gitignore' > structure.md"
   },
   "devDependencies": {
@@ -50,7 +32,6 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.0",
-    "commander": "^14.0.3",
     "ora": "^9.4.0",
     "picocolors": "^1.1.1",
     "react": "^19.2.0",

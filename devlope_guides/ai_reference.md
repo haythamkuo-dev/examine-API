@@ -32,7 +32,6 @@
 | --- | --- | --- |
 | 後端執行環境 | Bun + TypeScript | 使用 Bun 的測試、啟動與建置方式，不假設 Node-only API |
 | API 入口 | src/server/index.ts | server 的建立、依賴注入、路由註冊與關閉方式 |
-| CLI 入口 | index.ts | 若變更影響 CLI，說明 CLI 與 API 共用哪些 domain 或 service |
 | 業務邏輯 | src/domains/ | 純 TypeScript 的 payload、簽名、channel 對應與業務型別 |
 | 功能服務 | src/deposit/、src/payout/、src/subscription/ | defaults、preset、validation、preview、create 或 execute 的功能流程 |
 | API 路由 | src/server/routes/ | HTTP parsing、狀態碼、錯誤 envelope 與服務呼叫，不放核心業務邏輯 |

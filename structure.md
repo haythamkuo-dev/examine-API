@@ -5,6 +5,8 @@
 │   └── graph.db.zst
 ├── .env
 ├── .env.example
+├── .env.integration.local
+├── .env.local
 ├── .env.production
 ├── .env.test
 ├── AGENTS.md
@@ -83,22 +85,15 @@
 │   ├── ai_reference.md
 │   ├── issue
 │   ├── review
-│   ├── scripts
-│   │   └── query_merchant_turnover.sh
-│   └── todos
-│       └── 2026-10-22-preset-database-migration.md
-├── example.md
+│   ├── todos
+│   │   └── 2026-10-22-preset-database-migration.md
+│   └── writing
+│       └── query_merchant_turnover.sh
 ├── index.html
-├── index.ts
 ├── package.json
 ├── scripts
 │   └── database.ts
 ├── src
-│   ├── cli
-│   │   ├── depositPrompt.ts
-│   │   ├── index.test.ts
-│   │   ├── index.ts
-│   │   └── presetAudit.ts
 │   ├── core
 │   │   ├── codeFormatValidation.ts
 │   │   ├── createPresetBackedService.test.ts
@@ -170,6 +165,7 @@
 ├── tests
 │   ├── formValidation.test.ts
 │   ├── happydom.ts
+│   ├── integration-setup.ts
 │   ├── server-setup.ts
 │   ├── setup.ts
 │   └── web-setup.ts
@@ -220,4 +216,4 @@
     │       └── modal.tsx
     └── styles.css
 
-33 directories, 188 files
+32 directories, 185 files

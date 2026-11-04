@@ -15,7 +15,6 @@
 
 ### Project Structure
 - see `structure.md`
-- CLI 入口： `index.ts`
 - API server 入口： `src/server/index.ts`
 - Web 前端入口：`web/main.tsx`
 - Web 路由入口：`web/App.tsx`
@@ -41,7 +40,7 @@
 - TypeScript 型別檢查：`tsc --noEmit`
 - API 建置：`bun run build:api`
 - Web 建置：`bun run build:web`
-- CLI／完整套件建置：`bun run build`
+- API／Web 建置：分別執行 `bun run build:api` 與 `bun run build:web`
 - 結構快照：`bun run structure`（只有修改資料夾結構時需要，並更新 `structure.md`）
 - 特定測試與覆蓋率：`bun test --preload ./tests/setup.ts --coverage`
 
@@ -51,7 +50,6 @@
 - 修改 database adapter、migration、database lifecycle 或 PostgreSQL 整合測試流程：執行 `bun run test:api`、`bun run test:db` 與 `tsc --noEmit`。若修改影響 API 建置輸出，再執行 `bun run build:api`。
 - 修改 React page、hook、component、frontend route 或 web 行為：至少執行 `bun run test:web` 與 `tsc --noEmit`；若影響 production bundle、routing 或 frontend build，再執行 `bun run build:web`。
 - 跨越前後端或同時影響兩側公開行為：執行兩側相關測試與建置 gate。
-- 修改 CLI、入口或完整套件建置流程：執行 `bun run build`，並依受影響層級補充 API 或 Web gate。
 - 修改資料夾結構：執行 `bun run structure` 並確認 `structure.md` 已更新。
 - 只修改文件且不影響程式行為：檢查文件格式與引用即可，不要求執行與文件無關的程式驗證。
 
