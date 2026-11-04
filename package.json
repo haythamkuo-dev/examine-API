@@ -19,7 +19,7 @@
     "test": "bun run test:api && bun run test:web",
     "test:api": "bun test --isolate --preload ./tests/setup.ts ./src tests/formValidation.test.ts",
     "test:web": "bun test --isolate --preload ./tests/web-setup.ts ./web",
-    "test:db": "bun test --isolate --preload ./tests/setup.ts ./src/core/database.integration.test.ts",
+    "test:db": "bun test --isolate --preload ./tests/integration-setup.ts ./src/core/database.integration.test.ts",
     "db:migrate": "bun run scripts/database.ts migrate",
     "db:integration:reset": "bun run scripts/database.ts integration-reset",
     "db:integration:provision": "bun run scripts/database.ts integration-provision",

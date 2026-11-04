@@ -3,7 +3,14 @@ import { resolve } from 'path';
 
 const testEnvFilePath = resolve(process.cwd(), '.env.test');
 
-const loadTestEnvironment = (filePath: string): void => {
+/**
+ * Loads environment variables from a dotenv-style file.
+ *
+ * @param filePath Path to the environment file.
+ * @returns Nothing. Parsed values are assigned to `process.env`.
+ * @throws {Error} When the environment file cannot be read.
+ */
+export const loadEnvironmentFile = (filePath: string): void => {
   if (!existsSync(filePath)) {
     return;
   }
@@ -26,4 +33,4 @@ const loadTestEnvironment = (filePath: string): void => {
   }
 };
 
-loadTestEnvironment(testEnvFilePath);
+loadEnvironmentFile(testEnvFilePath);
