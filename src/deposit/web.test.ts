@@ -852,6 +852,7 @@ describe('deposit web helpers', () => {
     const values = toDepositDefaultsResponse('linepay', env, createSeedDepositPresets(env, makeId)).form;
     values.commonValues.productNo = 'DEP-LINEPAY-CUSTOM';
     values.commonValues.merchantRef = 'TEST_ORDER_OVERRIDDEN';
+    values.channelValues.merchant_ref = 'TEST_CHANNEL_MERCHANT_REF';
 
     const presets = await updateDepositPreset({
       dirPath,
@@ -864,8 +865,10 @@ describe('deposit web helpers', () => {
     const savedCommon = await readFile(join(dirPath, 'common.json'), 'utf8');
     const savedChannel = await readFile(join(dirPath, 'channels', 'linepay.json'), 'utf8');
     const savedCommonPreset = JSON.parse(savedCommon) as { values?: Record<string, unknown> };
+    const savedChannelPreset = JSON.parse(savedChannel) as { values?: Record<string, unknown> };
     expect(presets.channels.linepay.commonValues.productNo).toBe('DEP-LINEPAY-CUSTOM');
     expect(savedCommonPreset.values).not.toHaveProperty('merchantRef');
+    expect(savedChannelPreset.values).not.toHaveProperty('merchant_ref');
     expect(savedChannel).toContain('"productNo": "DEP-LINEPAY-CUSTOM"');
   });
 });

@@ -1,6 +1,6 @@
 # examine_api
 
-Internal CLI for exercising deposit, subscription, and payout API flows.
+Internal payment API and web operator for deposit, subscription, and payout flows.
 
 ## Install
 
@@ -32,13 +32,12 @@ bun run dev:api
 bun run dev:web
 ```
 
-## Build for publish
+## Build
 
 ```bash
-bun run build
+bun run build:api
+bun run build:web
 ```
-
-The published package exposes the `examine-api` bin and runs on a Node-compatible runtime.
 
 ## Deploy backend to Render
 

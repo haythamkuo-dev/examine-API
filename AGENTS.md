@@ -15,7 +15,6 @@
 
 ### Project Structure
 - see `structure.md`
-- CLI 入口： `index.ts`
 - API server 入口： `src/server/index.ts`
 - Web 前端入口：`web/main.tsx`
 - Web 路由入口：`web/App.tsx`
@@ -26,37 +25,58 @@
 * **[Backend] 核心邏輯 (純 TS)**: `src/domains/` (包含 Subscription, Payout, Deposit 業務邏輯)
 * **[Backend] API 路由與控制器**: `src/server/routes/` (僅處理 HTTP 傳輸，不含業務邏輯)
 * **[Frontend] UI 畫面與元件**: `web/` (React + Tailwind 相關程式碼，嚴禁混入後端 Node/Bun API)
-* **[Tests] 後端測試**: 與後端源碼同層或位於 `__tests__` 中，並透過 `tests/server-setup.ts` 初始化環境。
-* **[Tests] 前端測試**: 位於 `web/` 內部對應元件旁，並透過 `web-setup.ts` 初始化瀏覽器環境。
+* **[Tests] 後端單元／API 測試**：測試檔案與後端源碼同層或位於 `__tests__` 中。測試使用 `tests/setup.ts` 載入 `.env.test`。需要 server fixture 時，測試使用 `tests/server-setup.ts`。
+* **[Tests] PostgreSQL 整合測試**：測試檔案與 database adapter 或 migration 同層或位於 `__tests__` 中。測試使用 `bun run test:db` 與 `tests/integration-setup.ts`。只有 `test:db` 可以執行這些測試案例。
+* **[Tests] 前端測試**：位於 `web/` 內部對應元件旁，並透過 `web-setup.ts` 初始化瀏覽器環境。
 
 ### Build, Test, and Verification Commands
 
 以下是本專案的驗證命令目錄。每個任務只需依變更範圍選擇適用的 gate，不代表每次都要執行全部命令：
 
-- 前端測試：`bun run test:web`
-- 後端測試：`bun run test:api`
-- 全部測試：`bun run test`
+- 前端測試：`bun run test:web`。此命令使用 Happy DOM 與前端 setup。
+- 後端單元／API 測試：`bun run test:api`。此命令只使用測試 fixture，不連線到 PostgreSQL。
+- PostgreSQL 整合測試：`bun run test:db`。此命令需要可丟棄的整合測試資料庫。
+- 全部一般測試：`bun run test`。此命令執行 `test:api` 與 `test:web`，不執行 `test:db`。
 - TypeScript 型別檢查：`tsc --noEmit`
 - API 建置：`bun run build:api`
 - Web 建置：`bun run build:web`
-- CLI／完整套件建置：`bun run build`
+- API／Web 建置：分別執行 `bun run build:api` 與 `bun run build:web`
 - 結構快照：`bun run structure`（只有修改資料夾結構時需要，並更新 `structure.md`）
 - 特定測試與覆蓋率：`bun test --preload ./tests/setup.ts --coverage`
 
 適用 gate 的基本判斷如下：
 
-- 修改後端 domain、service、validation、API route 或 server 行為：至少執行 `bun run test:api` 與 `tsc --noEmit`；若影響 API 建置輸出，再執行 `bun run build:api`。
+- 修改後端 domain、service、validation、API route 或 server 行為：至少執行 `bun run test:api` 與 `tsc --noEmit`。若修改影響 API 建置輸出，再執行 `bun run build:api`。
+- 修改 database adapter、migration、database lifecycle 或 PostgreSQL 整合測試流程：執行 `bun run test:api`、`bun run test:db` 與 `tsc --noEmit`。若修改影響 API 建置輸出，再執行 `bun run build:api`。
 - 修改 React page、hook、component、frontend route 或 web 行為：至少執行 `bun run test:web` 與 `tsc --noEmit`；若影響 production bundle、routing 或 frontend build，再執行 `bun run build:web`。
 - 跨越前後端或同時影響兩側公開行為：執行兩側相關測試與建置 gate。
-- 修改 CLI、入口或完整套件建置流程：執行 `bun run build`，並依受影響層級補充 API 或 Web gate。
 - 修改資料夾結構：執行 `bun run structure` 並確認 `structure.md` 已更新。
 - 只修改文件且不影響程式行為：檢查文件格式與引用即可，不要求執行與文件無關的程式驗證。
+
+### 測試流程與環境分離
+
+- 本專案有兩種後端測試：單元／API 測試，以及 PostgreSQL 整合測試。
+- 單元／API 測試使用 `bun run test:api`。
+- `tests/setup.ts` 載入 `.env.test`。
+- `.env.test` 中的 `TEST_*` database URL 是測試 fixture。這些 URL 只用於 URL 解析、驗證與錯誤邊界測試。這些測試不得建立 PostgreSQL pool。
+- PostgreSQL 整合測試使用 `bun run test:db`。
+- `tests/integration-setup.ts` 先載入 `.env.test`，再載入 `.env.integration.local`。
+- `test:db` 缺少 `INTEGRATION_DATABASE_URL` 時必須失敗。`test:db` 不得跳過測試。
+- CI 必須提供相同名稱的 integration 變數。CI 可以從 secret 或 process environment 讀取這些變數。
+- `.env.local` 只供本機開發使用。此檔案可包含 runtime `DATABASE_URL`。測試不得載入此檔案。
+- `.env.integration.local` 只供本機整合測試使用。此檔案可包含 `INTEGRATION_DATABASE_URL`、`DATABASE_ADMIN_URL` 與 `INTEGRATION_DATABASE_NAME`。此檔案不得提交到 Git。
+- 整合測試只能連線到可丟棄的整合測試資料庫。整合測試不得使用開發資料庫、production database 或 runtime `DATABASE_URL`。
+- `TEST_INTEGRATION_DATABASE_URL` 是單元測試 fixture。`INTEGRATION_DATABASE_URL` 是整合測試連線。兩者不可互換。
+- `bun run test` 不執行 `test:db`。需要資料庫整合測試結果時，必須明確執行 `bun run test:db`。
+- `test:api` 通過不代表資料庫整合測試通過。
+- 一般測試命令可能會掃描位於 `src/` 的整合測試檔案。一般測試命令不得建立 PostgreSQL 連線，也不得執行整合測試案例。只有 `test:db` 可以執行這些案例。`test:db` 缺少必要環境變數時必須失敗，不得跳過測試。
+- 若設計文件與本節衝突，以本節為準。設計文件應另行更新。不得依舊文件把真實 integration URL 移入 `.env.test`。
 
 
 ### When writing Tests (Global 通用規範)
 - **DO:** 全面使用 Bun 原生測試框架 (`bun:test`)，嚴禁引入 Jest 或 Vitest 等其他工具。測試檔案需命名為 `*.test.ts` 並放在對應模組的同一層或 `__tests__` 目錄中。
 - **DO:** 使用 Bun 原生的 `mock()` 建立 mock 函式，取代 `jest.fn()`。若需要攔截或替換模組行為，必須使用 `mock.module(path, callback)`，並可搭配 `--preload` 使用以防模組引入前的副作用
-- **DO:** 測試專屬的環境變數（如 Mock 金鑰、測試用端點）必須統一透過 `.env.test` 載入，並嚴格遵循從 `src/core/env.ts` 讀取的專案標準。
+- **DO:** 測試環境變數必須依「測試流程與環境分離」分流。單元／API 測試使用 `.env.test`。資料庫整合測試使用 `.env.integration.local` 或 CI 注入的 integration environment。
 - **DO:** 使用型別安全的 `Mock (Use Type-Safe Mocks)`。絕對不要硬寫 `Timeout` 或 `NodeJS.Timeout` 等環境依賴型別，一律改用 `TypeScript` 內建的 `Utility Types`（如 ReturnType<typeof setTimeout> 或 Parameters<T>）來維持跨環境相容性。
 - **DO:** 保持 `Mock` 簡單與最小化 (Keep Mocks Simple)。測試時不需完整模擬整個內建物件的形狀，只需定義會用到的最小介面（例如 `(input: RequestInfo | URL, init?: RequestInit) => Promise<any>`），避免過度斷言型別導致環境差異的報錯。
 - **DO NOT:** 嚴禁在測試程式碼中 `Hard-coding` 任何環境變數或配置字串。
@@ -97,7 +117,7 @@
 
 ## Definition of Done
 每次任務完成與提交 (Commit) 前，必須依變更範圍滿足所有適用條件：
-1. 涉及程式碼或測試時，程式碼中不得有 Hard-coding（測試參數與環境變數必須從 `src/core/env.ts` 或 `data/*.json` 動態讀取，重複字串需提取）。
+1. 涉及程式碼或測試時，程式碼中不得有 Hard-coding。測試環境變數必須由對應 setup 從 `.env.test`、`.env.integration.local` 或 CI environment 載入。測試 fixture 依需要從 `src/core/env.ts` 或 `data/*.json` 動態讀取。重複字串需提取。
 2. 修改或新增 Public API 時，必須補齊 JSDoc 註釋（包含 `@param`, `@returns`, `@throws`）。
 3. 涉及 TypeScript 程式碼或測試時，執行 `tsc --noEmit` 且退出碼為 0（確保無任何隱式 any 型別，若型別不可預測，強制使用 unknown 搭配 Type Guard）。
 4. 修改資料夾結構時，執行 `bun run structure`，更新 `structure.md`。
@@ -124,7 +144,8 @@
 ## When writing Backend Tests
 - **DO:** 必須在測試檔案中引入伺服器配置（例如 `startApiTestServer`），並使用非同步的 `beforeAll` 啟動獨立的測試伺服器實例與隔離的 fixture。
 - **DO:** 強制在 `afterAll` 中呼叫伺服器回傳的 `stop()` 函式以優雅關閉伺服器、刪除暫存資料夾並釋放記憶體。確保測試環境中絕對不包含 `window` 或 `document` 等前端物件。
-- **DO:** 本專案無資料庫，**嚴禁** 在測試期間真實寫入或覆蓋原始的 JSON 檔案。API 狀態變更與資料重置，必須在 `beforeEach` 中呼叫伺服器 context 提供的重置鉤子（如 `resetDepositFixtures()`）處理，以確保測試案例絕對獨立。
+- **DO:** 一般後端／API 測試不得連線或寫入真實 PostgreSQL。API 狀態變更與資料重置，必須在 `beforeEach` 中呼叫伺服器 context 提供的重置鉤子（如 `resetDepositFixtures()`）。
+- **DO:** PostgreSQL 整合測試必須透過 `tests/integration-setup.ts` 載入設定。測試必須使用可丟棄的整合資料庫。測試必須在 `beforeAll` 建立連線，並在 `afterAll` 關閉 pool。每個測試只能重置整合資料庫的指定 schema。測試不得寫入、覆蓋或刪除原始 `data/*.json`。
 
 
 ## When writing Frontend Tests (Bun + Happy DOM)

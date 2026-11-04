@@ -6,6 +6,7 @@ import {
   type CliEnv,
   type CliEnvRegistry,
 } from '../core/env';
+import { assertSupportedBunVersion } from '../core/database';
 import { keepAlive } from '../utils';
 import type { Logger } from '../runner';
 import { corsHeaders, json, notFound } from './http';
@@ -123,6 +124,7 @@ export const createApiServer = (options: ApiServerOptions) => {
 // #todo Design an authorized, masked, and audited debug mode.
 
 if (import.meta.main) {
+  assertSupportedBunVersion();
   const server = createApiServer({
     envRegistry: getCliEnvRegistry(),
     depositPresetDirPath: DEFAULT_DEPOSIT_PRESET_DIR_PATH,

@@ -280,6 +280,7 @@ describe('subscription web helpers', () => {
     values.commonValues.merchantRef = 'TEST_SUB_OVERRIDDEN';
     values.commonValues.returnUrl = 'https://merchant.example.com/subscription/updated';
     values.channelValues.subs_plan_id = 'PLAN-DRAFT-SHOULD-NOT-SAVE';
+    values.channelValues.merchant_ref = 'TEST_CHANNEL_MERCHANT_REF';
     values.channelValues.product_name = 'Updated subscription product';
 
     const presets = await updateSubscriptionPreset({
@@ -292,10 +293,12 @@ describe('subscription web helpers', () => {
 
     const savedCommon = await readFile(join(presetDirPath, 'common.json'), 'utf8');
     const savedChannel = await readFile(join(presetDirPath, 'channels', 'default.json'), 'utf8');
+    const savedChannelPreset = JSON.parse(savedChannel) as { values?: Record<string, unknown> };
     expect(presets.common.values).not.toHaveProperty('merchantRef');
     expect(savedCommon).not.toContain('merchant_ref');
     expect(savedCommon).toContain('"return_url": "https://merchant.example.com/subscription/updated"');
     expect(savedChannel).toContain('"product_name": "Updated subscription product"');
+    expect(savedChannelPreset.values).not.toHaveProperty('merchant_ref');
     expect(savedChannel).not.toContain('subs_plan_id');
     expect(presets.channels.default.values.subs_plan_id).toBeUndefined();
   });

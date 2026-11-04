@@ -223,14 +223,20 @@ POST create
 
 - `DATABASE_URL` 是 server-only 設定，只有 PostgreSQL adapter 啟用時才必填；JSON adapter 與既有 API 測試不得因缺少它而失敗。
 - 啟動時必須由後端 env/config boundary 驗證 `DATABASE_URL`：不可為空、必須是 `postgres://` 或 `postgresql://` URL，並以 `SELECT 1` 完成連線探測；錯誤訊息不得輸出密碼。
-- `INTEGRATION_DATABASE_URL` 使用相同 URL 格式驗證，且必須明確與 runtime `DATABASE_URL` 分離；test setup 不得以 runtime URL 作為 fallback。
+- `INTEGRATION_DATABASE_URL` 必須使用相同的 URL 格式驗證。此 URL 必須與 runtime `DATABASE_URL` 分離。測試設定不得使用 runtime URL 作為替代值。
+- 單元／API 測試從 `.env.test` 讀取 `TEST_*` 測試資料。`test:db` 由 `tests/integration-setup.ts` 載入本機 `.env.integration.local`。CI 必須提供相同名稱的整合測試變數。
 - 連線失敗、URL 無效或環境缺漏時要明確失敗，不可靜默回退到 JSON，避免產生兩個 source of truth。
 - 每個 Bun server／CLI process 建立一個可重用 SQL pool；不得每個 request 建立新連線。
 - server／CLI 的 `stop()`、測試 `afterAll` 與 process teardown 必須先停止使用 repository，再 `await sql.close()`，確保 pool 與所有連線釋放完成。
 
 ### 可丟棄的 integration-test PostgreSQL database／schema
 
-- integration test 只能連專用的 disposable database，不得使用開發資料庫、Supabase production 或使用者指定的 runtime `DATABASE_URL`。測試設定透過 `.env.test` 提供 `INTEGRATION_DATABASE_URL`；runtime 與 integration test URL 分開命名、分開驗證。
+- 整合測試只能連線到專用的可丟棄資料庫。不得使用開發資料庫、Supabase production 或使用者指定的 runtime `DATABASE_URL`。
+- 本機 `test:db` 從 `.env.integration.local` 讀取 `INTEGRATION_DATABASE_URL`。
+- 本機資料庫建立與清理流程使用 `DATABASE_ADMIN_URL` 與 `INTEGRATION_DATABASE_NAME`。
+- CI 必須提供相同名稱的整合測試變數。
+- `.env.test` 只提供單元／API 測試使用的 `TEST_*` 測試資料。
+- runtime URL 與整合測試 URL 必須使用不同名稱。兩者必須分開驗證。
 - CI 每次 run 建立一個新的 integration-test PostgreSQL database，run 結束且所有連線關閉後刪除整個 database。本機可保留專用的 `examine_api_integration_test` database，但每次 run 必須重置其測試 schema；不能把它當作 development 或 application runtime database。
 - database 內使用固定的 `preset_store` schema，套用與 local／Supabase 相同的 canonical migration；不採用 run-scoped schema。隔離由 disposable database 提供，避免動態 `search_path`、migration history 與 SQL identifier 組裝造成測試和正式環境行為分歧；不得使用 `public` 作為 preset table 寫入範圍。
 - database provisioner（CI 或具管理權限的本機 setup）負責建立／刪除 database；測試 process 的 role 不需要 `CREATEDB`，也不負責自行刪除 database。若本機使用固定 database，測試前由明確的 reset 流程刪除／重建 `preset_store` schema，不能使用 runtime URL。
