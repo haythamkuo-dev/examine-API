@@ -39,11 +39,19 @@
 │   │   │   ├── ez-intercard-hkd.json
 │   │   │   ├── ez-intercard-jpy.json
 │   │   │   ├── ez-intercard-usd.json
+│   │   │   ├── googlepay_usd.json
 │   │   │   ├── id_dana_usd.json
 │   │   │   ├── inr_upi.json
 │   │   │   ├── international_credit_cards.json
 │   │   │   ├── linepay.json
 │   │   │   ├── linepay_invoice.json
+│   │   │   ├── loki-googlepay-hk-usd.json
+│   │   │   ├── loki-googlepay-id-usd.json
+│   │   │   ├── loki-googlepay-my-usd.json
+│   │   │   ├── loki-googlepay-ph-usd.json
+│   │   │   ├── loki-googlepay-sg-usd.json
+│   │   │   ├── loki-googlepay-th-usd.json
+│   │   │   ├── loki-googlepay-vn-usd.json
 │   │   │   ├── loki-intercard-hk-usd.json
 │   │   │   ├── loki-intercard-id-usd.json
 │   │   │   ├── loki-intercard-ph-usd.json
@@ -216,4 +224,4 @@
     │       └── modal.tsx
     └── styles.css
 
-32 directories, 185 files
+32 directories, 193 files

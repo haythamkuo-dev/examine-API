@@ -4,7 +4,8 @@
 
 - 文件等級：完整開發設計書。
 - 理由：本次變更會新增 PostgreSQL 持久化、migration、資料匯入、local / Supabase 部署邊界，並改變現有 JSON preset 的讀寫路徑。
-- 狀態：已確認資料邊界與分階段方向；本機 PostgreSQL 端點是已知前提，尚未切換應用程式儲存層。
+- 狀態：Phase 1、Phase 2 gate 已通過；後續開發起點為 Phase 3。本機 PostgreSQL 已完成 migration 與 disposable integration database lifecycle 驗證，但尚未切換應用程式儲存層。
+- Phase handoff：除非發現回歸、設計／需求變更，或使用者明確要求重新驗證，後續 AI 不應重做或重新規劃 Phase 1、Phase 2，直接依本文件從 Phase 3 開始。
 - 主要規範：[AGENTS.md](../../AGENTS.md)。
 
 ## 目標
@@ -249,7 +250,7 @@ POST create
 
 每個 phase 都要有自己的產物與 gate；未通過當前 phase 時，不進入下一個需要它的 runtime 或 deployment phase。Phase 1–4 不切換 production 的 storage driver；Phase 5 才開始本機切換。前述本機 PostgreSQL 端點已可連線是已知前提，不另列為 phase。
 
-### Phase 1：Storage boundary、JSON adapter 與資料 audit
+### Phase 1：Storage boundary、JSON adapter 與資料 audit（已通過）
 
 - 定義 feature-independent storage interface，明確區分 persistent preset projection 與 transient operation context。
 - 將現有 JSON loader／writer 包裝為 JSON adapter；從這一 phase 起 writer 不得寫入 `merchantRef`／`merchantReference`。
@@ -259,9 +260,9 @@ POST create
 - 將現有 route 的 `generateMerchantRef` callback 與 request builder 內的 merchant sanitize／fallback 降為轉送或相容處理；route、web form builder 不決定商業值，值產生、重用／重生與 final assignment 統一由 feature service／domain request builder 負責。
 - 建立全量 data audit，對無效 JSON（包含 JCB）輸出可追蹤的 `invalid`／`deferred` 狀態，不修改、不刪除、不默默跳過。
 
-**Phase 1 gate：** JSON adapter round-trip、defaults merchant omission、save 不持久化 merchant、audit report 與既有 API boundary 測試完成；尚未接 PostgreSQL，也不切換 runtime。
+**Phase 1 gate：已通過。** JSON adapter round-trip、defaults merchant omission、save 不持久化 merchant、audit report 與既有 API boundary 測試均已完成；Phase 1 不接 PostgreSQL，也不切換 runtime。後續 AI 應將 Phase 1 視為已完成前置條件，除非發現回歸或收到明確的重新驗證要求。
 
-### Phase 2：Schema、canonical migrations 與 DB lifecycle
+### Phase 2：Schema、canonical migrations 與 DB lifecycle（已通過）
 
 - 建立 `supabase/migrations` 版本化 canonical SQL；migration 只描述 schema 與 constraint，preset data import 由獨立 importer 負責。
 - 建立 `preset_store` private schema、`preset_sets`、`preset_channels`、foreign key、feature/channel uniqueness、JSONB object constraints 與 database-managed timestamps。
@@ -270,7 +271,7 @@ POST create
 - 明確固定 Bun `>=1.4.3`，並在 CI／啟動與 integration setup 入口檢查版本。
 - 完成 disposable integration database／固定 `preset_store` schema 的 provision、reset、teardown 流程；測試 role 不具備 `CREATEDB`。
 
-**Phase 2 gate：** fresh database 可套用 migration、重複套用為 no-op、migration history 正確、constraint／timestamp 行為可驗證，且 integration database 在連線關閉後可清理；尚未匯入 preset data，也不切換 runtime。
+**Phase 2 gate：已通過。** 已在專用 integration database 實際完成 fresh database provision、migration、重複套用 no-op、migration history、constraint／timestamp、pool session cleanup 與 database teardown 驗證；`bun run test:db` 結果為 `3 pass / 0 fail`。尚未匯入 preset data，也不切換 runtime。後續 AI 應將 Phase 2 視為已完成前置條件，直接進入 Phase 3；不得因日常本機使用固定 integration database 加 schema reset 而要求重新執行整個 fresh provision／teardown lifecycle。
 
 ### Phase 3：PostgreSQL adapter 與 repository integration tests
 

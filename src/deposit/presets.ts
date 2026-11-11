@@ -902,6 +902,11 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       },
     },
   },
+  googlepay_usd: {
+    commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-GOOGLEPAY-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
   pix_brl: {
     commonValues: {
       productNo: 'DEP-FUTUREPAY_COLLECT-PIX-USD',
@@ -1012,6 +1017,41 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
         },
       },
     },
+  },
+  'loki-googlepay-my-usd': {
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYMY-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
+  'loki-googlepay-sg-usd': {
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYSG-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
+  'loki-googlepay-vn-usd': {
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYVN-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
+  'loki-googlepay-th-usd': {
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYTH-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
+  'loki-googlepay-ph-usd': {
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYPH-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
+  'loki-googlepay-id-usd': {
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYID-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
+  'loki-googlepay-hk-usd': {
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYHK-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
   },
   'loki-intercard-sg-usd': {
     commonValues: { productNo: 'DEP-LOKI-INTERCARDSG-USD', amount: '10.00', currencyCode: 'USD' },

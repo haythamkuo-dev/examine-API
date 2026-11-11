@@ -428,6 +428,11 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  googlepay_usd: {
+    product_no: 'DEP-FUTUREPAY_COLLECT-GOOGLEPAY-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+  },
   pix_brl: {
     product_no: 'DEP-FUTUREPAY_COLLECT-PIX-USD',
     amount: { amount: '12.34', currency_code: 'BRL' },
@@ -498,6 +503,41 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
         shopper_email: 'test@example.com',
       },
     },
+  },
+  'loki-googlepay-my-usd': {
+    product_no: 'DEP-LOKI-GOOGLEPAYMY-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+  },
+  'loki-googlepay-sg-usd': {
+    product_no: 'DEP-LOKI-GOOGLEPAYSG-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+  },
+  'loki-googlepay-vn-usd': {
+    product_no: 'DEP-LOKI-GOOGLEPAYVN-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+  },
+  'loki-googlepay-th-usd': {
+    product_no: 'DEP-LOKI-GOOGLEPAYTH-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+  },
+  'loki-googlepay-ph-usd': {
+    product_no: 'DEP-LOKI-GOOGLEPAYPH-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+  },
+  'loki-googlepay-id-usd': {
+    product_no: 'DEP-LOKI-GOOGLEPAYID-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+  },
+  'loki-googlepay-hk-usd': {
+    product_no: 'DEP-LOKI-GOOGLEPAYHK-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
   },
   'loki-intercard-sg-usd': {
     product_no: 'DEP-LOKI-INTERCARDSG-USD',

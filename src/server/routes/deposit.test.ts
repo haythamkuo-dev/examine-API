@@ -425,6 +425,25 @@ describe('deposit API routes', () => {
     });
   });
 
+  test('GET /api/deposit/defaults returns the Google Pay USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=googlepay_usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('googlepay_usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-FUTUREPAY_COLLECT-GOOGLEPAY-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(form.channelValues).toEqual({});
+    expect(body.channelSchema).toEqual({});
+  });
+
   test('GET /api/deposit/defaults returns the Loki MY intercard defaults and required shopper email field', async () => {
     const response = await context.requestApi('/api/deposit/defaults?channel=loki-intercard-usd');
 
@@ -483,6 +502,139 @@ describe('deposit API routes', () => {
       },
     });
     expect((collectFields.shopper_email as Record<string, unknown>).required).toBe(true);
+  });
+
+  test('GET /api/deposit/defaults returns the Malaysia Google Pay USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-googlepay-my-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-googlepay-my-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-GOOGLEPAYMY-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(form.channelValues).toEqual({});
+    expect(body.channelSchema).toEqual({});
+  });
+
+  test('GET /api/deposit/defaults returns the Singapore Google Pay USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-googlepay-sg-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-googlepay-sg-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-GOOGLEPAYSG-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(form.channelValues).toEqual({});
+    expect(body.channelSchema).toEqual({});
+  });
+
+  test('GET /api/deposit/defaults returns the Vietnam Google Pay USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-googlepay-vn-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-googlepay-vn-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-GOOGLEPAYVN-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(form.channelValues).toEqual({});
+    expect(body.channelSchema).toEqual({});
+  });
+
+  test('GET /api/deposit/defaults returns the Thailand Google Pay USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-googlepay-th-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-googlepay-th-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-GOOGLEPAYTH-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(form.channelValues).toEqual({});
+    expect(body.channelSchema).toEqual({});
+  });
+
+  test('GET /api/deposit/defaults returns the Philippines Google Pay USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-googlepay-ph-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-googlepay-ph-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-GOOGLEPAYPH-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(form.channelValues).toEqual({});
+    expect(body.channelSchema).toEqual({});
+  });
+
+  test('GET /api/deposit/defaults returns the Indonesia Google Pay USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-googlepay-id-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-googlepay-id-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-GOOGLEPAYID-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(form.channelValues).toEqual({});
+    expect(body.channelSchema).toEqual({});
+  });
+
+  test('GET /api/deposit/defaults returns the Hong Kong Google Pay USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-googlepay-hk-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-googlepay-hk-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-GOOGLEPAYHK-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(form.channelValues).toEqual({});
+    expect(body.channelSchema).toEqual({});
   });
 
   test('GET /api/deposit/defaults returns the Loki VN intercard defaults and required shopper email field', async () => {
