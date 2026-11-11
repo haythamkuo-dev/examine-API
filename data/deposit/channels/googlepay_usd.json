@@ -1,0 +1,9 @@
+{
+  "commonValues": {
+    "productNo": "DEP-FUTUREPAY_COLLECT-GOOGLEPAY-USD",
+    "amount": "10.00",
+    "currencyCode": "USD"
+  },
+  "schema": {},
+  "values": {}
+}

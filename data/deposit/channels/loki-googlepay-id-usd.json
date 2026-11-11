@@ -1,0 +1,9 @@
+{
+  "commonValues": {
+    "productNo": "DEP-LOKI-GOOGLEPAYID-USD",
+    "amount": "10.00",
+    "currencyCode": "USD"
+  },
+  "schema": {},
+  "values": {}
+}

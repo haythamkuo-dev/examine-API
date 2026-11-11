@@ -271,7 +271,15 @@ describe('DepositPage', () => {
     expect(getDepositChannelLabel('my_tng_usd')).toBe('馬來西亞-tng-single-美金');
     expect(getDepositChannelLabel('my_boost_usd')).toBe('馬來西亞-boost-USD');
     expect(getDepositChannelLabel('my_tng_usd2')).toBe('馬來西亞-tng-collect-美金');
+    expect(getDepositChannelLabel('googlepay_usd')).toBe('Google-pay-USD');
     expect(getDepositChannelLabel('loki-intercard-usd')).toBe('loki-MY');
+    expect(getDepositChannelLabel('loki-googlepay-my-usd')).toBe('馬來西亞-GP-USD');
+    expect(getDepositChannelLabel('loki-googlepay-sg-usd')).toBe('新加坡-GP-USD');
+    expect(getDepositChannelLabel('loki-googlepay-vn-usd')).toBe('越南-GP-USD');
+    expect(getDepositChannelLabel('loki-googlepay-th-usd')).toBe('泰國-GP-USD');
+    expect(getDepositChannelLabel('loki-googlepay-ph-usd')).toBe('菲律賓-GP-USD');
+    expect(getDepositChannelLabel('loki-googlepay-id-usd')).toBe('印尼-GP-USD');
+    expect(getDepositChannelLabel('loki-googlepay-hk-usd')).toBe('香港-GP-USD');
     expect(getDepositChannelLabel('loki-intercard-sg-usd')).toBe('loki-SG');
     expect(getDepositChannelLabel('loki-intercard-vn-usd')).toBe('loki-VN');
     expect(getDepositChannelLabel('loki-intercard-th-usd')).toBe('loki-TH');
