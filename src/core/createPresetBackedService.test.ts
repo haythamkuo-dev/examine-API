@@ -236,4 +236,38 @@ describe('createPresetBackedService', () => {
     });
     expect(buildPreviewResponse).toHaveBeenCalledWith(operation.values, 'local');
   });
+
+  test('merges deeply nested values without consuming the JavaScript call stack', () => {
+    let defaults: unknown = 'persistent-value';
+    let overrides: unknown = 'request-value';
+
+    for (let depth = 0; depth < 10_000; depth += 1) {
+      defaults = { child: defaults };
+      overrides = { child: overrides };
+    }
+
+    const merged = mergePresetFormValues(defaults as { child: unknown }, overrides as { child: unknown });
+    let current: unknown = merged;
+
+    for (let depth = 0; depth < 10_000; depth += 1) {
+      current = (current as { child: unknown }).child;
+    }
+
+    expect(current).toBe('request-value');
+  });
+
+  test('clones array overrides instead of merging array indexes', () => {
+    const defaults = {
+      items: [{ value: 'persistent-value' }],
+    };
+    const overrides = {
+      items: [{ value: 'request-value' }],
+    };
+
+    const merged = mergePresetFormValues(defaults, overrides);
+
+    expect(merged).toEqual(overrides);
+    expect(merged.items).not.toBe(overrides.items);
+    expect(merged.items[0]).not.toBe(overrides.items[0]);
+  });
 });

@@ -84,33 +84,127 @@ export type CreatePresetBackedServiceOptions<
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+type CloneTask = {
+  value: unknown;
+  assign: (value: unknown) => void;
+};
+
 const cloneValue = <Value,>(value: Value): Value => {
-  if (Array.isArray(value)) {
-    return value.map((item) => cloneValue(item)) as Value;
+  let result: unknown;
+  const tasks: CloneTask[] = [
+    {
+      value,
+      assign: (clonedValue) => {
+        result = clonedValue;
+      },
+    },
+  ];
+
+  while (tasks.length > 0) {
+    const task = tasks.pop();
+    if (!task) continue;
+
+    if (Array.isArray(task.value)) {
+      const clonedArray: unknown[] = new Array(task.value.length);
+      task.assign(clonedArray);
+
+      for (let index = task.value.length - 1; index >= 0; index -= 1) {
+        if (!(index in task.value)) continue;
+        tasks.push({
+          value: task.value[index],
+          assign: (childValue) => {
+            clonedArray[index] = childValue;
+          },
+        });
+      }
+      continue;
+    }
+
+    if (isRecord(task.value)) {
+      const clonedRecord: Record<string, unknown> = {};
+      task.assign(clonedRecord);
+      const entries = Object.entries(task.value);
+
+      for (let index = entries.length - 1; index >= 0; index -= 1) {
+        const entry = entries[index];
+        if (!entry) continue;
+        const [key, childValue] = entry;
+        tasks.push({
+          value: childValue,
+          assign: (clonedChildValue) => {
+            Object.defineProperty(clonedRecord, key, {
+              configurable: true,
+              enumerable: true,
+              value: clonedChildValue,
+              writable: true,
+            });
+          },
+        });
+      }
+      continue;
+    }
+
+    task.assign(task.value);
   }
 
-  if (isRecord(value)) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, child]) => [key, cloneValue(child)]),
-    ) as Value;
-  }
+  return result as Value;
+};
 
-  return value;
+type MergeTask = {
+  base: unknown;
+  override: unknown;
+  assign: (value: unknown) => void;
 };
 
 const mergeValue = (base: unknown, override: unknown): unknown => {
-  if (override === undefined) {
-    return cloneValue(base);
+  let result: unknown;
+  const tasks: MergeTask[] = [
+    {
+      base,
+      override,
+      assign: (mergedValue) => {
+        result = mergedValue;
+      },
+    },
+  ];
+
+  while (tasks.length > 0) {
+    const task = tasks.pop();
+    if (!task) continue;
+
+    if (task.override === undefined) {
+      task.assign(cloneValue(task.base));
+      continue;
+    }
+
+    if (isRecord(task.base) && isRecord(task.override)) {
+      const mergedRecord: Record<string, unknown> = {};
+      task.assign(mergedRecord);
+      const keys = [...new Set([...Object.keys(task.base), ...Object.keys(task.override)])];
+
+      for (let index = keys.length - 1; index >= 0; index -= 1) {
+        const key = keys[index];
+        if (key === undefined) continue;
+        tasks.push({
+          base: task.base[key],
+          override: task.override[key],
+          assign: (mergedChildValue) => {
+            Object.defineProperty(mergedRecord, key, {
+              configurable: true,
+              enumerable: true,
+              value: mergedChildValue,
+              writable: true,
+            });
+          },
+        });
+      }
+      continue;
+    }
+
+    task.assign(cloneValue(task.override));
   }
 
-  if (isRecord(base) && isRecord(override)) {
-    const keys = new Set([...Object.keys(base), ...Object.keys(override)]);
-    return Object.fromEntries(
-      [...keys].map((key) => [key, mergeValue(base[key], override[key])]),
-    );
-  }
-
-  return cloneValue(override);
+  return result;
 };
 
 /**

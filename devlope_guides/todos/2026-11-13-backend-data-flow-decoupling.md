@@ -56,12 +56,17 @@ PostgreSQL adapter 已證明 storage contract 可以有第二種實作，但目�
 | API path、上游 payload key 與簽名規則保持相容 | 解耦只調整內部責任，不改公開行為。 |
 | DB unavailable 不得靜默 fallback 至 JSON | 未來若由 migration 工作切換 adapter，錯誤仍須 fail closed。 |
 
-### 2.2 不屬於本文件完成條件的後續工作
+### 2.2 JCB JSON 的提前修復
+
+`data/deposit/channels/JCB-JPY.json` 與 `data/deposit/channels/JCB-USD.json` 原本有已知的 JSON 語法錯誤。本分支已先完成語法修復，保留兩個檔案既有的 `commonValues`、`schema` 與 `values` 內容，沒有把這次修復延後到 migration 最終驗收。
+
+這項修復只關閉 invalid JSON 的資料格式問題，不等同於 Phase 4 importer、完整 parity 或 production readiness 已完成。兩個 channel 仍可由 manifest 保留 deferred 狀態，直到 migration phase 完成必要的 audit、parity 與資料 owner 確認；後續若再次出現 invalid JSON，應視為回歸並在資料變更前重新通過 validation 與 audit。
+
+### 2.3 不屬於本文件完成條件的後續工作
 
 下列項目仍由既有 migration 設計管理，除非實作解耦時發現它們是直接前置條件，否則不納入本次範圍：
 
 - Phase 4 importer、checksum、全量 parity 與 readiness report。
-- JCB invalid JSON 的資料修復或移除決策。
 - Phase 5 本機 PostgreSQL runtime cutover。
 - Phase 6 Supabase staging 與 remote migration。
 - Phase 7 最終資料驗收。
@@ -326,7 +331,7 @@ PostgreSQL integration gate `bun run test:db` 由使用者或 CI 負責執行，
 | 公開行為保持相容 | route、必要 payload、signature、merchant non-persistence 的代表性測試通過 | 不要求 production cutover |
 | 驗證可追溯 | 每項修改都有 `Risk → Test → Test layer` 與適用 gate 結果 | 不以 coverage 百分比作完成標準 |
 
-Importer、parity、JCB readiness、Supabase staging、production rollout 或 rollback rehearsal 未完成，不會阻止本文件宣告「解耦完成」；它們仍會阻止既有 migration 設計宣告「資料庫遷移完成」。
+Importer、parity、JCB readiness、Supabase staging、production rollout 或 rollback rehearsal 未完成，不會阻止本文件宣告「解耦完成」；JCB invalid JSON 的語法修復已完成，但上述 migration 證據仍會阻止既有 migration 設計宣告「資料庫遷移完成」。
 
 ## 15. 待確認事項
 

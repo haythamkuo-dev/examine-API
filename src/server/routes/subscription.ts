@@ -39,6 +39,7 @@ const subscriptionPlanError = (message: string): AppError =>
  * @param options.url Parsed request URL.
  * @param options.deps Runtime subscription service dependencies.
  * @returns A response when the route matches, otherwise `null`.
+ * @throws {AppError} When the request body exceeds the configured size or complexity limits.
  * @throws {SyntaxError} When the request body is not valid JSON.
  */
 export const handleSubscriptionRoute = async ({

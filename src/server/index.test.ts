@@ -116,4 +116,31 @@ describe('API server exception boundary', () => {
     expect(errorLog).toHaveBeenCalledTimes(1);
     expect(String(errorLog.mock.calls[0]?.[1])).toContain('SyntaxError');
   });
+
+  test('rejects deeply nested request JSON before preset hydration', async () => {
+    let nestedValue: unknown = 'leaf';
+    for (let depth = 0; depth < 100; depth += 1) {
+      nestedValue = { child: nestedValue };
+    }
+
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel: 'pix_brl',
+        commonValues: {},
+        channelValues: { untrusted: nestedValue },
+      }),
+    });
+
+    expect(response.status).toBe(413);
+    expect((await response.json()) as StandardErrorResponse).toEqual({
+      response: {
+        status: 413,
+        code: 'REQUEST_BODY_TOO_COMPLEX',
+        message: 'Request JSON is too deeply nested or contains too many values.',
+      },
+    });
+    expect(errorLog).not.toHaveBeenCalled();
+  });
 });
