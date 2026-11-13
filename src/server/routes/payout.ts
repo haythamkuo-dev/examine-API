@@ -42,7 +42,8 @@ export const handlePayoutRoute = async ({
     unknown,
     ReturnType<typeof createPayoutService>,
     Awaited<ReturnType<ReturnType<typeof createPayoutService>['getDefaultsForTarget']>>,
-    Awaited<ReturnType<ReturnType<typeof createPayoutService>['execute']>>
+    Awaited<ReturnType<ReturnType<typeof createPayoutService>['execute']>>,
+    Awaited<ReturnType<ReturnType<typeof createPayoutService>['prepareOperation']>>
   >({
     request,
     url,
@@ -54,9 +55,17 @@ export const handlePayoutRoute = async ({
     resolveChannel: getRequestedPayoutChannel,
     resolveChannelFromValues: (values) => values.channel,
     getDefaults: (service, channel, targetEnvironment) => service.getDefaultsForTarget(channel, targetEnvironment),
+    prepareOperation: async (service, channel, values, targetEnvironment) => {
+      const operation = await service.prepareOperation(channel, values, targetEnvironment);
+      return {
+        operation,
+        values: operation.values,
+        bundle: operation.defaults,
+      };
+    },
     generateMerchantRef: (service) => service.generateMerchantReference(),
-    preview: (service, values, targetEnvironment) => service.preview(values, targetEnvironment),
-    execute: (service, values, targetEnvironment) => service.execute(values, targetEnvironment),
+    preview: (service, operation) => service.preview(operation),
+    execute: (service, operation) => service.execute(operation),
     checkoutUrlPolicy: payoutCheckoutUrlPolicy((...args) => deps.logger.warn(...args)),
     validate: (values, bundle) =>
       validatePayoutForm(

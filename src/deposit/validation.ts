@@ -1,6 +1,7 @@
 import { validateCodeFormatRules } from '../core/codeFormatValidation';
 import { validateFormSections } from '../core/formValidation';
-import type { DepositFieldMap, DepositFormValues } from './web';
+import type { DepositFormValues } from '../domains/deposit';
+import type { DepositFieldMap } from './web';
 
 const depositValidationRules = [
   {

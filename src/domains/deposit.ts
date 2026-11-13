@@ -7,7 +7,22 @@ import {
 } from '../core/env';
 import { generateSign } from '../utils';
 import type { CommandRequest } from '../runner';
-import type { DepositChannelValues, DepositCommonValues } from '../deposit/web';
+
+export type DepositCommonValues = {
+  productNo: string;
+  merchantRef?: string;
+  amount: string;
+  currencyCode: string;
+  returnUrl: string;
+};
+
+export type DepositChannelValues = Record<string, unknown>;
+
+export type DepositFormValues = {
+  channel: DepositChannel;
+  commonValues: DepositCommonValues;
+  channelValues: DepositChannelValues;
+};
 
 type Amount = {
   amount: string;
@@ -651,7 +666,7 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
  * @param makeId ID factory used to create the final merchant reference.
  * @param overrides Optional legacy request overrides; merchant reference is ignored.
  * @returns A signed deposit payload.
- * @throws {TypeError} When the selected channel template cannot be composed.
+ * @throws {TypeError} When the generated payload cannot be signed.
  */
 export const createDepositPayload = (
   env: CliEnv,
@@ -745,23 +760,22 @@ export const createStructuredDepositPayload = (
   makeId: (prefix: string) => string,
   overrides: StructuredDepositRequestOverrides,
 ): DepositPayload => {
-  const template = createDepositTemplates(env)[channel];
   const channelValues = cloneUnknown(overrides.channelValues || {});
   const merchantRef = makeId('TEST_ORDER_');
   const payload = {
-    product_no: overrides.commonValues.productNo || template.product_no,
+    product_no: overrides.commonValues.productNo,
     merchant_ref: merchantRef,
     amount: {
-      amount: overrides.commonValues.amount || template.amount.amount,
-      currency_code: overrides.commonValues.currencyCode || template.amount.currency_code,
+      amount: overrides.commonValues.amount,
+      currency_code: overrides.commonValues.currencyCode,
     },
     ...(channelValues as Record<string, unknown>),
     merchant_ref: merchantRef,
   } as DepositPayload;
   const signFields = ['amount.amount', 'amount.currency_code', 'merchant_ref', 'product_no'];
 
-  if (overrides.commonValues.returnUrl || template.return_url) {
-    payload.return_url = overrides.commonValues.returnUrl || template.return_url;
+  if (overrides.commonValues.returnUrl) {
+    payload.return_url = overrides.commonValues.returnUrl;
   }
 
   return {

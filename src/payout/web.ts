@@ -5,7 +5,13 @@ import {
 } from '../core/env';
 import { generateSign, maskRequestHeaders } from '../utils';
 import type { PayoutPayload } from '../domains/payout';
-import { createPayoutPayload, createPayoutRequest } from '../domains/payout';
+import { createStructuredPayoutRequest, createStructuredPayoutPayload } from '../domains/payout';
+import type {
+  PayoutChannelValues,
+  PayoutCommonValues,
+  PayoutFormValues,
+} from '../domains/payout';
+export type { PayoutChannelValues, PayoutCommonValues, PayoutFormValues } from '../domains/payout';
 import type { CommandRequest, CommandResult } from '../runner';
 
 type PayoutFieldSchemaBase = {
@@ -47,18 +53,6 @@ export type PayoutFieldSchema =
   | PayoutArrayFieldSchema;
 
 export type PayoutFieldMap = Record<string, PayoutFieldSchema>;
-
-export type PayoutCommonValues = {
-  merchantReference?: string;
-};
-
-export type PayoutChannelValues = Record<string, unknown>;
-
-export type PayoutFormValues = {
-  channel: PayoutChannel;
-  commonValues: PayoutCommonValues;
-  channelValues: PayoutChannelValues;
-};
 
 export type PayoutRequestValues = PayoutFormValues & {
   apiKey?: string;
@@ -141,12 +135,14 @@ const buildPayloadFromForm = (
   values: PayoutFormValues,
   makeId: (prefix: string) => string,
 ): PayoutPayload => {
-  const payload = clone(createPayoutPayload(env, values.channel, makeId));
+  const payload = clone(createStructuredPayoutPayload(env, values.channel, makeId, {
+    commonValues: values.commonValues,
+    channelValues: values.channelValues,
+  }));
   const merchantReference = payload[merchantReferenceKey];
 
   const mergedPayload = {
     ...payload,
-    ...(clone(values.channelValues) as Omit<PayoutPayload, 'merchant_reference'>),
     merchant_reference: merchantReference,
   };
 
@@ -178,8 +174,10 @@ export const buildPayoutRequestFromForm = (
   makeId: (prefix: string) => string,
 ): CommandRequest => {
   const payload = buildPayloadFromForm(env, values, makeId);
-  const request = createPayoutRequest(env, values.channel, () => payload[merchantReferenceKey], {
+  const request = createStructuredPayoutRequest(env, values.channel, () => payload[merchantReferenceKey], {
     apiKey: values.apiKey?.trim() || undefined,
+    commonValues: values.commonValues,
+    channelValues: values.channelValues,
   });
 
   return {

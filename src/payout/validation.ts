@@ -1,6 +1,7 @@
 import { validateCodeFormatRules } from '../core/codeFormatValidation';
 import { validateFormSections } from '../core/formValidation';
-import type { PayoutFieldMap, PayoutFormValues } from './web';
+import type { PayoutFormValues } from '../domains/payout';
+import type { PayoutFieldMap } from './web';
 
 const payoutValidationRules = [
   {

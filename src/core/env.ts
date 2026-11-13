@@ -3,81 +3,128 @@ import {
   type TargetEnvironment,
 } from './targetEnvironment';
 
-export const DEPOSIT_CHANNELS = [
-  'southafrica_cards',
-  'linepay',
-  'linepay_invoice',
-  'inr_upi',
-  'bdt_worldpay',
-  'co_bank_transfer',
-  'co_cash',
-  'co_nequi',
-  'co_pse',
-  'th_rabbit_linepay',
-  'th_rabbit_linepay_usd',
-  'th_rabbit_linepay_usd2',
-  'th_kplus_usd',
-  'th_tmn_usd',
-  'my_tng',
-  'my_tng_usd',
-  'my_boost_usd',
-  'my_tng_usd2',
-  'my_fpx_usd',
-  'mx_spei_usd',
-  'international_credit_cards',
-  'googlepay_usd',
-  'pix_brl',
-  'id_dana_usd',
-  'duitnowqr_usd',
-  'JCB-USD',
-  'JCB-JPY',
-  'ALIPAY-CNY',
-  'ALIPAY-HKD',
-  'WECHAT-HKD',
-  'ALIPAY-8000',
-  'ALIPAY-6014',
-  'ALIPAY-6014-USD',
-  'WECHAT-6013',
-  'WECHAT-6038',
-  'WECHAT-6016',
-  'WECHAT-6016-USD',
-  'cmoney-intercard',
-  'loki-intercard-usd',
-  'loki-googlepay-my-usd',
-  'loki-googlepay-sg-usd',
-  'loki-googlepay-vn-usd',
-  'loki-googlepay-th-usd',
-  'loki-googlepay-ph-usd',
-  'loki-googlepay-id-usd',
-  'loki-googlepay-hk-usd',
-  'loki-intercard-sg-usd',
-  'loki-intercard-vn-usd',
-  'loki-intercard-th-usd',
-  'loki-intercard-ph-usd',
-  'loki-intercard-id-usd',
-  'loki-intercard-hk-usd',
-  'ez-intercard-usd',
-  'ez-intercard-hkd',
-  'ez-intercard-jpy',
-] as const;
-
-export const PAYOUT_CHANNELS = ['co_bank', 'co_wallet', 'imps', 'bd_wallet'] as const;
-export const SUBSCRIPTION_CHANNELS = [
-  'default',
-  'rabbitLinePay',
-  'touchAndGo',
-  'internationalCreditCard',
-] as const;
-
-export type DepositChannel = (typeof DEPOSIT_CHANNELS)[number];
-export type PayoutChannel = (typeof PAYOUT_CHANNELS)[number];
-export type SubscriptionChannel = (typeof SUBSCRIPTION_CHANNELS)[number];
-
 export enum MerchantTokenKey {
   Normal = 'normal',
   India = 'india',
   Bangladesh = 'bangladesh',
 }
+
+export type BackendFeature = 'deposit' | 'payout' | 'subscription';
+export type SubscriptionPlanEnvSuffix = '' | '_LINEPAY' | '_TNG' | '_INTERNATIONAL_CARD';
+
+export type BackendChannelManifestEntry<Channel extends string = string> = {
+  feature: BackendFeature;
+  channel: Channel;
+  presetFile: string;
+  auditTarget: string;
+  tokenKey?: MerchantTokenKey;
+  default?: boolean;
+  deferred?: boolean;
+  planEnvSuffix?: SubscriptionPlanEnvSuffix;
+};
+
+const createChannelManifestEntry = <Channel extends string>(
+  feature: BackendFeature,
+  channel: Channel,
+  metadata: Pick<
+    BackendChannelManifestEntry<Channel>,
+    'tokenKey' | 'default' | 'deferred' | 'planEnvSuffix'
+  >,
+): BackendChannelManifestEntry<Channel> => ({
+  feature,
+  channel,
+  presetFile: `${channel}.json`,
+  auditTarget: `preset_channels:${feature}:${channel}`,
+  ...metadata,
+});
+
+export const DEPOSIT_CHANNEL_MANIFEST = [
+  createChannelManifestEntry('deposit', 'southafrica_cards', { tokenKey: MerchantTokenKey.Normal, default: true }),
+  createChannelManifestEntry('deposit', 'linepay', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'linepay_invoice', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'inr_upi', { tokenKey: MerchantTokenKey.India }),
+  createChannelManifestEntry('deposit', 'bdt_worldpay', { tokenKey: MerchantTokenKey.Bangladesh }),
+  createChannelManifestEntry('deposit', 'co_bank_transfer', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'co_cash', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'co_nequi', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'co_pse', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'th_rabbit_linepay', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'th_rabbit_linepay_usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'th_rabbit_linepay_usd2', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'th_kplus_usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'th_tmn_usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'my_tng', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'my_tng_usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'my_boost_usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'my_tng_usd2', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'my_fpx_usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'mx_spei_usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'international_credit_cards', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'googlepay_usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'pix_brl', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'id_dana_usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'duitnowqr_usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'JCB-USD', { tokenKey: MerchantTokenKey.Normal, deferred: true }),
+  createChannelManifestEntry('deposit', 'JCB-JPY', { tokenKey: MerchantTokenKey.Normal, deferred: true }),
+  createChannelManifestEntry('deposit', 'ALIPAY-CNY', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ALIPAY-HKD', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'WECHAT-HKD', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ALIPAY-8000', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ALIPAY-6014', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ALIPAY-6014-USD', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'WECHAT-6013', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'WECHAT-6038', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'WECHAT-6016', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'WECHAT-6016-USD', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'cmoney-intercard', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-intercard-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-googlepay-my-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-googlepay-sg-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-googlepay-vn-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-googlepay-th-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-googlepay-ph-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-googlepay-id-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-googlepay-hk-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-intercard-sg-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-intercard-vn-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-intercard-th-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-intercard-ph-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-intercard-id-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-intercard-hk-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ez-intercard-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ez-intercard-hkd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ez-intercard-jpy', { tokenKey: MerchantTokenKey.Normal }),
+] as const;
+
+export const PAYOUT_CHANNEL_MANIFEST = [
+  createChannelManifestEntry('payout', 'co_bank', { tokenKey: MerchantTokenKey.Normal, default: true }),
+  createChannelManifestEntry('payout', 'co_wallet', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('payout', 'imps', { tokenKey: MerchantTokenKey.India }),
+  createChannelManifestEntry('payout', 'bd_wallet', { tokenKey: MerchantTokenKey.Bangladesh }),
+] as const;
+
+export const SUBSCRIPTION_CHANNEL_MANIFEST = [
+  createChannelManifestEntry('subscription', 'default', { default: true, planEnvSuffix: '' }),
+  createChannelManifestEntry('subscription', 'rabbitLinePay', { planEnvSuffix: '_LINEPAY' }),
+  createChannelManifestEntry('subscription', 'touchAndGo', { planEnvSuffix: '_TNG' }),
+  createChannelManifestEntry('subscription', 'internationalCreditCard', {
+    planEnvSuffix: '_INTERNATIONAL_CARD',
+  }),
+] as const;
+
+export type DepositChannel = (typeof DEPOSIT_CHANNEL_MANIFEST)[number]['channel'];
+export type PayoutChannel = (typeof PAYOUT_CHANNEL_MANIFEST)[number]['channel'];
+export type SubscriptionChannel = (typeof SUBSCRIPTION_CHANNEL_MANIFEST)[number]['channel'];
+
+export const DEPOSIT_CHANNELS: readonly DepositChannel[] = DEPOSIT_CHANNEL_MANIFEST.map(
+  ({ channel }) => channel,
+);
+export const PAYOUT_CHANNELS: readonly PayoutChannel[] = PAYOUT_CHANNEL_MANIFEST.map(
+  ({ channel }) => channel,
+);
+export const SUBSCRIPTION_CHANNELS: readonly SubscriptionChannel[] = SUBSCRIPTION_CHANNEL_MANIFEST.map(
+  ({ channel }) => channel,
+);
 
 export type CliEnv = {
   baseUrl: string;
@@ -100,71 +147,6 @@ export type CliEnv = {
 
 export type CliEnvRegistry = Record<TargetEnvironment, CliEnv>;
 
-const DEPOSIT_CHANNEL_TOKEN_KEYS: Record<DepositChannel, MerchantTokenKey> = {
-  southafrica_cards: MerchantTokenKey.Normal,
-  linepay: MerchantTokenKey.Normal,
-  linepay_invoice: MerchantTokenKey.Normal,
-  inr_upi: MerchantTokenKey.India,
-  bdt_worldpay: MerchantTokenKey.Bangladesh,
-  co_bank_transfer: MerchantTokenKey.Normal,
-  co_cash: MerchantTokenKey.Normal,
-  co_nequi: MerchantTokenKey.Normal,
-  co_pse: MerchantTokenKey.Normal,
-  th_rabbit_linepay: MerchantTokenKey.Normal,
-  th_rabbit_linepay_usd: MerchantTokenKey.Normal,
-  th_rabbit_linepay_usd2: MerchantTokenKey.Normal,
-  th_kplus_usd: MerchantTokenKey.Normal,
-  th_tmn_usd: MerchantTokenKey.Normal,
-  my_tng: MerchantTokenKey.Normal,
-  my_tng_usd: MerchantTokenKey.Normal,
-  my_boost_usd: MerchantTokenKey.Normal,
-  my_tng_usd2: MerchantTokenKey.Normal,
-  my_fpx_usd: MerchantTokenKey.Normal,
-  mx_spei_usd: MerchantTokenKey.Normal,
-  international_credit_cards: MerchantTokenKey.Normal,
-  googlepay_usd: MerchantTokenKey.Normal,
-  pix_brl: MerchantTokenKey.Normal,
-  id_dana_usd: MerchantTokenKey.Normal,
-  duitnowqr_usd: MerchantTokenKey.Normal,
-  'JCB-USD': MerchantTokenKey.Normal,
-  'JCB-JPY': MerchantTokenKey.Normal,
-  'ALIPAY-CNY': MerchantTokenKey.Normal,
-  'ALIPAY-HKD': MerchantTokenKey.Normal,
-  'WECHAT-HKD': MerchantTokenKey.Normal,
-  'ALIPAY-8000': MerchantTokenKey.Normal,
-  'ALIPAY-6014': MerchantTokenKey.Normal,
-  'ALIPAY-6014-USD': MerchantTokenKey.Normal,
-  'WECHAT-6013': MerchantTokenKey.Normal,
-  'WECHAT-6038': MerchantTokenKey.Normal,
-  'WECHAT-6016': MerchantTokenKey.Normal,
-  'WECHAT-6016-USD': MerchantTokenKey.Normal,
-  'cmoney-intercard': MerchantTokenKey.Normal,
-  'loki-intercard-usd': MerchantTokenKey.Normal,
-  'loki-googlepay-my-usd': MerchantTokenKey.Normal,
-  'loki-googlepay-sg-usd': MerchantTokenKey.Normal,
-  'loki-googlepay-vn-usd': MerchantTokenKey.Normal,
-  'loki-googlepay-th-usd': MerchantTokenKey.Normal,
-  'loki-googlepay-ph-usd': MerchantTokenKey.Normal,
-  'loki-googlepay-id-usd': MerchantTokenKey.Normal,
-  'loki-googlepay-hk-usd': MerchantTokenKey.Normal,
-  'loki-intercard-sg-usd': MerchantTokenKey.Normal,
-  'loki-intercard-vn-usd': MerchantTokenKey.Normal,
-  'loki-intercard-th-usd': MerchantTokenKey.Normal,
-  'loki-intercard-ph-usd': MerchantTokenKey.Normal,
-  'loki-intercard-id-usd': MerchantTokenKey.Normal,
-  'loki-intercard-hk-usd': MerchantTokenKey.Normal,
-  'ez-intercard-usd': MerchantTokenKey.Normal,
-  'ez-intercard-hkd': MerchantTokenKey.Normal,
-  'ez-intercard-jpy': MerchantTokenKey.Normal,
-};
-
-const PAYOUT_CHANNEL_TOKEN_KEYS: Record<PayoutChannel, MerchantTokenKey> = {
-  co_bank: MerchantTokenKey.Normal,
-  co_wallet: MerchantTokenKey.Normal,
-  imps: MerchantTokenKey.India,
-  bd_wallet: MerchantTokenKey.Bangladesh,
-};
-
 /**
  * Resolves the merchant token class for a deposit channel.
  *
@@ -172,8 +154,14 @@ const PAYOUT_CHANNEL_TOKEN_KEYS: Record<PayoutChannel, MerchantTokenKey> = {
  * @returns The env token key that should authorize this deposit request.
  * @throws {TypeError} When an invalid deposit channel is passed at runtime.
  */
-export const resolveDepositMerchantTokenKey = (channel: DepositChannel): MerchantTokenKey =>
-  DEPOSIT_CHANNEL_TOKEN_KEYS[channel];
+export const resolveDepositMerchantTokenKey = (channel: DepositChannel): MerchantTokenKey => {
+  const entry = DEPOSIT_CHANNEL_MANIFEST.find((candidate) => candidate.channel === channel);
+  if (!entry?.tokenKey) {
+    throw new TypeError(`Unsupported deposit channel: ${channel}`);
+  }
+
+  return entry.tokenKey;
+};
 
 /**
  * Resolves the merchant token class for a payout channel.
@@ -182,8 +170,14 @@ export const resolveDepositMerchantTokenKey = (channel: DepositChannel): Merchan
  * @returns The env token key that should authorize this payout request.
  * @throws {TypeError} When an invalid payout channel is passed at runtime.
  */
-export const resolvePayoutMerchantTokenKey = (channel: PayoutChannel): MerchantTokenKey =>
-  PAYOUT_CHANNEL_TOKEN_KEYS[channel];
+export const resolvePayoutMerchantTokenKey = (channel: PayoutChannel): MerchantTokenKey => {
+  const entry = PAYOUT_CHANNEL_MANIFEST.find((candidate) => candidate.channel === channel);
+  if (!entry?.tokenKey) {
+    throw new TypeError(`Unsupported payout channel: ${channel}`);
+  }
+
+  return entry.tokenKey;
+};
 
 /**
  * Resolves the merchant API token value from the configured environment.
@@ -247,19 +241,12 @@ const getSubscriptionPlanEnvVarName = (
 ): string => {
   const prefix = target === 'product' ? 'SUBSCRIPTION_PLAN_PROD' : 'SUBSCRIPTION_PLAN';
 
-  if (channel === 'default') {
-    return prefix;
+  const entry = SUBSCRIPTION_CHANNEL_MANIFEST.find((candidate) => candidate.channel === channel);
+  if (!entry || entry.planEnvSuffix === undefined) {
+    throw new TypeError(`Unsupported subscription channel: ${channel}`);
   }
 
-  if (channel === 'rabbitLinePay') {
-    return `${prefix}_LINEPAY`;
-  }
-
-  if (channel === 'internationalCreditCard') {
-    return `${prefix}_INTERNATIONAL_CARD`;
-  }
-
-  return `${prefix}_TNG`;
+  return `${prefix}${entry.planEnvSuffix}`;
 };
 
 /**
@@ -297,19 +284,12 @@ const buildCliEnv = (params: {
   subscriptionUrl: params.env.SUBSCRIPTION_URL || '/s2s/v1/subscriptions',
   callbackUrlDeposit: params.env.CALLBACK_URL_DEPOSIT,
   callbackUrlSubscription: params.env.CALLBACK_URL_SUBSCRIPTION,
-  subscriptionPlans: {
-    default: params.env[params.target === 'product' ? 'SUBSCRIPTION_PLAN_PROD' : 'SUBSCRIPTION_PLAN'] || '',
-    rabbitLinePay:
-      params.env[params.target === 'product' ? 'SUBSCRIPTION_PLAN_PROD_LINEPAY' : 'SUBSCRIPTION_PLAN_LINEPAY'] || '',
-    touchAndGo:
-      params.env[params.target === 'product' ? 'SUBSCRIPTION_PLAN_PROD_TNG' : 'SUBSCRIPTION_PLAN_TNG'] || '',
-    internationalCreditCard:
-      params.env[
-        params.target === 'product'
-          ? 'SUBSCRIPTION_PLAN_PROD_INTERNATIONAL_CARD'
-          : 'SUBSCRIPTION_PLAN_INTERNATIONAL_CARD'
-      ] || '',
-  },
+  subscriptionPlans: Object.fromEntries(
+    SUBSCRIPTION_CHANNEL_MANIFEST.map((entry) => [
+      entry.channel,
+      params.env[getSubscriptionPlanEnvVarName(entry.channel, params.target)] || '',
+    ]),
+  ) as Record<SubscriptionChannel, string>,
   tokens: {
     deposit: params.defaultMerchantApiToken,
     subscription: params.defaultMerchantApiToken,

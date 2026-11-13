@@ -1,6 +1,6 @@
 import type { SQL } from 'bun';
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
-import { DEPOSIT_CHANNELS } from './env';
+import { DEPOSIT_CHANNELS, getCliEnv } from './env';
 import {
   createPostgresDatabase,
   requireIntegrationDatabaseUrl,
@@ -11,6 +11,14 @@ import {
   runMigrations,
   type MigrationRunResult,
 } from './databaseMigrations';
+import { createDepositService } from '../deposit/service';
+import {
+  createSeedDepositPresets,
+  toDepositDefaultsResponse,
+  toDepositPersistentProjection,
+  type DepositPresetStore,
+} from '../deposit/presets';
+import type { DepositFormValues } from '../domains/deposit';
 import { resetAndMigrateIntegrationDatabase } from './integrationDatabase';
 import {
   createPostgresPresetRepository,
@@ -595,15 +603,16 @@ describeIntegration('PostgreSQL migration lifecycle', () => {
     });
 
     const initial = await storage.load();
+    const missingExpectedInput = {
+      channel: 'primary' as const,
+      values: {
+        merchantRef: 'transient',
+        returnUrl: 'https://merchant.example/return',
+        channelValue: 'saved',
+      },
+    } as unknown as Parameters<typeof storage.save>[0];
     await expect(
-      storage.save({
-        channel: 'primary',
-        values: {
-          merchantRef: 'transient',
-          returnUrl: 'https://merchant.example/return',
-          channelValue: 'saved',
-        },
-      }),
+      storage.save(missingExpectedInput),
     ).rejects.toBeInstanceOf(PresetStorageDataError);
 
     const saved = await storage.save({
@@ -627,6 +636,133 @@ describeIntegration('PostgreSQL migration lifecycle', () => {
     expect(saved.projection.channels.primary.channelValues).toHaveProperty(
       'payment_order.merchant_ref',
     );
+  });
+
+  test('passes the PostgreSQL snapshot timestamps through the deposit service save contract', async () => {
+    expect.hasAssertions();
+    expect(database).not.toBeNull();
+    if (!database) {
+      throw new Error('Integration database was not initialized.');
+    }
+
+    const env = getCliEnv(process.env);
+    const makeId = (prefix: string): string => `${prefix}integration-test`;
+    const storage = createPostgresPresetStorage<
+      (typeof DEPOSIT_CHANNELS)[number],
+      DepositFormValues,
+      DepositPresetStore
+    >({
+      client: database.sql,
+      feature: 'deposit',
+      channels: DEPOSIT_CHANNELS,
+      loadSeed: async () => createSeedDepositPresets(env, makeId),
+      fromPersistentProjection: (projection, seed) => ({
+        common: {
+          ...seed.common,
+          values: {
+            ...seed.common.values,
+            ...projection.commonValues,
+          },
+        },
+        channels: Object.fromEntries(
+          DEPOSIT_CHANNELS.map((channel) => [
+            channel,
+            {
+              ...seed.channels[channel],
+              commonValues: {
+                ...seed.channels[channel].commonValues,
+                ...projection.channels[channel].channelCommonValues,
+              },
+              values: {
+                ...seed.channels[channel].values,
+                ...projection.channels[channel].channelValues,
+              },
+            },
+          ]),
+        ) as DepositPresetStore['channels'],
+      }),
+      applyInput: (current, input) => {
+        const currentChannel = current.channels[input.channel];
+
+        return {
+          ...current,
+          common: {
+            ...current.common,
+            values: {
+              ...current.common.values,
+              returnUrl: input.values.commonValues.returnUrl,
+            },
+          },
+          channels: {
+            ...current.channels,
+            [input.channel]: {
+              ...currentChannel,
+              commonValues: {
+                ...currentChannel.commonValues,
+                productNo: input.values.commonValues.productNo,
+                amount: input.values.commonValues.amount,
+                currencyCode: input.values.commonValues.currencyCode,
+              },
+              values: input.values.channelValues,
+            },
+          },
+        };
+      },
+      toPersistentProjection: toDepositPersistentProjection,
+    });
+
+    const service = createDepositService({
+      getEnvForTarget: () => env,
+      storage,
+      makeId,
+      logger: {
+        info: () => undefined,
+        warn: () => undefined,
+        error: () => undefined,
+      },
+    });
+    const seed = createSeedDepositPresets(env, makeId);
+    const initialForm = toDepositDefaultsResponse(
+      'southafrica_cards',
+      env,
+      seed,
+    ).form;
+    const firstValues: DepositFormValues = {
+      ...initialForm,
+      commonValues: {
+        ...initialForm.commonValues,
+        returnUrl: 'https://merchant.example/first',
+      },
+    };
+    const secondValues: DepositFormValues = {
+      ...firstValues,
+      commonValues: {
+        ...firstValues.commonValues,
+        returnUrl: 'https://merchant.example/second',
+      },
+    };
+
+    await expect(
+      service.saveDefaultsForTarget('southafrica_cards', firstValues, 'local'),
+    ).resolves.toMatchObject({
+      ok: true,
+      form: { commonValues: { returnUrl: 'https://merchant.example/first' } },
+    });
+    await expect(
+      service.saveDefaultsForTarget('southafrica_cards', secondValues, 'local'),
+    ).resolves.toMatchObject({
+      ok: true,
+      form: { commonValues: { returnUrl: 'https://merchant.example/second' } },
+    });
+
+    const persisted = await createPostgresPresetRepository({
+      client: database.sql,
+      feature: 'deposit',
+      channels: DEPOSIT_CHANNELS,
+    }).load();
+    expect(persisted.projection.commonValues).toEqual({
+      returnUrl: 'https://merchant.example/second',
+    });
   });
 
   test('does not run seed loading after a storage save commits', async () => {

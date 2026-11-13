@@ -32,7 +32,8 @@ export const handleDepositRoute = async ({
     unknown,
     ReturnType<typeof createDepositService>,
     Awaited<ReturnType<ReturnType<typeof createDepositService>['getDefaultsForTarget']>>,
-    Awaited<ReturnType<ReturnType<typeof createDepositService>['execute']>>
+    Awaited<ReturnType<ReturnType<typeof createDepositService>['execute']>>,
+    Awaited<ReturnType<ReturnType<typeof createDepositService>['prepareOperation']>>
   >({
     request,
     url,
@@ -44,9 +45,17 @@ export const handleDepositRoute = async ({
     resolveChannel: getRequestedDepositChannel,
     resolveChannelFromValues: (values) => values.channel,
     getDefaults: (service, channel, targetEnvironment) => service.getDefaultsForTarget(channel, targetEnvironment),
+    prepareOperation: async (service, channel, values, targetEnvironment) => {
+      const operation = await service.prepareOperation(channel, values, targetEnvironment);
+      return {
+        operation,
+        values: operation.values,
+        bundle: operation.defaults,
+      };
+    },
     generateMerchantRef: (service) => service.generateMerchantRef(),
-    preview: (service, values, targetEnvironment) => service.preview(values, targetEnvironment),
-    execute: (service, values, targetEnvironment) => service.execute(values, targetEnvironment),
+    preview: (service, operation) => service.preview(operation),
+    execute: (service, operation) => service.execute(operation),
     checkoutUrlPolicy: depositCheckoutUrlPolicy,
     validate: (values, bundle) =>
       validateDepositForm(

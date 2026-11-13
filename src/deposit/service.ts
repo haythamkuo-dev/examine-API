@@ -1,8 +1,12 @@
 import { DEPOSIT_CHANNELS, type CliEnv, type DepositChannel } from '../core/env';
-import { createPresetBackedService } from '../core/createPresetBackedService';
-import { createJsonPresetStorage, stripTransientMerchantReferenceKeys } from '../core/presetStorage';
+import {
+  createPresetBackedService,
+  mergePresetFormValues,
+} from '../core/createPresetBackedService';
+import type { PresetStorage } from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
+import type { DepositFormValues, DepositRequestValues } from '../domains/deposit';
 import {
   buildDepositCreateResponse,
   buildDepositMerchantRefResponse,
@@ -10,26 +14,18 @@ import {
   buildDepositRequestFromForm,
   type DepositCreateResponse,
   type DepositDefaultsResponse,
-  type DepositFormValues,
   type DepositMerchantRefResponse,
-  type DepositRequestValues,
 } from './web';
 import {
-  loadDepositPresets,
   toDepositDefaultsResponse,
-  toDepositPersistentProjection,
-  updateDepositPreset,
+  type DepositPresetStore,
 } from './presets';
 
 export type DepositServiceDeps = {
   getEnvForTarget: (target: TargetEnvironment) => CliEnv;
-  presetDirPath: string;
+  storage: PresetStorage<DepositChannel, DepositFormValues, DepositPresetStore>;
   makeId: (prefix: string) => string;
   logger: Logger;
-};
-
-type DepositPersistentFormValues = Omit<DepositFormValues, 'commonValues'> & {
-  commonValues: Omit<DepositFormValues['commonValues'], 'merchantRef'>;
 };
 
 /**
@@ -50,54 +46,32 @@ export const getRequestedDepositChannel = (url: URL): DepositChannel => {
  * @returns The deposit service API used by the HTTP layer.
  */
 export const createDepositService = (deps: DepositServiceDeps) => {
-  const storage = createJsonPresetStorage<
-    DepositChannel,
-    DepositFormValues,
-    Awaited<ReturnType<typeof loadDepositPresets>>,
-    DepositPersistentFormValues
-  >({
-    load: () =>
-      loadDepositPresets({
-        dirPath: deps.presetDirPath,
-        env: deps.getEnvForTarget('local'),
-        makeId: deps.makeId,
-      }),
-    toPersistentInput: ({ channel, values }) => {
-      const { merchantRef: _merchantRef, ...commonValues } = values.commonValues;
-      return {
-        channel,
-        values: {
-          channel: values.channel,
-          commonValues,
-          channelValues: stripTransientMerchantReferenceKeys(values.channelValues),
-        },
-      };
-    },
-    save: ({ channel, values }) =>
-      updateDepositPreset({
-        dirPath: deps.presetDirPath,
-        channel,
-        values,
-        env: deps.getEnvForTarget('local'),
-        makeId: deps.makeId,
-      }),
-    toPersistentProjection: toDepositPersistentProjection,
-  });
-  const loadPresets = async () => (await storage.load()).presets;
+  const loadPresets = async () => deps.storage.load();
+  const toDefaultsResponse = (
+    channel: DepositChannel,
+    presets: DepositPresetStore,
+    target: TargetEnvironment | undefined,
+  ): DepositDefaultsResponse =>
+    toDepositDefaultsResponse(channel, deps.getEnvForTarget(target || 'local'), presets);
 
   const service = createPresetBackedService<
     DepositChannel,
     DepositRequestValues,
-    Awaited<ReturnType<typeof loadDepositPresets>>,
+    DepositPresetStore,
     DepositDefaultsResponse,
     ReturnType<typeof buildDepositPreviewResponse>,
     DepositCreateResponse,
     TargetEnvironment
   >({
     loadPresets,
-    toDefaultsResponse: (channel, presets) =>
-      toDepositDefaultsResponse(channel, deps.getEnvForTarget('local'), presets),
-    updatePreset: async (channel, values) => (await storage.save({ channel, values })).presets,
+    toDefaultsResponse,
+    hydrateValues: (channel, values, presets, target) =>
+      mergePresetFormValues(
+        toDefaultsResponse(channel, presets, target).form as DepositRequestValues,
+        values,
+      ),
+    updatePreset: async (channel, values, expected) =>
+      (await deps.storage.save({ channel, values, expected })).presets,
     buildPreviewResponse: (values, target) =>
       buildDepositPreviewResponse(deps.getEnvForTarget(target), values, deps.makeId),
     buildRequestFromForm: (values, target) =>
@@ -126,8 +100,7 @@ export const createDepositService = (deps: DepositServiceDeps) => {
     channel: DepositChannel,
     target: TargetEnvironment,
   ): Promise<DepositDefaultsResponse> => {
-    const presets = await loadPresets();
-    return toDepositDefaultsResponse(channel, deps.getEnvForTarget(target), presets);
+    return service.getDefaults(channel, target);
   };
 
   /**
@@ -143,12 +116,7 @@ export const createDepositService = (deps: DepositServiceDeps) => {
     values: DepositFormValues,
     target: TargetEnvironment,
   ): Promise<DepositDefaultsResponse & { ok: true }> => {
-    const presets = (await storage.save({ channel, values })).presets;
-
-    return {
-      ok: true,
-      ...toDepositDefaultsResponse(channel, deps.getEnvForTarget(target), presets),
-    };
+    return service.saveDefaults(channel, values, target);
   };
 
   return {

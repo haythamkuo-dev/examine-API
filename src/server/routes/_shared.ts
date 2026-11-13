@@ -1,6 +1,6 @@
 import { badRequest, errorResponse, json, readJson } from '../http';
 import { resolveTargetEnvironment, type TargetEnvironment } from '../../core/targetEnvironment';
-import { AppError, normalizeRouteError } from '../errors';
+import { AppError, normalizePresetStorageError, normalizeRouteError } from '../errors';
 
 type RouteResponse = Response | null;
 
@@ -51,6 +51,7 @@ export type PresetBackedRouteConfig<
   Service,
   DefaultsResponse,
   CreateResponse,
+  Operation,
   RouteError = never,
 > = {
   request: Request;
@@ -70,9 +71,22 @@ export type PresetBackedRouteConfig<
     commonSchema: CommonSchema;
     channelSchema: ChannelSchema;
   } & DefaultsResponse>;
+  prepareOperation: (
+    service: Service,
+    channel: Channel,
+    values: RequestValues,
+    targetEnvironment: TargetEnvironment,
+  ) => Promise<{
+    operation: Operation;
+    values: RequestValues;
+    bundle: {
+      commonSchema: CommonSchema;
+      channelSchema: ChannelSchema;
+    } & DefaultsResponse;
+  }>;
   generateMerchantRef: (service: Service) => unknown;
-  preview: (service: Service, values: RequestValues, targetEnvironment: TargetEnvironment) => unknown;
-  execute: (service: Service, values: RequestValues, targetEnvironment: TargetEnvironment) => Promise<CreateResponse>;
+  preview: (service: Service, operation: Operation) => unknown;
+  execute: (service: Service, operation: Operation) => Promise<CreateResponse>;
   checkoutUrlPolicy: CheckoutUrlPolicy;
   validate: (
     values: RequestValues,
@@ -88,6 +102,11 @@ const handleRouteError = async (
   error: unknown,
   onRouteError: (error: unknown) => Response | unknown | Promise<Response | unknown>,
 ): Promise<RouteResponse> => {
+  const storageError = normalizePresetStorageError(error);
+  if (storageError) {
+    return errorResponse(storageError.status, storageError.message, storageError.code);
+  }
+
   const handled = await onRouteError(error);
   if (handled instanceof Response) {
     return handled;
@@ -130,6 +149,7 @@ export const handlePresetBackedRoute = async <
   Service,
   DefaultsResponse,
   CreateResponse,
+  Operation,
   RouteError = never,
 >({
   request,
@@ -142,6 +162,7 @@ export const handlePresetBackedRoute = async <
   resolveChannel,
   resolveChannelFromValues,
   getDefaults,
+  prepareOperation,
   generateMerchantRef,
   preview,
   execute,
@@ -156,6 +177,7 @@ export const handlePresetBackedRoute = async <
   Service,
   DefaultsResponse,
   CreateResponse,
+  Operation,
   RouteError
 >): Promise<RouteResponse> => {
   const service = createService();
@@ -183,10 +205,15 @@ export const handlePresetBackedRoute = async <
     const values = await readJson<RequestValues>(request);
 
     try {
-      const bundle = await getDefaults(service, resolveChannelFromValues(values), targetEnvironment);
-      const error = validate(values, bundle);
+      const prepared = await prepareOperation(
+        service,
+        resolveChannelFromValues(values),
+        values,
+        targetEnvironment,
+      );
+      const error = validate(prepared.values, prepared.bundle);
       if (error) return badRequest(error);
-      return json(preview(service, values, targetEnvironment));
+      return json(preview(service, prepared.operation));
     } catch (error) {
       return handleRouteError(error, onRouteError);
     }
@@ -196,10 +223,15 @@ export const handlePresetBackedRoute = async <
     const values = await readJson<RequestValues>(request);
 
     try {
-      const bundle = await getDefaults(service, resolveChannelFromValues(values), targetEnvironment);
-      const error = validate(values, bundle);
+      const prepared = await prepareOperation(
+        service,
+        resolveChannelFromValues(values),
+        values,
+        targetEnvironment,
+      );
+      const error = validate(prepared.values, prepared.bundle);
       if (error) return badRequest(error);
-      const result = await execute(service, values, targetEnvironment);
+      const result = await execute(service, prepared.operation);
       const normalizedError = normalizeRouteError(result);
       if (normalizedError) {
         return json(normalizedError, {

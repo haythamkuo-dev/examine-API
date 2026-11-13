@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { cp, mkdtemp, readFile } from 'fs/promises';
+import { cp, mkdtemp, readFile, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { getCliEnv, getProductCliEnv } from '../core/env';
+import { PresetStorageInvalidError } from '../core/presetStorage';
 import { generateSign } from '../utils';
 import {
   buildSubscriptionPreviewResponse,
@@ -58,6 +59,20 @@ beforeEach(async () => {
 });
 
 describe('subscription web helpers', () => {
+  test('rejects an invalid channel projection instead of creating an empty schema', async () => {
+    expect.hasAssertions();
+
+    await writeFile(join(presetDirPath, 'channels', 'default.json'), '{}\n', 'utf8');
+
+    await expect(
+      loadSubscriptionPresets({
+        dirPath: presetDirPath,
+        env,
+        makeId,
+      }),
+    ).rejects.toBeInstanceOf(PresetStorageInvalidError);
+  });
+
   test('creates seed subscription presets for all configured channels without editable plan ids', async () => {
     const result = await createSeedSubscriptionPresets({ dirPath: presetDirPath, env, makeId });
     const defaultIntervalCount = result.channels.default.schema.interval_count;

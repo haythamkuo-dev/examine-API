@@ -1,5 +1,6 @@
 import {
   resolveSubscriptionApiKey,
+  resolveSubscriptionPlan,
   type CliEnv,
   type SubscriptionChannel,
 } from '../core/env';
@@ -8,6 +9,16 @@ import {
   createSubscriptionPayload,
   createSubscriptionRequest,
   type SubscriptionPayload,
+} from '../domains/subscription';
+import type {
+  SubscriptionChannelValues,
+  SubscriptionCommonValues,
+  SubscriptionFormValues,
+} from '../domains/subscription';
+export type {
+  SubscriptionChannelValues,
+  SubscriptionCommonValues,
+  SubscriptionFormValues,
 } from '../domains/subscription';
 import type { CommandRequest, CommandResult } from '../runner';
 
@@ -62,19 +73,6 @@ export type SubscriptionFieldSchema =
 
 export type SubscriptionFieldMap = Record<string, SubscriptionFieldSchema>;
 
-export type SubscriptionCommonValues = {
-  merchantRef?: string;
-  returnUrl: string;
-};
-
-export type SubscriptionChannelValues = Record<string, unknown>;
-
-export type SubscriptionFormValues = {
-  channel: SubscriptionChannel;
-  commonValues: SubscriptionCommonValues;
-  channelValues: SubscriptionChannelValues;
-};
-
 export type SubscriptionRequestValues = SubscriptionFormValues & {
   apiKey?: string;
 };
@@ -123,6 +121,24 @@ const subscriptionSignFields = ['merchant_no', 'merchant_ref', 'order_id', 'stat
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
+const resolveSubscriptionRequestValues = (
+  env: CliEnv,
+  values: SubscriptionRequestValues,
+): SubscriptionRequestValues => {
+  const planId = values.channelValues.subs_plan_id;
+  if (typeof planId === 'string' && planId.trim()) {
+    return values;
+  }
+
+  return {
+    ...values,
+    channelValues: {
+      ...values.channelValues,
+      subs_plan_id: resolveSubscriptionPlan(env, values.channel),
+    },
+  };
+};
+
 const buildPayloadFromForm = (
   env: CliEnv,
   values: SubscriptionFormValues,
@@ -158,11 +174,12 @@ export const buildSubscriptionRequestFromForm = (
   values: SubscriptionRequestValues,
   makeId: (prefix: string) => string,
 ): CommandRequest => {
-  const payload = buildPayloadFromForm(env, values, makeId);
-  const request = createSubscriptionRequest(env, values.channel, {
-    apiKey: values.apiKey?.trim() || undefined,
-    commonValues: values.commonValues,
-    channelValues: values.channelValues,
+  const resolvedValues = resolveSubscriptionRequestValues(env, values);
+  const payload = buildPayloadFromForm(env, resolvedValues, makeId);
+  const request = createSubscriptionRequest(env, resolvedValues.channel, {
+    apiKey: resolvedValues.apiKey?.trim() || undefined,
+    commonValues: resolvedValues.commonValues,
+    channelValues: resolvedValues.channelValues,
   }, () => payload.merchant_ref);
 
   return {

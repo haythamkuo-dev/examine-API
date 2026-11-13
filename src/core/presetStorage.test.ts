@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test';
-import { createJsonPresetStorage, stripTransientMerchantReferenceKeys } from './presetStorage';
+import {
+  createJsonPresetStorage,
+  PresetStorageInvalidError,
+  PresetStorageNotFoundError,
+  PresetStorageUnavailableError,
+  readPresetJsonObject,
+  stripTransientMerchantReferenceKeys,
+} from './presetStorage';
 
 type TestChannel = 'primary';
 
@@ -25,7 +32,15 @@ describe('createJsonPresetStorage', () => {
   test('maps operation values before writing and exposes a merchant-free persistent projection', async () => {
     expect.hasAssertions();
 
-    const savedInputs: Array<{ channel: TestChannel; values: TestPersistentFormValues }> = [];
+    const savedInputs: Array<{
+      channel: TestChannel;
+      values: TestPersistentFormValues;
+      expected: {
+        channel: TestChannel;
+        featureUpdatedAt: string | null;
+        channelUpdatedAt: string | null;
+      };
+    }> = [];
     let presets: TestPresets = {
       common: {
         values: {
@@ -47,9 +62,9 @@ describe('createJsonPresetStorage', () => {
       TestPersistentFormValues
     >({
       load: async () => presets,
-      toPersistentInput: ({ channel, values }) => {
+      toPersistentInput: ({ channel, values, expected }) => {
         const { merchantRef: _merchantRef, ...persistentValues } = values;
-        return { channel, values: persistentValues };
+        return { channel, values: persistentValues, expected };
       },
       save: async (input) => {
         savedInputs.push(input);
@@ -90,6 +105,11 @@ describe('createJsonPresetStorage', () => {
         merchantRef: 'transient-operation-value',
         returnUrl: 'https://merchant.example.com/updated',
       },
+      expected: {
+        channel: 'primary',
+        featureUpdatedAt: null,
+        channelUpdatedAt: null,
+      },
     });
 
     expect(savedInputs).toEqual([
@@ -97,6 +117,11 @@ describe('createJsonPresetStorage', () => {
         channel: 'primary',
         values: {
           returnUrl: 'https://merchant.example.com/updated',
+        },
+        expected: {
+          channel: 'primary',
+          featureUpdatedAt: null,
+          channelUpdatedAt: null,
         },
       },
     ]);
@@ -126,5 +151,28 @@ describe('createJsonPresetStorage', () => {
       },
       product_no: 'TEST-PRODUCT-001',
     });
+  });
+
+  test('classifies missing, invalid, and unavailable JSON sources independently', async () => {
+    expect.hasAssertions();
+
+    const missingFileError = Object.assign(new Error('missing'), { code: 'ENOENT' });
+    const permissionError = Object.assign(new Error('permission denied'), { code: 'EACCES' });
+
+    await expect(
+      readPresetJsonObject('/preset/missing.json', async () => {
+        throw missingFileError;
+      }),
+    ).rejects.toBeInstanceOf(PresetStorageNotFoundError);
+
+    await expect(
+      readPresetJsonObject('/preset/invalid.json', async () => '{invalid-json'),
+    ).rejects.toBeInstanceOf(PresetStorageInvalidError);
+
+    await expect(
+      readPresetJsonObject('/preset/forbidden.json', async () => {
+        throw permissionError;
+      }),
+    ).rejects.toBeInstanceOf(PresetStorageUnavailableError);
   });
 });

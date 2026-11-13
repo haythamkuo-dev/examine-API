@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { cp, mkdtemp, readFile } from 'fs/promises';
+import { cp, mkdtemp, readFile, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { getCliEnv } from '../core/env';
+import { PresetStorageInvalidError } from '../core/presetStorage';
 import { generateSign } from '../utils';
 import { buildPayoutPreviewResponse, buildPayoutRequestFromForm, type PayoutRequestValues } from './web';
 import { createSeedPayoutPresets, loadPayoutPresets, toPayoutDefaultsResponse, updatePayoutPreset } from './presets';
@@ -39,6 +40,19 @@ beforeEach(async () => {
 });
 
 describe('payout web helpers', () => {
+  test('rejects an invalid channel projection instead of creating an empty schema', async () => {
+    expect.hasAssertions();
+
+    await writeFile(join(presetDirPath, 'channels', 'co_bank.json'), '{}\n', 'utf8');
+
+    await expect(
+      loadPayoutPresets({
+        dirPath: presetDirPath,
+        makeId,
+      }),
+    ).rejects.toBeInstanceOf(PresetStorageInvalidError);
+  });
+
   test('creates seed payout presets for all channels', async () => {
     const result = await createSeedPayoutPresets({ dirPath: presetDirPath, makeId });
 

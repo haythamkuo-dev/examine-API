@@ -4,9 +4,21 @@ import {
   type SubscriptionChannel,
   joinUrl,
 } from '../core/env';
-import type { SubscriptionChannelValues, SubscriptionCommonValues } from '../subscription/web';
 import { generateSign } from '../utils';
 import type { CommandRequest } from '../runner';
+
+export type SubscriptionCommonValues = {
+  merchantRef?: string;
+  returnUrl: string;
+};
+
+export type SubscriptionChannelValues = Record<string, unknown>;
+
+export type SubscriptionFormValues = {
+  channel: SubscriptionChannel;
+  commonValues: SubscriptionCommonValues;
+  channelValues: SubscriptionChannelValues;
+};
 
 export type SubscriptionPayload = {
   subs_plan_id: string;
@@ -51,7 +63,6 @@ const subscriptionSignFields = ['merchant_no', 'merchant_ref', 'order_id', 'stat
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const resolveDraftSubscriptionPlanId = (
-  env: CliEnv,
   channel: SubscriptionChannel,
   overrides: SubscriptionRequestOverrides,
   planIdOverride?: string,
@@ -61,7 +72,11 @@ const resolveDraftSubscriptionPlanId = (
     return draftPlanId.trim();
   }
 
-  return planIdOverride || resolveSubscriptionPlan(env, channel);
+  if (planIdOverride?.trim()) {
+    return planIdOverride.trim();
+  }
+
+  throw new TypeError(`Subscription plan id is required for "${channel}".`);
 };
 
 const createLegacySubscriptionOverrides = (
@@ -100,14 +115,13 @@ const createLegacySubscriptionOverrides = (
 });
 
 const buildSubscriptionPayload = (
-  env: CliEnv,
   channel: SubscriptionChannel,
   overrides: SubscriptionRequestOverrides,
   makeId: (prefix: string) => string,
   planIdOverride?: string,
 ): SubscriptionPayload => ({
   ...(clone(overrides.channelValues) as Omit<SubscriptionPayload, 'merchant_ref' | 'return_url' | 'sign'>),
-  subs_plan_id: resolveDraftSubscriptionPlanId(env, channel, overrides, planIdOverride),
+  subs_plan_id: resolveDraftSubscriptionPlanId(channel, overrides, planIdOverride),
   merchant_ref: makeId('TEST_ORDER_'),
   return_url: overrides.commonValues.returnUrl,
 });
@@ -153,7 +167,7 @@ export function createSubscriptionPayload(
     throw new TypeError('Subscription merchant reference generator is required');
   }
 
-  const payload = buildSubscriptionPayload(env, channel, overrides, makeReference, planIdOverride);
+  const payload = buildSubscriptionPayload(channel, overrides, makeReference, planIdOverride);
 
   return {
     ...payload,

@@ -1,10 +1,17 @@
 import { describe, expect, test } from 'bun:test';
 import {
   buildErrorEnvelope,
+  normalizePresetStorageError,
   normalizeRouteError,
   sanitizeErrorMessage,
   unknownErrorMessage,
 } from './errors';
+import {
+  PresetStorageConflictError,
+  PresetStorageInvalidError,
+  PresetStorageNotFoundError,
+  PresetStorageUnavailableError,
+} from '../core/presetStorage';
 
 describe('server error normalization', () => {
   test('normalizes nested upstream fields without exposing command metadata', () => {
@@ -78,5 +85,22 @@ describe('server error normalization', () => {
     expect(sanitized).toContain('upstream validation context remains complete');
     expect(sanitized).not.toContain('auth-secret');
     expect(sanitized).not.toContain('api-secret');
+  });
+
+  test('maps classified preset storage failures to safe public errors', () => {
+    const cases = [
+      [new PresetStorageNotFoundError('/private/preset.json'), 500, 'PRESET_NOT_FOUND'],
+      [new PresetStorageInvalidError('invalid preset'), 500, 'PRESET_INVALID'],
+      [new PresetStorageUnavailableError('/private/preset.json'), 503, 'PRESET_STORAGE_UNAVAILABLE'],
+      [new PresetStorageConflictError('deposit', 'pix_brl'), 409, 'PRESET_CONFLICT'],
+    ] as const;
+
+    for (const [error, status, code] of cases) {
+      const normalized = normalizePresetStorageError(error);
+
+      expect(normalized).toBeInstanceOf(Error);
+      expect(normalized).toMatchObject({ status, code });
+      expect(normalized?.message).not.toContain('/private');
+    }
   });
 });

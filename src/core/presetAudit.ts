@@ -1,9 +1,10 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import {
-  DEPOSIT_CHANNELS,
-  PAYOUT_CHANNELS,
-  SUBSCRIPTION_CHANNELS,
+  DEPOSIT_CHANNEL_MANIFEST,
+  PAYOUT_CHANNEL_MANIFEST,
+  SUBSCRIPTION_CHANNEL_MANIFEST,
+  type BackendChannelManifestEntry,
 } from './env';
 
 export type PresetAuditStatus = 'ready' | 'deferred' | 'invalid';
@@ -34,14 +35,9 @@ type PresetAuditFile = {
   deferred: boolean;
 };
 
-const deferredFiles = new Set([
-  'deposit/channels/JCB-JPY.json',
-  'deposit/channels/JCB-USD.json',
-]);
-
-const createFeatureFiles = <Channel extends string>(
+const createFeatureFiles = (
   feature: PresetAuditEntry['feature'],
-  channels: readonly Channel[],
+  channels: readonly BackendChannelManifestEntry[],
 ): PresetAuditFile[] => [
   {
     feature,
@@ -50,20 +46,20 @@ const createFeatureFiles = <Channel extends string>(
     deferred: false,
   },
   ...channels.map((channel) => {
-    const relativePath = `${feature}/channels/${channel}.json`;
+    const relativePath = `${feature}/channels/${channel.presetFile}`;
     return {
       feature,
       relativePath,
-      targetRow: `preset_channels:${feature}:${channel}`,
-      deferred: deferredFiles.has(relativePath),
+      targetRow: channel.auditTarget,
+      deferred: channel.deferred === true,
     };
   }),
 ];
 
 const auditFiles = [
-  ...createFeatureFiles('deposit', DEPOSIT_CHANNELS),
-  ...createFeatureFiles('payout', PAYOUT_CHANNELS),
-  ...createFeatureFiles('subscription', SUBSCRIPTION_CHANNELS),
+  ...createFeatureFiles('deposit', DEPOSIT_CHANNEL_MANIFEST),
+  ...createFeatureFiles('payout', PAYOUT_CHANNEL_MANIFEST),
+  ...createFeatureFiles('subscription', SUBSCRIPTION_CHANNEL_MANIFEST),
 ];
 
 const isTopLevelJsonObject = (value: unknown): value is Record<string, unknown> =>

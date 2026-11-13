@@ -1,3 +1,5 @@
+import { PresetStorageError } from '../core/presetStorage';
+
 /** Stable fallback code used when an error has no recognized classification. */
 export const unknownErrorCode = 'UNKNOWN_ERROR';
 
@@ -40,6 +42,52 @@ export class AppError extends Error {
     this.code = params.code || unknownErrorCode;
   }
 }
+
+const presetStorageErrorDetails: Record<
+  PresetStorageError['kind'],
+  { status: number; code: string; message: string }
+> = {
+  not_found: {
+    status: 500,
+    code: 'PRESET_NOT_FOUND',
+    message: 'Preset configuration is missing.',
+  },
+  invalid: {
+    status: 500,
+    code: 'PRESET_INVALID',
+    message: 'Preset configuration is invalid.',
+  },
+  unavailable: {
+    status: 503,
+    code: 'PRESET_STORAGE_UNAVAILABLE',
+    message: 'Preset storage is unavailable.',
+  },
+  conflict: {
+    status: 409,
+    code: 'PRESET_CONFLICT',
+    message: 'Preset configuration changed. Retry the operation.',
+  },
+};
+
+/**
+ * Converts a classified preset adapter failure into a safe route error.
+ *
+ * @param error Unknown error raised by a preset storage adapter.
+ * @returns A public application error, or `null` for unrelated errors.
+ */
+export const normalizePresetStorageError = (error: unknown): AppError | null => {
+  if (!(error instanceof PresetStorageError)) {
+    return null;
+  }
+
+  const details = presetStorageErrorDetails[error.kind];
+  return new AppError({
+    status: details.status,
+    code: details.code,
+    message: details.message,
+    cause: error,
+  });
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);

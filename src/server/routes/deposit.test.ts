@@ -1344,7 +1344,7 @@ describe('deposit API routes', () => {
     const requestBody = createPixBody();
     const paymentOrder = requestBody.channelValues.payment_order as Record<string, unknown>;
     const collect = paymentOrder.collect as Record<string, unknown>;
-    delete collect.shopper_email;
+    collect.shopper_email = '';
 
     const response = await context.requestApi('/api/deposit/preview', {
       method: 'POST',
@@ -1357,6 +1357,49 @@ describe('deposit API routes', () => {
       response: {
         message: 'payment_order.collect.shopper_email is required',
       },
+    });
+  });
+
+  test('POST /api/deposit/preview hydrates omitted fields from the selected persistent preset', async () => {
+    const defaultsResponse = await context.requestApi('/api/deposit/defaults?channel=pix_brl');
+    const defaults = (await defaultsResponse.json()) as { form: DepositFormValues };
+    const response = await context.requestApi('/api/deposit/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel: 'pix_brl',
+        commonValues: {
+          amount: '88.88',
+        },
+        channelValues: {
+          payment_order: {
+            collect: {
+              shopper_email: 'partial-request@example.com',
+            },
+          },
+        },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as { request: { payload: Record<string, unknown> } };
+    const payload = body.request.payload;
+    const amount = payload.amount as Record<string, string>;
+    const paymentOrder = payload.payment_order as Record<string, unknown>;
+    const collect = paymentOrder.collect as Record<string, unknown>;
+    const defaultPaymentOrder = defaults.form.channelValues.payment_order as Record<string, unknown>;
+    const defaultCollect = defaultPaymentOrder.collect as Record<string, unknown>;
+
+    expect(payload.product_no).toBe(defaults.form.commonValues.productNo);
+    expect(amount).toEqual({
+      amount: '88.88',
+      currency_code: defaults.form.commonValues.currencyCode,
+    });
+    expect(collect).toMatchObject({
+      country_code: defaultCollect.country_code,
+      product_name: defaultCollect.product_name,
+      shopper_email: 'partial-request@example.com',
     });
   });
 

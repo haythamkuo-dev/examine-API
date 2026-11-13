@@ -26,7 +26,7 @@
 * **[Backend] API 路由與控制器**: `src/server/routes/` (僅處理 HTTP 傳輸，不含業務邏輯)
 * **[Frontend] UI 畫面與元件**: `web/` (React + Tailwind 相關程式碼，嚴禁混入後端 Node/Bun API)
 * **[Tests] 後端單元／API 測試**：測試檔案與後端源碼同層或位於 `__tests__` 中。測試使用 `tests/setup.ts` 載入 `.env.test`。需要 server fixture 時，測試使用 `tests/server-setup.ts`。
-* **[Tests] PostgreSQL 整合測試**：測試檔案與 database adapter 或 migration 同層或位於 `__tests__` 中。測試使用 `bun run test:db` 與 `tests/integration-setup.ts`。只有 `test:db` 可以執行這些測試案例。
+* **[Tests] PostgreSQL 整合測試**：測試檔案與 database adapter 或 migration 同層或位於 `__tests__` 中。測試由使用者或 CI 使用 `bun run test:db` 與 `tests/integration-setup.ts` 執行。只有 `test:db` 可以執行這些測試案例；AI 不在一般任務中執行此 gate，完成其他適用驗證後提醒使用者執行。
 * **[Tests] 前端測試**：位於 `web/` 內部對應元件旁，並透過 `web-setup.ts` 初始化瀏覽器環境。
 
 ### Build, Test, and Verification Commands
@@ -35,7 +35,7 @@
 
 - 前端測試：`bun run test:web`。此命令使用 Happy DOM 與前端 setup。
 - 後端單元／API 測試：`bun run test:api`。此命令只使用測試 fixture，不連線到 PostgreSQL。
-- PostgreSQL 整合測試：`bun run test:db`。此命令需要可丟棄的整合測試資料庫。
+- PostgreSQL 整合測試：`bun run test:db`。此命令需要可丟棄的整合測試資料庫，由使用者或 CI 執行。AI 不執行此 gate，完成其他適用驗證後必須提醒使用者執行。
 - 全部一般測試：`bun run test`。此命令執行 `test:api` 與 `test:web`，不執行 `test:db`。
 - TypeScript 型別檢查：`tsc --noEmit`
 - API 建置：`bun run build:api`
@@ -47,7 +47,7 @@
 適用 gate 的基本判斷如下：
 
 - 修改後端 domain、service、validation、API route 或 server 行為：至少執行 `bun run test:api` 與 `tsc --noEmit`。若修改影響 API 建置輸出，再執行 `bun run build:api`。
-- 修改 database adapter、migration、database lifecycle 或 PostgreSQL 整合測試流程：執行 `bun run test:api`、`bun run test:db` 與 `tsc --noEmit`。若修改影響 API 建置輸出，再執行 `bun run build:api`。
+- 修改 database adapter、migration、database lifecycle 或 PostgreSQL 整合測試流程：AI 執行 `bun run test:api` 與 `tsc --noEmit`；若修改影響 API 建置輸出，再執行 `bun run build:api`。完成上述驗證後，提醒使用者自行執行 `bun run test:db`。AI 不執行此 PostgreSQL integration gate。
 - 修改 React page、hook、component、frontend route 或 web 行為：至少執行 `bun run test:web` 與 `tsc --noEmit`；若影響 production bundle、routing 或 frontend build，再執行 `bun run build:web`。
 - 跨越前後端或同時影響兩側公開行為：執行兩側相關測試與建置 gate。
 - 修改資料夾結構：執行 `bun run structure` 並確認 `structure.md` 已更新。
@@ -59,7 +59,7 @@
 - 單元／API 測試使用 `bun run test:api`。
 - `tests/setup.ts` 載入 `.env.test`。
 - `.env.test` 中的 `TEST_*` database URL 是測試 fixture。這些 URL 只用於 URL 解析、驗證與錯誤邊界測試。這些測試不得建立 PostgreSQL pool。
-- PostgreSQL 整合測試使用 `bun run test:db`。
+- PostgreSQL 整合測試使用 `bun run test:db`，由使用者或 CI 負責執行。AI 不在一般任務中執行此命令。
 - `tests/integration-setup.ts` 先載入 `.env.test`，再載入 `.env.integration.local`。
 - `test:db` 缺少 `INTEGRATION_DATABASE_URL` 時必須失敗。`test:db` 不得跳過測試。
 - CI 必須提供相同名稱的 integration 變數。CI 可以從 secret 或 process environment 讀取這些變數。
@@ -67,7 +67,7 @@
 - `.env.integration.local` 只供本機整合測試使用。此檔案可包含 `INTEGRATION_DATABASE_URL`、`DATABASE_ADMIN_URL` 與 `INTEGRATION_DATABASE_NAME`。此檔案不得提交到 Git。
 - 整合測試只能連線到可丟棄的整合測試資料庫。整合測試不得使用開發資料庫、production database 或 runtime `DATABASE_URL`。
 - `TEST_INTEGRATION_DATABASE_URL` 是單元測試 fixture。`INTEGRATION_DATABASE_URL` 是整合測試連線。兩者不可互換。
-- `bun run test` 不執行 `test:db`。需要資料庫整合測試結果時，必須明確執行 `bun run test:db`。
+- `bun run test` 不執行 `test:db`。需要資料庫整合測試結果時，使用者或 CI 必須明確執行 `bun run test:db`；AI 完成其他適用驗證後提醒使用者，不代為執行。
 - `test:api` 通過不代表資料庫整合測試通過。
 - 一般測試命令可能會掃描位於 `src/` 的整合測試檔案。一般測試命令不得建立 PostgreSQL 連線，也不得執行整合測試案例。只有 `test:db` 可以執行這些案例。`test:db` 缺少必要環境變數時必須失敗，不得跳過測試。
 - 若設計文件與本節衝突，以本節為準。設計文件應另行更新。不得依舊文件把真實 integration URL 移入 `.env.test`。
@@ -112,6 +112,7 @@
 - 任務完成不得僅以程式碼已產生或修改結束作為依據。AI 必須將設計或需求中的完成條件，逐項對應至實際執行的測試、型別檢查、建置、手動驗證或其他適當證據。
 - 驗證層級應依風險與公開契約選擇最低但足夠的層級，並遵守本文件的 `Risk → Test → Test layer` 規範；不要求為了 coverage 而增加無產品風險對應的測試。
 - 相關驗證失敗時，不得宣稱任務已完成。若受環境、工具或外部依賴限制而無法執行，必須列出未執行的命令、原因、替代驗證、未涵蓋部分與剩餘風險。
+- PostgreSQL integration gate `bun run test:db` 由使用者或 CI 負責。AI 不執行此命令；若變更範圍適用，AI 完成其他必要驗證後，必須提醒使用者執行，並在交付說明中標記該 gate 尚未由 AI 驗證。
 - 交付說明至少應包含：已完成的行為、實際執行的驗證及結果、未能驗證的部分，以及仍需使用者決策或後續處理的風險。
 
 

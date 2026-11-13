@@ -3,6 +3,7 @@ import { cp, mkdtemp } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { createTestCliEnv } from '../../tests/server-setup';
+import { createDepositJsonPresetStorage } from './storage';
 import { createDepositService, getRequestedDepositChannel } from './service';
 
 const env = createTestCliEnv();
@@ -12,6 +13,9 @@ const sourceDirPath = resolve(process.cwd(), 'data/deposit');
 
 let presetDirPath = sourceDirPath;
 const originalFetch = globalThis.fetch;
+
+const createStorage = () =>
+  createDepositJsonPresetStorage({ dirPath: presetDirPath, env, makeId });
 
 const copyDepositFixtures = async (): Promise<string> => {
   const tempDir = await mkdtemp(join(tmpdir(), 'deposit-service-'));
@@ -47,7 +51,7 @@ describe('deposit service', () => {
   test('loads deposit defaults from the fixture bundle', async () => {
     const service = createDepositService({
       getEnvForTarget,
-      presetDirPath,
+      storage: createStorage(),
       makeId,
       logger: console,
     });
@@ -63,14 +67,15 @@ describe('deposit service', () => {
   test('builds a masked preview response from deposit form values', async () => {
     const service = createDepositService({
       getEnvForTarget,
-      presetDirPath,
+      storage: createStorage(),
       makeId,
       logger: console,
     });
     const defaults = await service.getDefaults('southafrica_cards');
 
     defaults.form.commonValues.merchantRef = 'TEST_SERVICE_PREVIEW_001';
-    const preview = service.preview(defaults.form, 'local');
+    const operation = await service.prepareOperation('southafrica_cards', defaults.form, 'local');
+    const preview = service.preview(operation);
     const payload = preview.request.payload as Record<string, unknown>;
 
     expect(preview.request.headers?.Authorization).toBe('ApiKey ****-token');
@@ -87,13 +92,14 @@ describe('deposit service', () => {
 
     const service = createDepositService({
       getEnvForTarget,
-      presetDirPath,
+      storage: createStorage(),
       makeId,
       logger: console,
     });
     const defaults = await service.getDefaults('southafrica_cards');
 
-    const result = await service.execute(defaults.form, 'local');
+    const operation = await service.prepareOperation('southafrica_cards', defaults.form, 'local');
+    const result = await service.execute(operation);
 
     expect(result.ok).toBe(false);
     expect(result.status).toBe(400);

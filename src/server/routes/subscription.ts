@@ -58,6 +58,7 @@ export const handleSubscriptionRoute = async ({
     ReturnType<typeof createSubscriptionService>,
     Awaited<ReturnType<ReturnType<typeof createSubscriptionService>['getDefaultsForTarget']>>,
     Awaited<ReturnType<ReturnType<typeof createSubscriptionService>['execute']>>,
+    Awaited<ReturnType<ReturnType<typeof createSubscriptionService>['prepareOperation']>>,
     AppError
   >({
     request,
@@ -70,9 +71,17 @@ export const handleSubscriptionRoute = async ({
     resolveChannel: getRequestedSubscriptionChannel,
     resolveChannelFromValues: (values) => values.channel,
     getDefaults: (service, channel, targetEnvironment) => service.getDefaultsForTarget(channel, targetEnvironment),
+    prepareOperation: async (service, channel, values, targetEnvironment) => {
+      const operation = await service.prepareOperation(channel, values, targetEnvironment);
+      return {
+        operation,
+        values: operation.values,
+        bundle: operation.defaults,
+      };
+    },
     generateMerchantRef: (service) => service.generateMerchantRef(),
-    preview: (service, values, targetEnvironment) => service.preview(values, targetEnvironment),
-    execute: (service, values, targetEnvironment) => service.execute(values, targetEnvironment),
+    preview: (service, operation) => service.preview(operation),
+    execute: (service, operation) => service.execute(operation),
     checkoutUrlPolicy: subscriptionCheckoutUrlPolicy,
     validate: (values, bundle) =>
       validateSubscriptionForm(
