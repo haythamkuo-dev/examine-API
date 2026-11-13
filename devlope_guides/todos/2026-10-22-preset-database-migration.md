@@ -4,8 +4,8 @@
 
 - 文件等級：完整開發設計書。
 - 理由：本次變更會新增 PostgreSQL 持久化、migration、資料匯入、local / Supabase 部署邊界，並改變現有 JSON preset 的讀寫路徑。
-- 狀態：Phase 1、Phase 2 gate 已通過；後續開發起點為 Phase 3。本機 PostgreSQL 已完成 migration 與 disposable integration database lifecycle 驗證，但尚未切換應用程式儲存層。
-- Phase handoff：除非發現回歸、設計／需求變更，或使用者明確要求重新驗證，後續 AI 不應重做或重新規劃 Phase 1、Phase 2，直接依本文件從 Phase 3 開始。
+- 狀態：Phase 1、Phase 2、Phase 3 gate 已通過；後續開發起點為 Phase 4。本機 PostgreSQL 已完成 migration、disposable integration database lifecycle 與 adapter／repository 驗證，但尚未切換應用程式儲存層。
+- Phase handoff：除非發現回歸、設計／需求變更，或使用者明確要求重新驗證，後續 AI 不應重做或重新規劃 Phase 1、Phase 2、Phase 3，直接依本文件從 Phase 4 開始。
 - 主要規範：[AGENTS.md](../../AGENTS.md)。
 
 ## 目標
@@ -273,7 +273,7 @@ POST create
 
 **Phase 2 gate：已通過。** 已在專用 integration database 實際完成 fresh database provision、migration、重複套用 no-op、migration history、constraint／timestamp、pool session cleanup 與 database teardown 驗證；`bun run test:db` 結果為 `3 pass / 0 fail`。尚未匯入 preset data，也不切換 runtime。後續 AI 應將 Phase 2 視為已完成前置條件，直接進入 Phase 3；不得因日常本機使用固定 integration database 加 schema reset 而要求重新執行整個 fresh provision／teardown lifecycle。
 
-### Phase 3：PostgreSQL adapter 與 repository integration tests
+### Phase 3：PostgreSQL adapter 與 repository integration tests（已通過）
 
 - 實作 PostgreSQL adapter 的 canonical read／save；只讀寫 persistent projection，不接受 merchant reference 作為可持久化欄位。
 - save 必須在單一 Bun SQL transaction 中完成 feature common 與所有受影響 channel row 的寫入；callback throw／reject 時由 Bun rollback，成功才 commit。
@@ -282,7 +282,7 @@ POST create
 - 新增必要的 repository integration tests，使用 disposable integration database；測試 server／repository 的 stop 與 pool close 必須由 lifecycle hook 驗證。
 - adapter 先保持 disabled，避免未完成 import 前誤切換 runtime。
 
-**Phase 3 gate：** read／save round-trip、common/channel atomicity、stale-write conflict、transaction rollback、DB unavailable、pool close 與 merchant non-persistence 均有對應測試；尚未切換本機 runtime。
+**Phase 3 gate：已通過。** read／save round-trip、common/channel atomicity、stale-write conflict、transaction rollback、DB unavailable、pool close 與 merchant non-persistence 均有對應測試；尚未切換本機 runtime。
 
 ### Phase 4：Importer、parity 與 readiness report
 
