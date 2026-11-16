@@ -107,10 +107,6 @@ const handleRouteError = async (
     return errorResponse(storageError.status, storageError.message, storageError.code);
   }
 
-  if (error instanceof AppError) {
-    return errorResponse(error.status, error.message, error.code);
-  }
-
   const handled = await onRouteError(error);
   if (handled instanceof Response) {
     return handled;
@@ -143,7 +139,6 @@ const handleRouteError = async (
  * @param options.validate Validates request values against the loaded schema bundle.
  * @param options.onRouteError Converts route-specific errors into HTTP responses when needed.
  * @returns A response when the request matches the route, otherwise `null`.
- * @throws {AppError} When the request body exceeds the configured size or complexity limits.
  * @throws {SyntaxError} When the request body is not valid JSON.
  */
 export const handlePresetBackedRoute = async <
@@ -207,8 +202,9 @@ export const handlePresetBackedRoute = async <
   }
 
   if (request.method === 'POST' && url.pathname === previewPath) {
+    const values = await readJson<RequestValues>(request);
+
     try {
-      const values = await readJson<RequestValues>(request);
       const prepared = await prepareOperation(
         service,
         resolveChannelFromValues(values),
@@ -224,8 +220,9 @@ export const handlePresetBackedRoute = async <
   }
 
   if (request.method === 'POST' && url.pathname === createPath) {
+    const values = await readJson<RequestValues>(request);
+
     try {
-      const values = await readJson<RequestValues>(request);
       const prepared = await prepareOperation(
         service,
         resolveChannelFromValues(values),
