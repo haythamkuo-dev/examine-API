@@ -1,9 +1,15 @@
-import { SUBSCRIPTION_CHANNELS, type CliEnv, type SubscriptionChannel } from '../core/env';
+import {
+  getDefaultChannel,
+  SUBSCRIPTION_CHANNEL_MANIFEST,
+  SUBSCRIPTION_CHANNELS,
+  type CliEnv,
+  type SubscriptionChannel,
+} from '../core/env';
 import { createPresetBackedService, mergePresetFormValues } from '../core/createPresetBackedService';
 import type { PresetStorage } from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
-import type { SubscriptionFormValues, SubscriptionRequestValues } from '../domains/subscription';
+import type { SubscriptionFormValues } from '../domains/subscription';
 import {
   buildSubscriptionCreateResponse,
   buildSubscriptionMerchantRefResponse,
@@ -12,6 +18,7 @@ import {
   type SubscriptionCreateResponse,
   type SubscriptionDefaultsResponse,
   type SubscriptionMerchantRefResponse,
+  type SubscriptionRequestValues,
 } from './web';
 import {
   toSubscriptionDefaultsResponse,
@@ -25,15 +32,17 @@ export type SubscriptionServiceDeps = {
   logger: Logger;
 };
 
+const defaultSubscriptionChannel = getDefaultChannel(SUBSCRIPTION_CHANNEL_MANIFEST);
+
 /**
  * Resolves the requested subscription channel from the query string.
  *
  * @param url Request URL carrying the optional `channel` search param.
- * @returns A valid subscription channel, defaulting to `default`.
+ * @returns A valid subscription channel, defaulting to the manifest default.
  */
 export const getRequestedSubscriptionChannel = (url: URL): SubscriptionChannel => {
-  const channel = (url.searchParams.get('channel') || 'default') as SubscriptionChannel;
-  return SUBSCRIPTION_CHANNELS.includes(channel) ? channel : 'default';
+  const channel = (url.searchParams.get('channel') || defaultSubscriptionChannel) as SubscriptionChannel;
+  return SUBSCRIPTION_CHANNELS.includes(channel) ? channel : defaultSubscriptionChannel;
 };
 
 /**

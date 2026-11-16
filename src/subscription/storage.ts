@@ -27,6 +27,9 @@ export type SubscriptionPresetStorage = PresetStorage<
  *
  * @param options Preset directory, local environment, and runtime ID factory.
  * @returns A subscription storage implementation with merchant references removed before persistence.
+ * @throws {PresetStorageNotFoundError} When a required subscription preset source is missing.
+ * @throws {PresetStorageInvalidError} When a subscription preset source contains malformed or invalid data.
+ * @throws {PresetStorageUnavailableError} When a subscription preset source cannot be read or written.
  */
 export const createSubscriptionJsonPresetStorage = (options: {
   dirPath: string;

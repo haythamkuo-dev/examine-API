@@ -1,9 +1,15 @@
-import { PAYOUT_CHANNELS, type CliEnv, type PayoutChannel } from '../core/env';
+import {
+  getDefaultChannel,
+  PAYOUT_CHANNEL_MANIFEST,
+  PAYOUT_CHANNELS,
+  type CliEnv,
+  type PayoutChannel,
+} from '../core/env';
 import { createPresetBackedService, mergePresetFormValues } from '../core/createPresetBackedService';
 import type { PresetStorage } from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
-import type { PayoutFormValues, PayoutRequestValues } from '../domains/payout';
+import type { PayoutFormValues } from '../domains/payout';
 import {
   buildPayoutCreateResponse,
   buildPayoutMerchantReferenceResponse,
@@ -12,6 +18,7 @@ import {
   type PayoutCreateResponse,
   type PayoutDefaultsResponse,
   type PayoutMerchantReferenceResponse,
+  type PayoutRequestValues,
 } from './web';
 import {
   toPayoutDefaultsResponse,
@@ -25,15 +32,17 @@ export type PayoutServiceDeps = {
   logger: Logger;
 };
 
+const defaultPayoutChannel = getDefaultChannel(PAYOUT_CHANNEL_MANIFEST);
+
 /**
  * Resolves the requested payout channel from the query string.
  *
  * @param url Request URL carrying the optional `channel` search param.
- * @returns A valid payout channel, defaulting to `co_bank`.
+ * @returns A valid payout channel, defaulting to the manifest default.
  */
 export const getRequestedPayoutChannel = (url: URL): PayoutChannel => {
-  const channel = (url.searchParams.get('channel') || 'co_bank') as PayoutChannel;
-  return PAYOUT_CHANNELS.includes(channel) ? channel : 'co_bank';
+  const channel = (url.searchParams.get('channel') || defaultPayoutChannel) as PayoutChannel;
+  return PAYOUT_CHANNELS.includes(channel) ? channel : defaultPayoutChannel;
 };
 
 /**

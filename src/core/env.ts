@@ -38,6 +38,25 @@ const createChannelManifestEntry = <Channel extends string>(
   ...metadata,
 });
 
+/**
+ * Resolves the single default channel declared by a backend feature manifest.
+ *
+ * @param manifest Channel metadata for one backend feature.
+ * @returns The channel marked with `default: true`.
+ * @throws {TypeError} When the manifest does not contain exactly one default channel.
+ */
+export const getDefaultChannel = <Channel extends string>(
+  manifest: readonly BackendChannelManifestEntry<Channel>[],
+): Channel => {
+  const defaults = manifest.filter((entry) => entry.default === true);
+  if (defaults.length !== 1) {
+    const feature = manifest[0]?.feature || 'unknown';
+    throw new TypeError(`Expected exactly one default channel in the ${feature} manifest.`);
+  }
+
+  return defaults[0]!.channel;
+};
+
 export const DEPOSIT_CHANNEL_MANIFEST = [
   createChannelManifestEntry('deposit', 'southafrica_cards', { tokenKey: MerchantTokenKey.Normal, default: true }),
   createChannelManifestEntry('deposit', 'linepay', { tokenKey: MerchantTokenKey.Normal }),

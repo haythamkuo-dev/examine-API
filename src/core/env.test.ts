@@ -2,11 +2,15 @@ import { describe, expect, test } from 'bun:test';
 import {
   DEPOSIT_CHANNEL_MANIFEST,
   DEPOSIT_CHANNELS,
+  getDefaultChannel,
   PAYOUT_CHANNEL_MANIFEST,
   PAYOUT_CHANNELS,
   SUBSCRIPTION_CHANNEL_MANIFEST,
   SUBSCRIPTION_CHANNELS,
 } from './env';
+import { getRequestedDepositChannel } from '../deposit/service';
+import { getRequestedPayoutChannel } from '../payout/service';
+import { getRequestedSubscriptionChannel } from '../subscription/service';
 
 const expectManifestParity = <Channel extends string>(
   manifest: readonly { channel: Channel; presetFile: string; auditTarget: string }[],
@@ -37,5 +41,28 @@ describe('backend channel manifests', () => {
       'JCB-USD',
       'JCB-JPY',
     ]);
+  });
+
+  test('keeps resolver fallbacks aligned with manifest defaults', () => {
+    const depositDefault = getDefaultChannel(DEPOSIT_CHANNEL_MANIFEST);
+    const payoutDefault = getDefaultChannel(PAYOUT_CHANNEL_MANIFEST);
+    const subscriptionDefault = getDefaultChannel(SUBSCRIPTION_CHANNEL_MANIFEST);
+
+    expect(getRequestedDepositChannel(new URL('https://example.test/api/deposit/defaults'))).toBe(depositDefault);
+    expect(
+      getRequestedDepositChannel(new URL('https://example.test/api/deposit/defaults?channel=unknown')),
+    ).toBe(depositDefault);
+
+    expect(getRequestedPayoutChannel(new URL('https://example.test/api/payout/defaults'))).toBe(payoutDefault);
+    expect(
+      getRequestedPayoutChannel(new URL('https://example.test/api/payout/defaults?channel=unknown')),
+    ).toBe(payoutDefault);
+
+    expect(
+      getRequestedSubscriptionChannel(new URL('https://example.test/api/subscription/defaults')),
+    ).toBe(subscriptionDefault);
+    expect(
+      getRequestedSubscriptionChannel(new URL('https://example.test/api/subscription/defaults?channel=unknown')),
+    ).toBe(subscriptionDefault);
   });
 });

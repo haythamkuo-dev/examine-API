@@ -40,6 +40,20 @@
 
 **下一步**：請開發者決定拆分 worktree WIP 或正式納入本分支；在決定前 Gate 1 維持 `ISSUE_FOUND`。
 
+#### Issue 2：Server type check fails after database refactor
+
+**追蹤文件**：[`server-typecheck-errors.md`](../issue/server-typecheck-errors.md)
+
+**原始問題**：`bunx tsc -p tsconfig.server.json --noEmit` 報告 7 個檔案中的 13 個 TypeScript errors，其中 6 個位於測試檔案，7 個位於 source files。
+
+**分支歸屬**：這組錯誤與目前 branch 的 database adapter、integration test 與 preset/domain 變更相關，不是三個 feature service import boundary 修正造成的單一錯誤。
+
+**主要影響**：server TypeScript check 失敗，branch 目前不能通過 TypeScript verification gate。測試範圍只能解釋其中 6 個錯誤，不能解釋 source files 的 7 個錯誤。
+
+**解決方向**：依追蹤文件修正 source 與 test errors，檢查 Bun runtime 與 locked `@types/bun` 的相容性，再重新執行 server TypeScript check。不得只排除 tests 來降低錯誤數量。
+
+**目前狀態**：已建立追蹤文件，但 issue 尚未修正；Gate 1 維持 `ISSUE_FOUND`。
+
 ## Gate 2：原有業務邏輯變更
 
 未執行。Gate 1 有未處理 issue，依序停止。
@@ -66,7 +80,7 @@
 
 ## Review 結論
 
-- Review 未通過；目前阻塞於 Gate 1 的一項未處理 issue。
-- 本輪依使用者授權更新兩份設計文件，未修改程式碼或測試；Review 文件也已同步更新。
-- 開發者完成 worktree scope 決策後，需重新從 Gate 1 分析；Gate 1 通過後才可繼續 Gate 2 到 Gate 7。
+- Review 未通過；目前阻塞於 Gate 1 的未處理 issue。
+- 本輪新增 `devlope_guides/issue/server-typecheck-errors.md` 並更新 Review 文件，未修改程式碼或測試。
+- 開發者完成既有 worktree scope 決策與 server type check issue 處理後，需重新從 Gate 1 分析；Gate 1 通過後才可繼續 Gate 2 到 Gate 7。
 - 若後續變更仍涉及 database adapter／integration flow，完成其他 gate 後仍需提醒使用者或 CI 執行 `bun run test:db`。

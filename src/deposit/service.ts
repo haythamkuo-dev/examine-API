@@ -1,4 +1,10 @@
-import { DEPOSIT_CHANNELS, type CliEnv, type DepositChannel } from '../core/env';
+import {
+  DEPOSIT_CHANNEL_MANIFEST,
+  DEPOSIT_CHANNELS,
+  getDefaultChannel,
+  type CliEnv,
+  type DepositChannel,
+} from '../core/env';
 import {
   createPresetBackedService,
   mergePresetFormValues,
@@ -6,7 +12,7 @@ import {
 import type { PresetStorage } from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
-import type { DepositFormValues, DepositRequestValues } from '../domains/deposit';
+import type { DepositFormValues } from '../domains/deposit';
 import {
   buildDepositCreateResponse,
   buildDepositMerchantRefResponse,
@@ -15,6 +21,7 @@ import {
   type DepositCreateResponse,
   type DepositDefaultsResponse,
   type DepositMerchantRefResponse,
+  type DepositRequestValues,
 } from './web';
 import {
   toDepositDefaultsResponse,
@@ -28,15 +35,17 @@ export type DepositServiceDeps = {
   logger: Logger;
 };
 
+const defaultDepositChannel = getDefaultChannel(DEPOSIT_CHANNEL_MANIFEST);
+
 /**
  * Resolves the requested deposit channel from the query string.
  *
  * @param url Request URL carrying the optional `channel` search param.
- * @returns A valid deposit channel, defaulting to `southafrica_cards`.
+ * @returns A valid deposit channel, defaulting to the manifest default.
  */
 export const getRequestedDepositChannel = (url: URL): DepositChannel => {
-  const channel = (url.searchParams.get('channel') || 'southafrica_cards') as DepositChannel;
-  return DEPOSIT_CHANNELS.includes(channel) ? channel : 'southafrica_cards';
+  const channel = (url.searchParams.get('channel') || defaultDepositChannel) as DepositChannel;
+  return DEPOSIT_CHANNELS.includes(channel) ? channel : defaultDepositChannel;
 };
 
 /**

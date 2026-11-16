@@ -27,6 +27,9 @@ export type PayoutPresetStorage = PresetStorage<
  *
  * @param options Preset directory and runtime ID factory.
  * @returns A payout storage implementation with merchant references removed before persistence.
+ * @throws {PresetStorageNotFoundError} When a required payout preset source is missing.
+ * @throws {PresetStorageInvalidError} When a payout preset source contains malformed or invalid data.
+ * @throws {PresetStorageUnavailableError} When a payout preset source cannot be read or written.
  */
 export const createPayoutJsonPresetStorage = (options: {
   dirPath: string;

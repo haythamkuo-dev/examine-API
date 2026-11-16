@@ -27,6 +27,9 @@ export type DepositPresetStorage = PresetStorage<
  *
  * @param options Preset directory, local environment, and runtime ID factory.
  * @returns A deposit storage implementation with merchant references removed before persistence.
+ * @throws {PresetStorageNotFoundError} When a required deposit preset source is missing.
+ * @throws {PresetStorageInvalidError} When a deposit preset source contains malformed or invalid data.
+ * @throws {PresetStorageUnavailableError} When a deposit preset source cannot be read or written.
  */
 export const createDepositJsonPresetStorage = (options: {
   dirPath: string;

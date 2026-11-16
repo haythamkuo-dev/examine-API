@@ -277,6 +277,8 @@ const emptyTimestamps = <Channel extends string>(
  *
  * @param options Loader, persistent input mapper, saver, and projection mapper.
  * @returns A storage adapter that reports JSON snapshots without a database timestamp.
+ * @throws {PresetStorageError} When a configured storage callback raises a classified storage failure.
+ * @throws {Error} When a configured mapper or callback raises an unclassified error.
  */
 export const createJsonPresetStorage = <Channel extends string, FormValues, Presets, PersistentValues>(
   options: JsonPresetStorageOptions<Channel, FormValues, Presets, PersistentValues>,

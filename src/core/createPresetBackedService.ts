@@ -215,6 +215,7 @@ const mergeValue = (base: unknown, override: unknown): unknown => {
  * @param defaults Persistent form values loaded for the selected channel.
  * @param overrides Request values allowed to override the persistent form.
  * @returns A new operation form containing the merged values.
+ * @throws {Error} When reading or cloning an input property fails during the merge.
  */
 export const mergePresetFormValues = <FormValues extends object>(
   defaults: FormValues,
@@ -227,6 +228,8 @@ export const mergePresetFormValues = <FormValues extends object>(
  *
  * @param options Service-specific persistence and request-mapping callbacks.
  * @returns A service with stable defaults, preview, and execute operations.
+ * @throws {PresetStorageError} When a preset load or update callback raises a classified storage failure.
+ * @throws {Error} When a supplied mapping, hydration, or response callback raises an unclassified error.
  */
 export const createPresetBackedService = <
   Channel extends string,
