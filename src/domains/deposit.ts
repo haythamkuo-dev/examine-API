@@ -539,6 +539,21 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
     amount: { amount: '10.00', currency_code: 'USD' },
     return_url: env.callbackUrlDeposit,
   },
+  'loki-googlepay-jp-jpy': {
+    product_no: 'DEP-LOKI-GOOGLEPAYJP-JPY',
+    amount: { amount: '100', currency_code: 'JPY' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        product_name: 'Google Pay Japan Test',
+        product_detail: 'Test order for %s',
+        shopper_reference: 'shopper-test-001',
+        shopper_email: 'shopper@example.com',
+        telephone_number: '+819012345678',
+        origin: 'https://merchant.example.com',
+      },
+    },
+  },
   'loki-intercard-sg-usd': {
     product_no: 'DEP-LOKI-INTERCARDSG-USD',
     amount: { amount: '10.00', currency_code: 'USD' },

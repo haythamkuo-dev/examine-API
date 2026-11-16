@@ -47,6 +47,7 @@
 │   │   │   ├── linepay_invoice.json
 │   │   │   ├── loki-googlepay-hk-usd.json
 │   │   │   ├── loki-googlepay-id-usd.json
+│   │   │   ├── loki-googlepay-jp-jpy.json
 │   │   │   ├── loki-googlepay-my-usd.json
 │   │   │   ├── loki-googlepay-ph-usd.json
 │   │   │   ├── loki-googlepay-sg-usd.json
@@ -91,8 +92,6 @@
 │   ├── ai_code_review_guide.md
 │   ├── ai_design_doc_writing.md
 │   ├── ai_reference.md
-│   ├── issue
-│   ├── review
 │   ├── todos
 │   │   └── 2026-10-22-preset-database-migration.md
 │   └── writing
@@ -224,4 +223,4 @@
     │       └── modal.tsx
     └── styles.css
 
-32 directories, 193 files
+30 directories, 194 files

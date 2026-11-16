@@ -262,6 +262,23 @@ describe('deposit web helpers', () => {
       currencyCode: 'USD',
     });
     expect(result.channels['ALIPAY-6014-USD'].values).toEqual({});
+    expect(result.channels['loki-googlepay-jp-jpy'].commonValues).toEqual({
+      productNo: 'DEP-LOKI-GOOGLEPAYJP-JPY',
+      amount: '100',
+      currencyCode: 'JPY',
+    });
+    expect(result.channels['loki-googlepay-jp-jpy'].values).toEqual({
+      payment_order: {
+        collect: {
+          product_name: 'Google Pay Japan Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+819012345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
   });
 
   test('builds the Boost USD request with the provider-specific payload key', () => {
@@ -622,6 +639,33 @@ describe('deposit web helpers', () => {
       amount: { amount: '10.00', currency_code: 'USD' },
       payment_order: {
         collect: { shopper_email: 'test@example.com' },
+      },
+    });
+  });
+
+  test('builds the Japan Google Pay JPY request with the collect payload', () => {
+    const defaults = toDepositDefaultsResponse(
+      'loki-googlepay-jp-jpy',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-LOKI-GOOGLEPAYJP-JPY',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '100', currency_code: 'JPY' },
+      payment_order: {
+        collect: {
+          product_name: 'Google Pay Japan Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+819012345678',
+          origin: 'https://merchant.example.com',
+        },
       },
     });
   });

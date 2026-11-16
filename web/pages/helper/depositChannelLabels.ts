@@ -48,6 +48,7 @@ export const DEPOSIT_CHANNEL_LABELS: Partial<Record<DepositChannel, string>> = {
   'loki-googlepay-ph-usd': '菲律賓-GP-USD',
   'loki-googlepay-id-usd': '印尼-GP-USD',
   'loki-googlepay-hk-usd': '香港-GP-USD',
+  'loki-googlepay-jp-jpy': 'Google-pay-JPY',
   'loki-intercard-sg-usd': 'loki-SG',
   'loki-intercard-vn-usd': 'loki-VN',
   'loki-intercard-th-usd': 'loki-TH',

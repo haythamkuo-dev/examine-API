@@ -280,6 +280,7 @@ describe('DepositPage', () => {
     expect(getDepositChannelLabel('loki-googlepay-ph-usd')).toBe('菲律賓-GP-USD');
     expect(getDepositChannelLabel('loki-googlepay-id-usd')).toBe('印尼-GP-USD');
     expect(getDepositChannelLabel('loki-googlepay-hk-usd')).toBe('香港-GP-USD');
+    expect(getDepositChannelLabel('loki-googlepay-jp-jpy')).toBe('Google-pay-JPY');
     expect(getDepositChannelLabel('loki-intercard-sg-usd')).toBe('loki-SG');
     expect(getDepositChannelLabel('loki-intercard-vn-usd')).toBe('loki-VN');
     expect(getDepositChannelLabel('loki-intercard-th-usd')).toBe('loki-TH');

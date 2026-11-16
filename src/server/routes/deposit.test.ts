@@ -637,6 +637,48 @@ describe('deposit API routes', () => {
     expect(body.channelSchema).toEqual({});
   });
 
+  test('GET /api/deposit/defaults returns the Japan Google Pay JPY product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-googlepay-jp-jpy');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-googlepay-jp-jpy');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-GOOGLEPAYJP-JPY',
+      amount: '100',
+      currencyCode: 'JPY',
+    });
+    expect(channelValues).toEqual({
+      payment_order: {
+        collect: {
+          product_name: 'Google Pay Japan Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+819012345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      product_detail: { required: true },
+      shopper_reference: { required: true },
+      shopper_email: { required: true },
+      telephone_number: { required: true },
+      origin: { required: true },
+    });
+  });
+
   test('GET /api/deposit/defaults returns the Loki VN intercard defaults and required shopper email field', async () => {
     const response = await context.requestApi('/api/deposit/defaults?channel=loki-intercard-vn-usd');
 

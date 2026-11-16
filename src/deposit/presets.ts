@@ -208,6 +208,19 @@ const PIX_SCHEMA: DepositFieldMap = {
   }),
 };
 
+const GOOGLEPAY_JP_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {
+      product_name: textField('Product name', true),
+      product_detail: textareaField('Product detail', true),
+      shopper_reference: textField('Shopper reference', true),
+      shopper_email: textField('Shopper email', true),
+      telephone_number: textField('Telephone number', true),
+      origin: textField('Origin', true),
+    }),
+  }),
+};
+
 const WORLDPAY_SCHEMA: DepositFieldMap = {
   payment_order: objectField('Payment order', {
     worldpay: objectField('Worldpay', {
@@ -1052,6 +1065,22 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
     commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYHK-USD', amount: '10.00', currencyCode: 'USD' },
     schema: {},
     values: {},
+  },
+  'loki-googlepay-jp-jpy': {
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYJP-JPY', amount: '100', currencyCode: 'JPY' },
+    schema: clone(GOOGLEPAY_JP_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          product_name: 'Google Pay Japan Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+819012345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    },
   },
   'loki-intercard-sg-usd': {
     commonValues: { productNo: 'DEP-LOKI-INTERCARDSG-USD', amount: '10.00', currencyCode: 'USD' },
