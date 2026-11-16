@@ -45,6 +45,15 @@
 │   │   │   ├── international_credit_cards.json
 │   │   │   ├── linepay.json
 │   │   │   ├── linepay_invoice.json
+│   │   │   ├── loki-applepay-hk-usd.json
+│   │   │   ├── loki-applepay-id-usd.json
+│   │   │   ├── loki-applepay-jp-jpy.json
+│   │   │   ├── loki-applepay-my-usd.json
+│   │   │   ├── loki-applepay-ph-usd.json
+│   │   │   ├── loki-applepay-sg-usd.json
+│   │   │   ├── loki-applepay-th-usd.json
+│   │   │   ├── loki-applepay-usd.json
+│   │   │   ├── loki-applepay-vn-usd.json
 │   │   │   ├── loki-googlepay-hk-usd.json
 │   │   │   ├── loki-googlepay-id-usd.json
 │   │   │   ├── loki-googlepay-jp-jpy.json
@@ -223,4 +232,4 @@
     │       └── modal.tsx
     └── styles.css
 
-30 directories, 194 files
+30 directories, 203 files
