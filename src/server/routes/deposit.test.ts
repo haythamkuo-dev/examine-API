@@ -436,7 +436,7 @@ describe('deposit API routes', () => {
 
     expect(body.channel).toBe('googlepay_usd');
     expect(commonValues).toMatchObject({
-      productNo: 'DEP-FUTUREPAY_COLLECT-GOOGLEPAY-USD',
+      productNo: 'DEP-LOKI-GOOGLEPAY-USD',
       amount: '10.00',
       currencyCode: 'USD',
     });

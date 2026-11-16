@@ -429,7 +429,7 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
     },
   },
   googlepay_usd: {
-    product_no: 'DEP-FUTUREPAY_COLLECT-GOOGLEPAY-USD',
+    product_no: 'DEP-LOKI-GOOGLEPAY-USD',
     amount: { amount: '10.00', currency_code: 'USD' },
     return_url: env.callbackUrlDeposit,
   },

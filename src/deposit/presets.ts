@@ -903,7 +903,7 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
     },
   },
   googlepay_usd: {
-    commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-GOOGLEPAY-USD', amount: '10.00', currencyCode: 'USD' },
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAY-USD', amount: '10.00', currencyCode: 'USD' },
     schema: {},
     values: {},
   },
