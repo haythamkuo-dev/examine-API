@@ -1,6 +1,6 @@
 # Server Type Check Fails After Database Refactor
 
-- Status: Open
+- Status: Resolved
 - Severity: Medium
 - Scope: Current `dev` branch
 - Primary gate: Gate 1, implementation completeness and required verification
@@ -71,3 +71,21 @@ Risk: The branch can merge without a passing server TypeScript check.
 Test: `bunx tsc -p tsconfig.server.json --noEmit`
 
 Test layer: TypeScript compiler check.
+
+## Resolution
+
+All 13 server type-check errors were fixed, including strict nullability in the
+integration tests, Bun transaction typing, preset projection narrowing, the
+duplicate deposit payload key, and the database environment and migration
+guards.
+
+Verification:
+
+- `bunx tsc -p tsconfig.server.json --noEmit` — passed.
+- `bunx tsc --noEmit` — passed.
+- `bun run test:api` — 194 passed, 15 PostgreSQL integration cases skipped by
+  the normal test environment, 0 failed.
+- `bun run build:api` — passed.
+
+The PostgreSQL integration gate remains `bun run test:db`, which must be run by
+the user or CI with a disposable `INTEGRATION_DATABASE_URL`.

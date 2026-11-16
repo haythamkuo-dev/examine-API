@@ -108,11 +108,12 @@ const REQUIRED_DEPOSIT_COMMON_SCHEMA_KEYS = ['productNo', 'amount', 'currencyCod
 const REQUIRED_DEPOSIT_CHANNEL_COMMON_KEYS = ['productNo', 'amount', 'currencyCode'] as const;
 
 const validateDepositCommonProjection = (source: Record<string, unknown>): string | undefined => {
-  if (!isPresetFieldMap(source.schema)) {
+  const schema = source.schema;
+  if (!isPresetFieldMap(schema)) {
     return 'Deposit common preset schema must be a valid field map.';
   }
 
-  if (!REQUIRED_DEPOSIT_COMMON_SCHEMA_KEYS.every((key) => key in source.schema)) {
+  if (!REQUIRED_DEPOSIT_COMMON_SCHEMA_KEYS.every((key) => key in schema)) {
     return 'Deposit common preset schema is missing required fields.';
   }
 
@@ -138,7 +139,8 @@ const validateDepositChannelProjection = (source: Record<string, unknown>): stri
     }
   }
 
-  if (!isPresetFieldMap(source.schema)) {
+  const schema = source.schema;
+  if (!isPresetFieldMap(schema)) {
     return 'Deposit channel schema must be a valid field map.';
   }
 

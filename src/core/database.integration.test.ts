@@ -229,6 +229,7 @@ describeIntegration('PostgreSQL migration lifecycle', () => {
     if (!database) {
       throw new Error('Integration database was not initialized.');
     }
+    const initializedDatabase = database;
 
     let beginCalls = 0;
     const unavailableAfterCommitClient = {
@@ -240,7 +241,7 @@ describeIntegration('PostgreSQL migration lifecycle', () => {
           return Promise.reject(new Error('Simulated post-commit database outage.'));
         }
 
-        return database.sql.begin(callback);
+        return initializedDatabase.sql.begin(callback);
       },
     } as unknown as SQL;
     const repository = createPostgresPresetRepository({
@@ -308,6 +309,7 @@ describeIntegration('PostgreSQL migration lifecycle', () => {
     if (!database) {
       throw new Error('Integration database was not initialized.');
     }
+    const initializedDatabase = database;
 
     await database.sql.unsafe(
       'insert into preset_store.preset_sets (feature, common_values) values ($1, $2::jsonb)',
@@ -323,7 +325,7 @@ describeIntegration('PostgreSQL migration lifecycle', () => {
       begin: <T>(
         callback: SQL.TransactionContextCallback<T>,
       ): Promise<SQL.ContextCallbackResult<T>> =>
-        database.sql.begin(async (transaction) => {
+        initializedDatabase.sql.begin(async (transaction) => {
           const controlledTransaction = new Proxy(transaction, {
             get(target, property, receiver) {
               if (property !== 'unsafe') {
@@ -334,7 +336,7 @@ describeIntegration('PostgreSQL migration lifecycle', () => {
                 const rows = await target.unsafe(query, values);
                 if (!writerCommitted && query.includes('from preset_store.preset_sets')) {
                   writerCommitted = true;
-                  await database.sql.begin(async (writer) => {
+                  await initializedDatabase.sql.begin(async (writer) => {
                     await writer.unsafe(
                       'update preset_store.preset_sets set common_values = $1::jsonb where feature = $2',
                       [{ returnUrl: 'https://merchant.example/after' }, 'deposit'],
@@ -348,7 +350,7 @@ describeIntegration('PostgreSQL migration lifecycle', () => {
                 return rows;
               };
             },
-          }) as SQL.TransactionSQL;
+          });
 
           return callback(controlledTransaction);
         }),
@@ -877,6 +879,7 @@ describeIntegration('PostgreSQL migration lifecycle', () => {
     if (!database) {
       throw new Error('Integration database was not initialized.');
     }
+    const initializedDatabase = database;
 
     type TestChannel = 'primary';
     type TestValues = {
@@ -895,7 +898,7 @@ describeIntegration('PostgreSQL migration lifecycle', () => {
         callback: SQL.TransactionContextCallback<T>,
       ): Promise<SQL.ContextCallbackResult<T>> => {
         transactionCalls += 1;
-        return database.sql.begin(callback).then((result) => {
+        return initializedDatabase.sql.begin(callback).then((result) => {
           if (transactionCalls === 2) {
             writeCommitted = true;
           }

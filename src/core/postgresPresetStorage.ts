@@ -5,6 +5,7 @@ import {
   PresetStorageError,
   PresetStorageInvalidError,
   PresetStorageUnavailableError,
+  type PersistentPresetChannelProjection,
   type PersistentPresetProjection,
   type PresetFeature,
   type PresetRowTimestamps,
@@ -429,11 +430,13 @@ const sanitizeProjection = <Channel extends string>(
 ): PersistentPresetProjection<Channel> => ({
   commonValues: stripTransientMerchantReferenceKeys(projection.commonValues),
   channels: Object.fromEntries(
-    Object.entries(projection.channels).map(([channel, values]) => [channel, {
-      channelCommonValues: stripTransientMerchantReferenceKeys(values.channelCommonValues),
-      channelValues: stripTransientMerchantReferenceKeys(values.channelValues),
-    }]),
-  ) as Record<Channel, { channelCommonValues: Record<string, unknown>; channelValues: Record<string, unknown> }>,
+    (Object.entries(projection.channels) as Array<[Channel, PersistentPresetChannelProjection]>).map(
+      ([channel, values]) => [channel, {
+        channelCommonValues: stripTransientMerchantReferenceKeys(values.channelCommonValues),
+        channelValues: stripTransientMerchantReferenceKeys(values.channelValues),
+      }],
+    ),
+  ) as Record<Channel, PersistentPresetChannelProjection>,
 });
 
 /**

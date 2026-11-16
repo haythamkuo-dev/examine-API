@@ -764,7 +764,6 @@ export const createStructuredDepositPayload = (
   const merchantRef = makeId('TEST_ORDER_');
   const payload = {
     product_no: overrides.commonValues.productNo,
-    merchant_ref: merchantRef,
     amount: {
       amount: overrides.commonValues.amount,
       currency_code: overrides.commonValues.currencyCode,
