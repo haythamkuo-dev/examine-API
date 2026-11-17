@@ -1,3 +1,5 @@
+import { join } from 'path';
+
 import {
   createJsonPresetStorage,
   stripTransientMerchantReferenceKeys,
@@ -30,6 +32,7 @@ export type PayoutPresetStorage = PresetStorage<
  * @throws {PresetStorageNotFoundError} When a required payout preset source is missing.
  * @throws {PresetStorageInvalidError} When a payout preset source contains malformed or invalid data.
  * @throws {PresetStorageUnavailableError} When a payout preset source cannot be read or written.
+ * @throws {PresetStorageConflictError} When a save is based on a stale JSON snapshot.
  */
 export const createPayoutJsonPresetStorage = (options: {
   dirPath: string;
@@ -41,6 +44,8 @@ export const createPayoutJsonPresetStorage = (options: {
     PayoutPresetStore,
     PayoutPersistentFormValues
   >({
+    feature: 'payout',
+    lockPath: join(options.dirPath, '.preset-storage.lock'),
     load: () => loadPayoutPresets({ dirPath: options.dirPath, makeId: options.makeId }),
     toPersistentInput: ({ channel, values, expected }) => {
       const { merchantReference: _merchantReference, ...commonValues } = values.commonValues;

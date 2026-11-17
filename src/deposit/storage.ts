@@ -1,3 +1,5 @@
+import { join } from 'path';
+
 import {
   createJsonPresetStorage,
   stripTransientMerchantReferenceKeys,
@@ -30,6 +32,7 @@ export type DepositPresetStorage = PresetStorage<
  * @throws {PresetStorageNotFoundError} When a required deposit preset source is missing.
  * @throws {PresetStorageInvalidError} When a deposit preset source contains malformed or invalid data.
  * @throws {PresetStorageUnavailableError} When a deposit preset source cannot be read or written.
+ * @throws {PresetStorageConflictError} When a save is based on a stale JSON snapshot.
  */
 export const createDepositJsonPresetStorage = (options: {
   dirPath: string;
@@ -42,6 +45,8 @@ export const createDepositJsonPresetStorage = (options: {
     DepositPresetStore,
     DepositPersistentFormValues
   >({
+    feature: 'deposit',
+    lockPath: join(options.dirPath, '.preset-storage.lock'),
     load: () => loadDepositPresets({ dirPath: options.dirPath, env: options.env, makeId: options.makeId }),
     toPersistentInput: ({ channel, values, expected }) => {
       const { merchantRef: _merchantRef, ...commonValues } = values.commonValues;

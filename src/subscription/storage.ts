@@ -1,3 +1,5 @@
+import { join } from 'path';
+
 import {
   createJsonPresetStorage,
   stripTransientMerchantReferenceKeys,
@@ -30,6 +32,7 @@ export type SubscriptionPresetStorage = PresetStorage<
  * @throws {PresetStorageNotFoundError} When a required subscription preset source is missing.
  * @throws {PresetStorageInvalidError} When a subscription preset source contains malformed or invalid data.
  * @throws {PresetStorageUnavailableError} When a subscription preset source cannot be read or written.
+ * @throws {PresetStorageConflictError} When a save is based on a stale JSON snapshot.
  */
 export const createSubscriptionJsonPresetStorage = (options: {
   dirPath: string;
@@ -42,6 +45,8 @@ export const createSubscriptionJsonPresetStorage = (options: {
     SubscriptionPresetStore,
     SubscriptionPersistentFormValues
   >({
+    feature: 'subscription',
+    lockPath: join(options.dirPath, '.preset-storage.lock'),
     load: () =>
       loadSubscriptionPresets({ dirPath: options.dirPath, env: options.env, makeId: options.makeId }),
     toPersistentInput: ({ channel, values, expected }) => {

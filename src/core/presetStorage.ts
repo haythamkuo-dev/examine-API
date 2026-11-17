@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from 'fs/promises';
+import crypto from 'crypto';
+import { mkdir, readFile, stat, unlink, writeFile } from 'fs/promises';
 import { dirname } from 'path';
 
 export type PresetJsonObject = Record<string, unknown>;
@@ -141,6 +142,136 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isErrnoError = (error: unknown): error is { code?: unknown } =>
   typeof error === 'object' && error !== null && 'code' in error;
 
+const canonicalizeJsonValue = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(canonicalizeJsonValue);
+  }
+
+  if (isRecord(value)) {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonicalizeJsonValue(value[key])]),
+    );
+  }
+
+  return value;
+};
+
+const createJsonVersionToken = (value: unknown): string => {
+  const serialized = JSON.stringify(canonicalizeJsonValue(value));
+  if (serialized === undefined) {
+    throw new PresetStorageInvalidError('Preset projection cannot be serialized.');
+  }
+
+  return `json:${crypto.createHash('sha256').update(serialized).digest('hex')}`;
+};
+
+const jsonStorageLockRetryDelayMs = 10;
+const jsonStorageLockWaitTimeoutMs = 5_000;
+
+const isProcessAlive = (pid: number): boolean => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return !(isErrnoError(error) && error.code === 'ESRCH');
+  }
+};
+
+const canRemoveJsonStorageLock = async (lockPath: string): Promise<boolean> => {
+  let owner: string;
+  let metadata: Awaited<ReturnType<typeof stat>>;
+
+  try {
+    owner = await readFile(lockPath, 'utf8');
+    metadata = await stat(lockPath);
+  } catch (error) {
+    if (isErrnoError(error) && error.code === 'ENOENT') {
+      return false;
+    }
+
+    throw new PresetStorageUnavailableError(lockPath, error);
+  }
+
+  const pid = Number.parseInt(owner.trim(), 10);
+  if (Number.isInteger(pid) && pid > 0) {
+    return !isProcessAlive(pid);
+  }
+
+  return Date.now() - metadata.mtimeMs > jsonStorageLockWaitTimeoutMs;
+};
+
+const acquireJsonStorageLock = async (lockPath: string): Promise<void> => {
+  try {
+    await mkdir(dirname(lockPath), { recursive: true });
+  } catch (error) {
+    throw new PresetStorageUnavailableError(lockPath, error);
+  }
+
+  const deadline = Date.now() + jsonStorageLockWaitTimeoutMs;
+  while (true) {
+    try {
+      await writeFile(lockPath, `${process.pid}\n`, {
+        encoding: 'utf8',
+        flag: 'wx',
+      });
+      return;
+    } catch (error) {
+      if (isErrnoError(error) && error.code === 'EEXIST') {
+        if (await canRemoveJsonStorageLock(lockPath)) {
+          try {
+            await unlink(lockPath);
+          } catch (removeError) {
+            if (!(isErrnoError(removeError) && removeError.code === 'ENOENT')) {
+              throw new PresetStorageUnavailableError(lockPath, removeError);
+            }
+          }
+          continue;
+        }
+
+        if (Date.now() < deadline) {
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, jsonStorageLockRetryDelayMs);
+          });
+          continue;
+        }
+
+        throw new PresetStorageUnavailableError(
+          lockPath,
+          new Error('Preset JSON storage lock remained busy until the wait timeout.'),
+        );
+      }
+
+      throw new PresetStorageUnavailableError(lockPath, error);
+    }
+  }
+};
+
+const releaseJsonStorageLock = async (lockPath: string): Promise<void> => {
+  try {
+    await unlink(lockPath);
+  } catch (error) {
+    if (isErrnoError(error) && error.code === 'ENOENT') {
+      return;
+    }
+
+    throw new PresetStorageUnavailableError(lockPath, error);
+  }
+};
+
+const withJsonStorageLock = async <Result>(
+  lockPath: string,
+  operation: () => Promise<Result>,
+): Promise<Result> => {
+  await acquireJsonStorageLock(lockPath);
+  try {
+    return await operation();
+  } finally {
+    await releaseJsonStorageLock(lockPath);
+  }
+};
+
 const defaultReadFileText = (filePath: string): Promise<string> => readFile(filePath, 'utf8');
 
 /**
@@ -250,6 +381,8 @@ export type PresetStorage<Channel extends string, FormValues, Presets> = {
 };
 
 type JsonPresetStorageOptions<Channel extends string, FormValues, Presets, PersistentValues> = {
+  feature: PresetFeature;
+  lockPath: string;
   load: () => Promise<Presets>;
   save: (input: PresetStorageInput<Channel, PersistentValues>) => Promise<Presets>;
   toPersistentInput: (
@@ -258,14 +391,31 @@ type JsonPresetStorageOptions<Channel extends string, FormValues, Presets, Persi
   toPersistentProjection: (presets: Presets) => PersistentPresetProjection<Channel>;
 };
 
-const emptyTimestamps = <Channel extends string>(
+const createJsonRowTimestamps = (value: unknown): PresetRowTimestamps => {
+  const version = createJsonVersionToken(value);
+  return {
+    // JSON storage has no separate creation metadata; both fields carry the
+    // opaque persistent-content revision used by the storage contract.
+    createdAt: version,
+    updatedAt: version,
+  };
+};
+
+const createJsonTimestamps = <Channel extends string>(
   projection: PersistentPresetProjection<Channel>,
-): PresetStorageTimestamps<Channel> => ({
-  feature: null,
-  channels: Object.fromEntries(
-    Object.keys(projection.channels).map((channel) => [channel, null]),
-  ) as Record<Channel, null>,
-});
+): PresetStorageTimestamps<Channel> => {
+  const channels = Object.fromEntries(
+    Object.keys(projection.channels).map((channel) => [
+      channel,
+      createJsonRowTimestamps(projection.channels[channel as Channel]),
+    ]),
+  ) as Record<Channel, PresetRowTimestamps>;
+
+  return {
+    feature: createJsonRowTimestamps(projection.commonValues),
+    channels,
+  };
+};
 
 /**
  * Creates the transitional JSON-backed preset adapter.
@@ -276,8 +426,9 @@ const emptyTimestamps = <Channel extends string>(
  * before the saver so feature writers cannot receive raw form values.
  *
  * @param options Loader, persistent input mapper, saver, and projection mapper.
- * @returns A storage adapter that reports JSON snapshots without a database timestamp.
+ * @returns A storage adapter that reports JSON snapshots with content-based concurrency tokens and a shared save lock.
  * @throws {PresetStorageError} When a configured storage callback raises a classified storage failure.
+ * @throws {PresetStorageConflictError} When the expected JSON content version is stale.
  * @throws {Error} When a configured mapper or callback raises an unclassified error.
  */
 export const createJsonPresetStorage = <Channel extends string, FormValues, Presets, PersistentValues>(
@@ -285,17 +436,39 @@ export const createJsonPresetStorage = <Channel extends string, FormValues, Pres
 ): PresetStorage<Channel, FormValues, Presets> => {
   const toSnapshot = (presets: Presets): PresetStorageSnapshot<Channel, Presets> => {
     const projection = options.toPersistentProjection(presets);
+    const timestamps = createJsonTimestamps(projection);
 
     return {
       presets,
       projection,
-      updatedAt: null,
-      timestamps: emptyTimestamps(projection),
+      updatedAt: timestamps.feature?.updatedAt || null,
+      timestamps,
     };
   };
 
+  const load = async (): Promise<PresetStorageSnapshot<Channel, Presets>> =>
+    toSnapshot(await options.load());
+
+  const save = async (
+    input: PresetStorageInput<Channel, FormValues>,
+  ): Promise<PresetStorageSnapshot<Channel, Presets>> =>
+    withJsonStorageLock(options.lockPath, async () => {
+      const current = await load();
+      const currentFeatureUpdatedAt = current.timestamps.feature?.updatedAt || null;
+      const currentChannelUpdatedAt = current.timestamps.channels[input.channel]?.updatedAt || null;
+
+      if (
+        input.expected.featureUpdatedAt !== currentFeatureUpdatedAt ||
+        input.expected.channelUpdatedAt !== currentChannelUpdatedAt
+      ) {
+        throw new PresetStorageConflictError(options.feature, input.channel);
+      }
+
+      return toSnapshot(await options.save(options.toPersistentInput(input)));
+    });
+
   return {
-    load: async () => toSnapshot(await options.load()),
-    save: async (input) => toSnapshot(await options.save(options.toPersistentInput(input))),
+    load,
+    save,
   };
 };
