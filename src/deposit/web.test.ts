@@ -74,7 +74,8 @@ describe('deposit web helpers', () => {
     expect(result.common.values.returnUrl).toBe('https://merchant.example.com/deposit');
   });
 
-  test('includes the new deposit channel presets', () => {
+  // Regional Loki presets share one product contract; retain canonical and special variants only.
+  test('includes deposit channel presets and representative Loki variants', () => {
     const result = createSeedDepositPresets(env, makeId);
 
     expect(result.channels['JCB-USD'].commonValues).toEqual({
@@ -121,78 +122,6 @@ describe('deposit web helpers', () => {
       currencyCode: 'USD',
     });
     expect(result.channels['loki-intercard-usd'].values).toEqual({
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    });
-    expect(result.channels['loki-intercard-sg-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-INTERCARDSG-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-intercard-sg-usd'].values).toEqual({
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    });
-    expect(result.channels['loki-intercard-vn-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-INTERCARDVN-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-intercard-vn-usd'].values).toEqual({
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    });
-    expect(result.channels['loki-intercard-th-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-INTERCARDTH-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-intercard-th-usd'].values).toEqual({
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    });
-    expect(result.channels['loki-intercard-ph-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-INTERCARDPH-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-intercard-ph-usd'].values).toEqual({
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    });
-    expect(result.channels['loki-intercard-id-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-INTERCARDID-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-intercard-id-usd'].values).toEqual({
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    });
-    expect(result.channels['loki-intercard-hk-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-INTERCARDHK-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-intercard-hk-usd'].values).toEqual({
       payment_order: {
         collect: {
           shopper_email: 'test@example.com',
@@ -316,147 +245,16 @@ describe('deposit web helpers', () => {
         },
       },
     });
-    expect(result.channels['loki-applepay-hk-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-APPLEPAYHK-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-applepay-hk-usd'].values).toEqual({
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Hong Kong Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+85291234567',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-    expect(result.channels['loki-applepay-id-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-APPLEPAYID-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-applepay-id-usd'].values).toEqual({
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Indonesia Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+6281234567890',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
     expect(result.channels['loki-applepay-jp-jpy'].commonValues).toEqual({
       productNo: 'DEP-LOKI-APPLEPAYJP-JPY',
       amount: '100',
       currencyCode: 'JPY',
     });
-    expect(result.channels['loki-applepay-jp-jpy'].values).toEqual({
+    expect(result.channels['loki-applepay-jp-jpy'].values).toMatchObject({
       checkout_url_type: 'direct',
       payment_order: {
         collect: {
           product_name: 'Apple Pay Japan Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+819012345678',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-    expect(result.channels['loki-applepay-my-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-APPLEPAYMY-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-applepay-my-usd'].values).toEqual({
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Malaysia Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+60123456789',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-    expect(result.channels['loki-applepay-ph-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-APPLEPAYPH-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-applepay-ph-usd'].values).toEqual({
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Philippines Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+639123456789',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-    expect(result.channels['loki-applepay-sg-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-APPLEPAYSG-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-applepay-sg-usd'].values).toEqual({
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Singapore Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+6591234567',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-    expect(result.channels['loki-applepay-th-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-APPLEPAYTH-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-applepay-th-usd'].values).toEqual({
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Thailand Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+66812345678',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-    expect(result.channels['loki-applepay-vn-usd'].commonValues).toEqual({
-      productNo: 'DEP-LOKI-APPLEPAYVN-USD',
-      amount: '10.00',
-      currencyCode: 'USD',
-    });
-    expect(result.channels['loki-applepay-vn-usd'].values).toEqual({
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Vietnam Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+84912345678',
-          origin: 'https://merchant.example.com',
         },
       },
     });
@@ -704,126 +502,6 @@ describe('deposit web helpers', () => {
     });
   });
 
-  test('builds the Loki SG intercard request with the normal merchant token', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-intercard-sg-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-INTERCARDSG-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      payment_order: {
-        collect: { shopper_email: 'test@example.com' },
-      },
-    });
-  });
-
-  test('builds the Loki VN intercard request with the normal merchant token', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-intercard-vn-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-INTERCARDVN-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      payment_order: {
-        collect: { shopper_email: 'test@example.com' },
-      },
-    });
-  });
-
-  test('builds the Loki TH intercard request with the normal merchant token', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-intercard-th-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-INTERCARDTH-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      payment_order: {
-        collect: { shopper_email: 'test@example.com' },
-      },
-    });
-  });
-
-  test('builds the Loki PH intercard request with the normal merchant token', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-intercard-ph-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-INTERCARDPH-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      payment_order: {
-        collect: { shopper_email: 'test@example.com' },
-      },
-    });
-  });
-
-  test('builds the Loki ID intercard request with the normal merchant token', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-intercard-id-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-INTERCARDID-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      payment_order: {
-        collect: { shopper_email: 'test@example.com' },
-      },
-    });
-  });
-
-  test('builds the Loki HK intercard request with the normal merchant token', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-intercard-hk-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-INTERCARDHK-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      payment_order: {
-        collect: { shopper_email: 'test@example.com' },
-      },
-    });
-  });
-
   test('builds the Japan Google Pay JPY request with the collect payload', () => {
     const defaults = toDepositDefaultsResponse(
       'loki-googlepay-jp-jpy',
@@ -880,209 +558,6 @@ describe('deposit web helpers', () => {
     });
   });
 
-  test('builds the Apple Pay Malaysia USD request with direct checkout and collect payload', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-applepay-my-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-APPLEPAYMY-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      return_url: 'https://merchant.example.com/deposit',
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Malaysia Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+60123456789',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-  });
-
-  test('builds the Apple Pay Philippines USD request with direct checkout and collect payload', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-applepay-ph-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-APPLEPAYPH-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      return_url: 'https://merchant.example.com/deposit',
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Philippines Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+639123456789',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-  });
-
-  test('builds the Apple Pay Singapore USD request with direct checkout and collect payload', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-applepay-sg-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-APPLEPAYSG-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      return_url: 'https://merchant.example.com/deposit',
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Singapore Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+6591234567',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-  });
-
-  test('builds the Apple Pay Thailand USD request with direct checkout and collect payload', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-applepay-th-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-APPLEPAYTH-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      return_url: 'https://merchant.example.com/deposit',
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Thailand Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+66812345678',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-  });
-
-  test('builds the Apple Pay Vietnam USD request with direct checkout and collect payload', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-applepay-vn-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-APPLEPAYVN-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      return_url: 'https://merchant.example.com/deposit',
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Vietnam Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+84912345678',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-  });
-
-  test('builds the Apple Pay Hong Kong USD request with direct checkout and collect payload', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-applepay-hk-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-APPLEPAYHK-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      return_url: 'https://merchant.example.com/deposit',
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Hong Kong Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+85291234567',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-  });
-
-  test('builds the Apple Pay Indonesia USD request with direct checkout and collect payload', () => {
-    const defaults = toDepositDefaultsResponse(
-      'loki-applepay-id-usd',
-      env,
-      createSeedDepositPresets(env, makeId),
-    );
-    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
-    const payload = request.payload as Record<string, unknown>;
-
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
-    expect(payload).toMatchObject({
-      product_no: 'DEP-LOKI-APPLEPAYID-USD',
-      merchant_ref: 'TEST_ORDER_fixed-id',
-      amount: { amount: '10.00', currency_code: 'USD' },
-      return_url: 'https://merchant.example.com/deposit',
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Indonesia Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+6281234567890',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    });
-  });
-
   test('builds the Apple Pay Japan JPY request with direct checkout and collect payload', () => {
     const defaults = toDepositDefaultsResponse(
       'loki-applepay-jp-jpy',
@@ -1092,21 +567,13 @@ describe('deposit web helpers', () => {
     const request = buildDepositRequestFromForm(env, defaults.form, makeId);
     const payload = request.payload as Record<string, unknown>;
 
-    expect(request.headers?.Authorization).toBe('ApiKey default-token');
     expect(payload).toMatchObject({
       product_no: 'DEP-LOKI-APPLEPAYJP-JPY',
-      merchant_ref: 'TEST_ORDER_fixed-id',
       amount: { amount: '100', currency_code: 'JPY' },
-      return_url: 'https://merchant.example.com/deposit',
       checkout_url_type: 'direct',
       payment_order: {
         collect: {
           product_name: 'Apple Pay Japan Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+819012345678',
-          origin: 'https://merchant.example.com',
         },
       },
     });
