@@ -280,6 +280,16 @@ describe('DepositPage', () => {
     expect(getDepositChannelLabel('loki-googlepay-ph-usd')).toBe('菲律賓-GP-USD');
     expect(getDepositChannelLabel('loki-googlepay-id-usd')).toBe('印尼-GP-USD');
     expect(getDepositChannelLabel('loki-googlepay-hk-usd')).toBe('香港-GP-USD');
+    expect(getDepositChannelLabel('loki-googlepay-jp-jpy')).toBe('Google-pay-JPY');
+    expect(getDepositChannelLabel('loki-applepay-usd')).toBe('Apple pay-USD');
+    expect(getDepositChannelLabel('loki-applepay-my-usd')).toBe('Apple pay-MY');
+    expect(getDepositChannelLabel('loki-applepay-ph-usd')).toBe('Apple pay-PH');
+    expect(getDepositChannelLabel('loki-applepay-sg-usd')).toBe('Apple pay-SG');
+    expect(getDepositChannelLabel('loki-applepay-th-usd')).toBe('Apple pay-TH');
+    expect(getDepositChannelLabel('loki-applepay-vn-usd')).toBe('Apple pay-VN');
+    expect(getDepositChannelLabel('loki-applepay-hk-usd')).toBe('Apple pay-HK');
+    expect(getDepositChannelLabel('loki-applepay-id-usd')).toBe('Apple pay-ID');
+    expect(getDepositChannelLabel('loki-applepay-jp-jpy')).toBe('Apple pay-JP');
     expect(getDepositChannelLabel('loki-intercard-sg-usd')).toBe('loki-SG');
     expect(getDepositChannelLabel('loki-intercard-vn-usd')).toBe('loki-VN');
     expect(getDepositChannelLabel('loki-intercard-th-usd')).toBe('loki-TH');

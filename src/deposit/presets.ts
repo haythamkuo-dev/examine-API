@@ -264,6 +264,24 @@ const PIX_SCHEMA: DepositFieldMap = {
   }),
 };
 
+const GOOGLEPAY_JP_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {
+      product_name: textField('Product name', true),
+      product_detail: textareaField('Product detail', true),
+      shopper_reference: textField('Shopper reference', true),
+      shopper_email: textField('Shopper email', true),
+      telephone_number: textField('Telephone number', true),
+      origin: textField('Origin', true),
+    }),
+  }),
+};
+
+const APPLEPAY_SCHEMA: DepositFieldMap = {
+  ...UPI_SCHEMA,
+  ...GOOGLEPAY_JP_SCHEMA,
+};
+
 const WORLDPAY_SCHEMA: DepositFieldMap = {
   payment_order: objectField('Payment order', {
     worldpay: objectField('Worldpay', {
@@ -1108,6 +1126,175 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
     commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYHK-USD', amount: '10.00', currencyCode: 'USD' },
     schema: {},
     values: {},
+  },
+  'loki-googlepay-jp-jpy': {
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYJP-JPY', amount: '100', currencyCode: 'JPY' },
+    schema: clone(GOOGLEPAY_JP_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          product_name: 'Google Pay Japan Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+819012345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    },
+  },
+  'loki-applepay-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAY-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(APPLEPAY_SCHEMA),
+    values: {
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay USD Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+14155550100',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    },
+  },
+  'loki-applepay-my-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYMY-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(APPLEPAY_SCHEMA),
+    values: {
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Malaysia Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+60123456789',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    },
+  },
+  'loki-applepay-ph-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYPH-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(APPLEPAY_SCHEMA),
+    values: {
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Philippines Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+639123456789',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    },
+  },
+  'loki-applepay-sg-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYSG-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(APPLEPAY_SCHEMA),
+    values: {
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Singapore Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+6591234567',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    },
+  },
+  'loki-applepay-th-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYTH-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(APPLEPAY_SCHEMA),
+    values: {
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Thailand Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+66812345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    },
+  },
+  'loki-applepay-vn-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYVN-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(APPLEPAY_SCHEMA),
+    values: {
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Vietnam Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+84912345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    },
+  },
+  'loki-applepay-hk-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYHK-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(APPLEPAY_SCHEMA),
+    values: {
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Hong Kong Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+85291234567',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    },
+  },
+  'loki-applepay-id-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYID-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: clone(APPLEPAY_SCHEMA),
+    values: {
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Indonesia Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+6281234567890',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    },
+  },
+  'loki-applepay-jp-jpy': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYJP-JPY', amount: '100', currencyCode: 'JPY' },
+    schema: clone(APPLEPAY_SCHEMA),
+    values: {
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Japan Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+819012345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    },
   },
   'loki-intercard-sg-usd': {
     commonValues: { productNo: 'DEP-LOKI-INTERCARDSG-USD', amount: '10.00', currencyCode: 'USD' },

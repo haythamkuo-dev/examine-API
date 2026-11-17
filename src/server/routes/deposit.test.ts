@@ -637,6 +637,507 @@ describe('deposit API routes', () => {
     expect(body.channelSchema).toEqual({});
   });
 
+  test('GET /api/deposit/defaults returns the Japan Google Pay JPY product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-googlepay-jp-jpy');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-googlepay-jp-jpy');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-GOOGLEPAYJP-JPY',
+      amount: '100',
+      currencyCode: 'JPY',
+    });
+    expect(channelValues).toEqual({
+      payment_order: {
+        collect: {
+          product_name: 'Google Pay Japan Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+819012345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      product_detail: { required: true },
+      shopper_reference: { required: true },
+      shopper_email: { required: true },
+      telephone_number: { required: true },
+      origin: { required: true },
+    });
+  });
+
+  test('GET /api/deposit/defaults returns the Apple Pay USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-applepay-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const checkoutUrlTypeSchema = channelSchema.checkout_url_type as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-applepay-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-APPLEPAY-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay USD Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+14155550100',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
+    expect(checkoutUrlTypeSchema).toMatchObject({
+      kind: 'select',
+      options: [
+        { label: 'Direct', value: 'direct' },
+        { label: 'LionPage', value: 'lionpage' },
+      ],
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      product_detail: { required: true },
+      shopper_reference: { required: true },
+      shopper_email: { required: true },
+      telephone_number: { required: true },
+      origin: { required: true },
+    });
+  });
+
+  test('GET /api/deposit/defaults returns the Apple Pay Malaysia USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-applepay-my-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const checkoutUrlTypeSchema = channelSchema.checkout_url_type as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-applepay-my-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-APPLEPAYMY-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Malaysia Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+60123456789',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
+    expect(checkoutUrlTypeSchema).toMatchObject({
+      kind: 'select',
+      options: [
+        { label: 'Direct', value: 'direct' },
+        { label: 'LionPage', value: 'lionpage' },
+      ],
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      product_detail: { required: true },
+      shopper_reference: { required: true },
+      shopper_email: { required: true },
+      telephone_number: { required: true },
+      origin: { required: true },
+    });
+  });
+
+  test('GET /api/deposit/defaults returns the Apple Pay Philippines USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-applepay-ph-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const checkoutUrlTypeSchema = channelSchema.checkout_url_type as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-applepay-ph-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-APPLEPAYPH-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Philippines Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+639123456789',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
+    expect(checkoutUrlTypeSchema).toMatchObject({
+      kind: 'select',
+      options: [
+        { label: 'Direct', value: 'direct' },
+        { label: 'LionPage', value: 'lionpage' },
+      ],
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      product_detail: { required: true },
+      shopper_reference: { required: true },
+      shopper_email: { required: true },
+      telephone_number: { required: true },
+      origin: { required: true },
+    });
+  });
+
+  test('GET /api/deposit/defaults returns the Apple Pay Singapore USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-applepay-sg-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const checkoutUrlTypeSchema = channelSchema.checkout_url_type as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-applepay-sg-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-APPLEPAYSG-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Singapore Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+6591234567',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
+    expect(checkoutUrlTypeSchema).toMatchObject({
+      kind: 'select',
+      options: [
+        { label: 'Direct', value: 'direct' },
+        { label: 'LionPage', value: 'lionpage' },
+      ],
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      product_detail: { required: true },
+      shopper_reference: { required: true },
+      shopper_email: { required: true },
+      telephone_number: { required: true },
+      origin: { required: true },
+    });
+  });
+
+  test('GET /api/deposit/defaults returns the Apple Pay Thailand USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-applepay-th-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const checkoutUrlTypeSchema = channelSchema.checkout_url_type as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-applepay-th-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-APPLEPAYTH-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Thailand Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+66812345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
+    expect(checkoutUrlTypeSchema).toMatchObject({
+      kind: 'select',
+      options: [
+        { label: 'Direct', value: 'direct' },
+        { label: 'LionPage', value: 'lionpage' },
+      ],
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      product_detail: { required: true },
+      shopper_reference: { required: true },
+      shopper_email: { required: true },
+      telephone_number: { required: true },
+      origin: { required: true },
+    });
+  });
+
+  test('GET /api/deposit/defaults returns the Apple Pay Vietnam USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-applepay-vn-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const checkoutUrlTypeSchema = channelSchema.checkout_url_type as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-applepay-vn-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-APPLEPAYVN-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Vietnam Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+84912345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
+    expect(checkoutUrlTypeSchema).toMatchObject({
+      kind: 'select',
+      options: [
+        { label: 'Direct', value: 'direct' },
+        { label: 'LionPage', value: 'lionpage' },
+      ],
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      product_detail: { required: true },
+      shopper_reference: { required: true },
+      shopper_email: { required: true },
+      telephone_number: { required: true },
+      origin: { required: true },
+    });
+  });
+
+  test('GET /api/deposit/defaults returns the Apple Pay Hong Kong USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-applepay-hk-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const checkoutUrlTypeSchema = channelSchema.checkout_url_type as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-applepay-hk-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-APPLEPAYHK-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Hong Kong Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+85291234567',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
+    expect(checkoutUrlTypeSchema).toMatchObject({
+      kind: 'select',
+      options: [
+        { label: 'Direct', value: 'direct' },
+        { label: 'LionPage', value: 'lionpage' },
+      ],
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      product_detail: { required: true },
+      shopper_reference: { required: true },
+      shopper_email: { required: true },
+      telephone_number: { required: true },
+      origin: { required: true },
+    });
+  });
+
+  test('GET /api/deposit/defaults returns the Apple Pay Indonesia USD product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-applepay-id-usd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const checkoutUrlTypeSchema = channelSchema.checkout_url_type as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-applepay-id-usd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-APPLEPAYID-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(channelValues).toEqual({
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Indonesia Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+6281234567890',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
+    expect(checkoutUrlTypeSchema).toMatchObject({
+      kind: 'select',
+      options: [
+        { label: 'Direct', value: 'direct' },
+        { label: 'LionPage', value: 'lionpage' },
+      ],
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      product_detail: { required: true },
+      shopper_reference: { required: true },
+      shopper_email: { required: true },
+      telephone_number: { required: true },
+      origin: { required: true },
+    });
+  });
+
+  test('GET /api/deposit/defaults returns the Apple Pay Japan JPY product defaults', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-applepay-jp-jpy');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const checkoutUrlTypeSchema = channelSchema.checkout_url_type as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-applepay-jp-jpy');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-APPLEPAYJP-JPY',
+      amount: '100',
+      currencyCode: 'JPY',
+    });
+    expect(channelValues).toEqual({
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Japan Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+819012345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
+    expect(checkoutUrlTypeSchema).toMatchObject({
+      kind: 'select',
+      options: [
+        { label: 'Direct', value: 'direct' },
+        { label: 'LionPage', value: 'lionpage' },
+      ],
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      product_detail: { required: true },
+      shopper_reference: { required: true },
+      shopper_email: { required: true },
+      telephone_number: { required: true },
+      origin: { required: true },
+    });
+  });
+
   test('GET /api/deposit/defaults returns the Loki VN intercard defaults and required shopper email field', async () => {
     const response = await context.requestApi('/api/deposit/defaults?channel=loki-intercard-vn-usd');
 

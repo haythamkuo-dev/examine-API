@@ -45,8 +45,18 @@
 │   │   │   ├── international_credit_cards.json
 │   │   │   ├── linepay.json
 │   │   │   ├── linepay_invoice.json
+│   │   │   ├── loki-applepay-hk-usd.json
+│   │   │   ├── loki-applepay-id-usd.json
+│   │   │   ├── loki-applepay-jp-jpy.json
+│   │   │   ├── loki-applepay-my-usd.json
+│   │   │   ├── loki-applepay-ph-usd.json
+│   │   │   ├── loki-applepay-sg-usd.json
+│   │   │   ├── loki-applepay-th-usd.json
+│   │   │   ├── loki-applepay-usd.json
+│   │   │   ├── loki-applepay-vn-usd.json
 │   │   │   ├── loki-googlepay-hk-usd.json
 │   │   │   ├── loki-googlepay-id-usd.json
+│   │   │   ├── loki-googlepay-jp-jpy.json
 │   │   │   ├── loki-googlepay-my-usd.json
 │   │   │   ├── loki-googlepay-ph-usd.json
 │   │   │   ├── loki-googlepay-sg-usd.json
@@ -91,8 +101,6 @@
 │   ├── ai_code_review_guide.md
 │   ├── ai_design_doc_writing.md
 │   ├── ai_reference.md
-│   ├── issue
-│   ├── review
 │   ├── todos
 │   │   └── 2026-10-22-preset-database-migration.md
 │   └── writing
@@ -224,4 +232,4 @@
     │       └── modal.tsx
     └── styles.css
 
-32 directories, 193 files
+30 directories, 203 files

@@ -1,0 +1,72 @@
+{
+  "commonValues": {
+    "productNo": "DEP-LOKI-APPLEPAYID-USD",
+    "amount": "10.00",
+    "currencyCode": "USD"
+  },
+  "schema": {
+    "checkout_url_type": {
+      "kind": "select",
+      "label": "Checkout URL type",
+      "options": [
+        { "label": "Direct", "value": "direct" },
+        { "label": "LionPage", "value": "lionpage" }
+      ]
+    },
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "collect": {
+          "kind": "object",
+          "label": "Collect payload",
+          "fields": {
+            "product_name": {
+              "kind": "text",
+              "label": "Product name",
+              "required": true
+            },
+            "product_detail": {
+              "kind": "textarea",
+              "label": "Product detail",
+              "required": true
+            },
+            "shopper_reference": {
+              "kind": "text",
+              "label": "Shopper reference",
+              "required": true
+            },
+            "shopper_email": {
+              "kind": "text",
+              "label": "Shopper email",
+              "required": true
+            },
+            "telephone_number": {
+              "kind": "text",
+              "label": "Telephone number",
+              "required": true
+            },
+            "origin": {
+              "kind": "text",
+              "label": "Origin",
+              "required": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "checkout_url_type": "direct",
+    "payment_order": {
+      "collect": {
+        "product_name": "Apple Pay Indonesia Test",
+        "product_detail": "Test order for %s",
+        "shopper_reference": "shopper-test-001",
+        "shopper_email": "shopper@example.com",
+        "telephone_number": "+6281234567890",
+        "origin": "https://merchant.example.com"
+      }
+    }
+  }
+}
