@@ -197,13 +197,14 @@ describe('createJsonPresetStorage', () => {
       expected,
     });
 
+    await expect(latestSave).resolves.toBeDefined();
+
     const staleSave = storage.save({
       channel: 'primary',
       values: { returnUrl: 'https://merchant.example.com/stale' },
       expected,
     });
 
-    await expect(latestSave).resolves.toBeDefined();
     await expect(staleSave).rejects.toBeInstanceOf(PresetStorageConflictError);
 
     await expect(storage.load()).resolves.toMatchObject({
