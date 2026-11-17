@@ -1,5 +1,6 @@
 import { validateFormSections } from '../core/formValidation';
-import type { SubscriptionFieldMap, SubscriptionFormValues } from './web';
+import type { SubscriptionFormValues } from '../domains/subscription';
+import type { SubscriptionFieldMap } from './web';
 
 /**
  * Validates a subscription form payload against the active common and channel schemas.

@@ -4,8 +4,8 @@
 
 - 文件等級：完整開發設計書。
 - 理由：本次變更會新增 PostgreSQL 持久化、migration、資料匯入、local / Supabase 部署邊界，並改變現有 JSON preset 的讀寫路徑。
-- 狀態：Phase 1、Phase 2 gate 已通過；後續開發起點為 Phase 3。本機 PostgreSQL 已完成 migration 與 disposable integration database lifecycle 驗證，但尚未切換應用程式儲存層。
-- Phase handoff：除非發現回歸、設計／需求變更，或使用者明確要求重新驗證，後續 AI 不應重做或重新規劃 Phase 1、Phase 2，直接依本文件從 Phase 3 開始。
+- 狀態：Phase 1、Phase 2、Phase 3 gate 已通過；後續開發起點為 Phase 4。本機 PostgreSQL 已完成 migration、disposable integration database lifecycle 與 adapter／repository 驗證，但尚未切換應用程式儲存層。
+- Phase handoff：除非發現回歸、設計／需求變更，或使用者明確要求重新驗證，後續 AI 不應重做或重新規劃 Phase 1、Phase 2、Phase 3，直接依本文件從 Phase 4 開始。
 - 主要規範：[AGENTS.md](../../AGENTS.md)。
 
 ## 目標
@@ -23,7 +23,7 @@
 - 不把 API key、sign key、merchant token 或其他 secret 寫入資料庫。
 - 不把三項服務的動態 `merchantRef`／`merchantReference` 值寫入資料庫；這些值由 runtime 產生。
 - 不在本機前置條件中處理 Supabase 專案現有資料與 schema 狀態。
-- JCB JSON 修復延後至最終驗收階段。
+- JCB JSON 語法已於本分支提前修復；Phase 7 仍需完成全量 audit、import、parity 與 data owner readiness 確認。
 - 不重寫既有 API route path 或上游 payload key；僅調整 merchant reference 的輸入／defaults response 語意，並可增加不含業務資料的 `presetMeta.updatedAt` concurrency metadata；不在 route handler 內加入資料庫業務邏輯。
 
 ## 現況與已知資料風險
@@ -40,16 +40,15 @@
 
 現有 JSON common 檔案與既有 preset writer 會保存 `merchantRef` 或 `merchantReference`；這是本次要移除的 legacy persistence 行為。它們不是 preset，而是 request、preview 與 API payload 產生流程中的 runtime-only 值。既有 JSON 可讀取 legacy 值作為相容輸入，但 Phase 1 起所有 persistence adapter 都不得再寫入此欄位；前端只可作為目前操作的暫存值。
 
-已知無效 JSON：
+曾知無效、現已修復的 JSON：
 
 - `data/deposit/channels/JCB-JPY.json`
 - `data/deposit/channels/JCB-USD.json`
 
-這兩個檔案目前列為「已知、延後處理」：
+這兩個檔案的語法修復已提前完成，不再列為 invalid JSON；資料 readiness 仍依 migration phase 的 audit、parity 與 owner 確認判定：
 
-- 在 JCB 修復或移除決策完成前只記錄問題，不修改、不刪除、不補資料。
-- audit 與 migration 設計必須能列出這兩個檔案的狀態，不能把它們默默當成成功匯入。
-- 最終驗收前必須完成修復或由資料 owner 明確確認移除，並重新執行完整資料 parity。
+- audit 與 migration 設計仍必須列出這兩個檔案的來源、target row 與驗證狀態，不能把語法修復誤當成成功匯入。
+- 最終驗收前仍必須重新執行完整資料 parity，並由資料 owner 確認內容與 readiness。
 - 在上述完成前，不宣稱三個功能的資料已達到完整 parity。
 
 ## 設計結論
@@ -248,7 +247,7 @@ POST create
 
 ## 分階段執行
 
-每個 phase 都要有自己的產物與 gate；未通過當前 phase 時，不進入下一個需要它的 runtime 或 deployment phase。Phase 1–4 不切換 production 的 storage driver；Phase 5 才開始本機切換。前述本機 PostgreSQL 端點已可連線是已知前提，不另列為 phase。
+每個 phase 都要有自己的產物與 gate；未通過當前 phase 時，不進入下一個需要它的 runtime 或 deployment phase。Phase 1 到 Phase 4 不切換 production 的 storage driver；Phase 5 才開始本機切換。前述本機 PostgreSQL 端點已可連線是已知前提，不另列為 phase。
 
 ### Phase 1：Storage boundary、JSON adapter 與資料 audit（已通過）
 
@@ -258,7 +257,7 @@ POST create
 - `GET defaults` 不返回 runtime-only merchant 欄位；缺少的可持久化欄位仍依現行 code-owned defaults／preset contract 補齊。
 - validator 接受沒有 merchant 欄位的 request；legacy 同名欄位不可作為 final value。前端只建立目前操作的 in-memory candidate，不使用 `sessionStorage` 或其他持久化 draft。
 - 將現有 route 的 `generateMerchantRef` callback 與 request builder 內的 merchant sanitize／fallback 降為轉送或相容處理；route、web form builder 不決定商業值，值產生、重用／重生與 final assignment 統一由 feature service／domain request builder 負責。
-- 建立全量 data audit，對無效 JSON（包含 JCB）輸出可追蹤的 `invalid`／`deferred` 狀態，不修改、不刪除、不默默跳過。
+- 建立全量 data audit，對無效 JSON 輸出可追蹤的 `invalid`／`deferred` 狀態；JCB 修復後仍須保留來源、target row 與驗證狀態，不默默跳過。
 
 **Phase 1 gate：已通過。** JSON adapter round-trip、defaults merchant omission、save 不持久化 merchant、audit report 與既有 API boundary 測試均已完成；Phase 1 不接 PostgreSQL，也不切換 runtime。後續 AI 應將 Phase 1 視為已完成前置條件，除非發現回歸或收到明確的重新驗證要求。
 
@@ -273,7 +272,7 @@ POST create
 
 **Phase 2 gate：已通過。** 已在專用 integration database 實際完成 fresh database provision、migration、重複套用 no-op、migration history、constraint／timestamp、pool session cleanup 與 database teardown 驗證；`bun run test:db` 結果為 `3 pass / 0 fail`。尚未匯入 preset data，也不切換 runtime。後續 AI 應將 Phase 2 視為已完成前置條件，直接進入 Phase 3；不得因日常本機使用固定 integration database 加 schema reset 而要求重新執行整個 fresh provision／teardown lifecycle。
 
-### Phase 3：PostgreSQL adapter 與 repository integration tests
+### Phase 3：PostgreSQL adapter 與 repository integration tests（已通過）
 
 - 實作 PostgreSQL adapter 的 canonical read／save；只讀寫 persistent projection，不接受 merchant reference 作為可持久化欄位。
 - save 必須在單一 Bun SQL transaction 中完成 feature common 與所有受影響 channel row 的寫入；callback throw／reject 時由 Bun rollback，成功才 commit。
@@ -282,7 +281,7 @@ POST create
 - 新增必要的 repository integration tests，使用 disposable integration database；測試 server／repository 的 stop 與 pool close 必須由 lifecycle hook 驗證。
 - adapter 先保持 disabled，避免未完成 import 前誤切換 runtime。
 
-**Phase 3 gate：** read／save round-trip、common/channel atomicity、stale-write conflict、transaction rollback、DB unavailable、pool close 與 merchant non-persistence 均有對應測試；尚未切換本機 runtime。
+**Phase 3 gate：已通過。** read／save round-trip、common/channel atomicity、stale-write conflict、transaction rollback、DB unavailable、pool close 與 merchant non-persistence 均有對應測試；尚未切換本機 runtime。
 
 ### Phase 4：Importer、parity 與 readiness report
 
@@ -290,14 +289,14 @@ POST create
 - importer 明確排除 `merchantRef`／`merchantReference` 及其 legacy top-level 值；巢狀 JSON 的固定 `merchant_ref` template 值依現況保留，不把它誤判成 runtime merchant reference。
 - 每次匯入產出 manifest：source file、target row、row count、checksum、`ready`／`deferred`／`invalid` 狀態與錯誤原因。checksum 只比較 persistent projection，merchant reference 另由 API boundary 驗證。
 - 匯入具 transaction boundary 與 idempotency；匯入前保存 JSON snapshot，匯入後保存 PostgreSQL dump／export。
-- JCB 檔案維持 `deferred`，在修復或移除決策完成前不得報告「完整 parity」；其餘資料可先完成 local readiness。
+- JCB 檔案的 invalid JSON 語法已修復，但在重新完成 audit、import、parity 與資料 owner readiness 確認前，仍不得報告「完整 parity」；其餘資料可先完成 local readiness。
 
-**Phase 4 gate：** importer 可重跑、manifest 可審計、可持久化資料 parity 通過、JCB deferred 明確可見，且沒有任何 merchant reference 寫入 DB；尚未進行 production 或 Supabase runtime switch。
+**Phase 4 gate：** importer 可重跑、manifest 可審計、可持久化資料 parity 通過、JCB 修復與 readiness 狀態明確可見，且沒有任何 merchant reference 寫入 DB；尚未進行 production 或 Supabase runtime switch。
 
 ### Phase 5：本機 runtime cutover
 
 - 以 `PRESET_STORAGE_DRIVER=json|postgres` 控制 adapter；預設仍為 `json`，切換需顯式設定。
-- local preflight 必須確認 migration、import manifest、DB connectivity 與 parity report。JCB `deferred` 只能在明確的 non-production local gate 下允許切換，且報告仍標記為 incomplete；staging／production 不接受 deferred readiness。
+- local preflight 必須確認 migration、import manifest、DB connectivity 與 parity report。JCB 在重新完成 readiness 確認前，只能在明確的 non-production local gate 下允許切換，且報告仍標記為 incomplete；staging／production 不接受未完成的 readiness。
 - 本機切換後 PostgreSQL 是唯一 runtime source of truth；不得 per-channel 靜默 fallback 到 JSON。JSON 保留為 read-only export／fixture 與明確 rollback source。
 - 驗證 `GET defaults`、save、preview、create、merchant-ref generation、前端 transient candidate、final upstream payload 與 DB 不保存 merchant reference。
 
@@ -310,17 +309,17 @@ POST create
 - 執行 staging import、manifest、parity、API smoke test 與 rollback rehearsal；只連 server-side credential，不把 service credential 或 DB URL 放入前端。
 - staging 僅驗證部署與行為，不視為 production cutover 授權。
 
-**Phase 6 gate：** remote migration history、schema security、data parity、merchant boundary、DB lifecycle 與 staging rollback rehearsal 通過；JCB 仍 deferred 時不得進入 production acceptance。
+**Phase 6 gate：** remote migration history、schema security、data parity、merchant boundary、DB lifecycle 與 staging rollback rehearsal 通過；JCB readiness 未完成時不得進入 production acceptance。
 
 ### Phase 7：最終驗收與切換決策
 
-- 修復兩個 JCB JSON，或由資料 owner 明確確認正式移除；重新執行全量 audit、import、parity 與 manifest review。
+- 重新執行兩個 JCB JSON 的全量 audit、import、parity 與 manifest review，並由資料 owner 確認內容與 readiness。
 - 驗證三項服務的 defaults、save、preview、create、merchant-ref generation 與第三方 request final value；確認 caller 同名欄位不能覆蓋 domain/service 決定的值。
 - 驗證 `created_at` immutable、`updated_at` optimistic conflict、transaction rollback、DB unavailable、pool close、disposable test DB cleanup 與 no-fallback 行為。
 - 完成 JSON→PostgreSQL 與 PostgreSQL→JSON 的 rollback rehearsal；確認切換後寫入不會因直接切回舊 JSON 而遺失。
 - 產出 go／no-go checklist；未通過不得進入 production。
 
-**Phase 7 gate：** JCB 已處理、全量 parity 通過、security／lifecycle／rollback 證據完整，並取得 production cutover 核准。
+**Phase 7 gate：** JCB readiness 已確認、全量 parity 通過、security／lifecycle／rollback 證據完整，並取得 production cutover 核准。
 
 ### Phase 8：Production cutover 與 JSON runtime 退場
 
@@ -335,7 +334,7 @@ POST create
 
 - 三項服務的 persistent preset projection 已由同一套 canonical schema／migration 表達，local PostgreSQL 與 Supabase migration history 可追蹤且無 drift。
 - `GET defaults`、preview、create 與 preset save 的公開行為符合本設計：merchant reference 不進 defaults／persistence，final value 由 service/domain 在 runner 前決定，caller 不能覆蓋。
-- JSON audit、import manifest 與 parity 證明所有可持久化資料已匯入；JCB invalid files 已修復或由資料 owner 明確移除，沒有未揭露的 deferred exception。
+- JSON audit、import manifest 與 parity 證明所有可持久化資料已匯入；JCB files 已修復並完成 readiness 確認，沒有未揭露的 deferred exception。
 - `created_at`／`updated_at`、optimistic conflict、Bun transaction rollback、DB unavailable、pool close、integration database cleanup 與 no-fallback 行為都有對應證據。
 - local、staging、production 的 cutover 都可由 feature flag 控制；若 PostgreSQL 已有新寫入，rollback 會先 export／backfill 或 forward-fix，不會直接切回過期 JSON。
 - 驗證命令與結果、未執行部分及剩餘風險均記錄在實作交付說明；文件完成本身不代表上述 runtime 已部署。
@@ -372,7 +371,7 @@ POST create
 - DB integration gate：檢查 `bun --version >= 1.4.3`、`INTEGRATION_DATABASE_URL` 與 runtime `DATABASE_URL` 分離、migration history、`SELECT 1`、transaction rollback、`updated_at` conflict、`sql.close()`、固定 `preset_store` schema reset 與 disposable database cleanup。
 - 若新增資料夾或 migration 目錄：`bun run structure` 並確認 `structure.md`。
 - Supabase migration：local fresh database、migration history、dry-run、staging parity；production push 需人工核准。
-- Phase 7 最終驗收：JCB 修復／移除、全量 JSON audit、可持久化資料 parity、runtime merchant reference 產生結果、DB export／rollback 演練。
+- Phase 7 最終驗收：JCB readiness 確認、全量 JSON audit、可持久化資料 parity、runtime merchant reference 產生結果、DB export／rollback 演練。
 - Phase 8 production：backup、verified import、cutover smoke test、監控與 rollback window；不得以未執行的測試宣稱完成。
 
 ## 適用的設計參考章節
@@ -395,7 +394,7 @@ POST create
 | [AGENTS.md](../../AGENTS.md) | 專案唯一共用規範、測試／建置／完成 gate、資料 fixture 與 lifecycle 要求 |
 | `src/core/createPresetBackedService.ts`、`src/server/routes/_shared.ts` | 既有 defaults／save／preview／create service flow 與 HTTP dispatch 邊界 |
 | `src/deposit/`、`src/payout/`、`src/subscription/` 的 `presets.ts`、`service.ts`、`web.ts` | 現有 preset mapping、merchant generator、request builder 與 writer 行為 |
-| `data/{deposit,payout,subscription}` | JSON common／channel shape、shared fields、fixed nested `merchant_ref` 與 JCB invalid files |
+| `data/{deposit,payout,subscription}` | JSON common／channel shape、shared fields、fixed nested `merchant_ref` 與已修復的 JCB source files |
 | [Bun SQL official documentation](https://bun.sh/docs/runtime/sql) | Bun native SQL pool、prepared statement、transaction callback rollback、`sql.close()` 行為 |
 | [Supabase database migration documentation](https://supabase.com/docs/guides/local-development/database-migrations) | versioned migration、remote baseline、staging 與 deploy workflow |
 
@@ -403,6 +402,6 @@ POST create
 
 | 事項 | Owner | 影響 | 處理時機 |
 | --- | --- | --- | --- |
-| JCB-JPY / JCB-USD 真實資料或移除決策 | 資料 owner | 完整 import parity 與 production readiness | Phase 7 |
+| JCB-JPY / JCB-USD 的 parity 與 readiness 確認 | 資料 owner | 完整 import parity 與 production readiness | Phase 7 |
 | Supabase 專案是否已有 schema / data | 部署 owner | remote baseline 與 migration 策略 | Phase 6 前 |
 | local／integration migration runner 的維護 owner | Backend owner | migration history、fresh DB 與 CI 可重現性 | Phase 2 |

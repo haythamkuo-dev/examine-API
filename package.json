@@ -6,7 +6,7 @@
     "build:web": "vite build",
     "start:api": "bun run dist/server/index.js",
     "test": "bun run test:api && bun run test:web",
-    "test:api": "bun test --isolate --preload ./tests/setup.ts ./src tests/formValidation.test.ts",
+    "test:api": "bun test --isolate --preload ./tests/setup.ts --path-ignore-patterns '**/*.integration.test.ts' ./src tests/formValidation.test.ts",
     "test:web": "bun test --isolate --preload ./tests/web-setup.ts ./web",
     "test:db": "bun test --isolate --preload ./tests/integration-setup.ts ./src/core/database.integration.test.ts",
     "db:migrate": "bun run scripts/database.ts migrate",

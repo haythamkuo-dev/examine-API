@@ -7,6 +7,12 @@ import {
   createStructuredDepositRequest,
   type DepositCollectOverride,
 } from '../domains/deposit';
+import type {
+  DepositChannelValues,
+  DepositCommonValues,
+  DepositFormValues,
+} from '../domains/deposit';
+export type { DepositChannelValues, DepositCommonValues, DepositFormValues } from '../domains/deposit';
 import type { CommandRequest, CommandResult } from '../runner';
 import { maskRequestHeaders } from '../utils';
 import { getRequestFailureHint } from './failureHint';
@@ -61,22 +67,6 @@ export type DepositFieldSchema =
   | DepositArrayFieldSchema;
 
 export type DepositFieldMap = Record<string, DepositFieldSchema>;
-
-export type DepositCommonValues = {
-  productNo: string;
-  merchantRef?: string;
-  amount: string;
-  currencyCode: string;
-  returnUrl: string;
-};
-
-export type DepositChannelValues = Record<string, unknown>;
-
-export type DepositFormValues = {
-  channel: DepositChannel;
-  commonValues: DepositCommonValues;
-  channelValues: DepositChannelValues;
-};
 
 export type DepositRequestValues = DepositFormValues & {
   apiKey?: string;

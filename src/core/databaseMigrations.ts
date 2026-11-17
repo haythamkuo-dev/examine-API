@@ -108,8 +108,13 @@ export const listMigrations = async (
       );
     }
 
+    const version = match[1];
+    if (version === undefined) {
+      throw new MigrationError('Migration file name is missing a version: ' + entry.name);
+    }
+
     migrations.push({
-      version: match[1],
+      version,
       fileName: entry.name,
       filePath: join(directoryPath, entry.name),
     });

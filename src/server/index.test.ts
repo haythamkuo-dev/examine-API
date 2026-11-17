@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { rm, writeFile } from 'fs/promises';
+import { join } from 'path';
 import {
   startApiTestServer,
   type ApiTestServerContext,
@@ -53,6 +55,42 @@ describe('API server exception boundary', () => {
         status: 404,
         code: unknownErrorCode,
         message: 'Not found',
+      },
+    });
+    expect(errorLog).not.toHaveBeenCalled();
+  });
+
+  test('fails closed with a classified error when a preset source is missing', async () => {
+    await rm(context.depositPresetDirPath, { recursive: true, force: true });
+
+    const response = await context.requestApi('/api/deposit/defaults?channel=pix_brl');
+
+    expect(response.status).toBe(500);
+    expect((await response.json()) as StandardErrorResponse).toEqual({
+      response: {
+        status: 500,
+        code: 'PRESET_NOT_FOUND',
+        message: 'Preset configuration is missing.',
+      },
+    });
+    expect(errorLog).not.toHaveBeenCalled();
+  });
+
+  test('maps invalid JCB preset JSON to PRESET_INVALID instead of using the code seed', async () => {
+    await writeFile(
+      join(context.depositPresetDirPath, 'channels', 'JCB-USD.json'),
+      '{invalid-json',
+      'utf8',
+    );
+
+    const response = await context.requestApi('/api/deposit/defaults?channel=JCB-USD');
+
+    expect(response.status).toBe(500);
+    expect((await response.json()) as StandardErrorResponse).toEqual({
+      response: {
+        status: 500,
+        code: 'PRESET_INVALID',
+        message: 'Preset configuration is invalid.',
       },
     });
     expect(errorLog).not.toHaveBeenCalled();

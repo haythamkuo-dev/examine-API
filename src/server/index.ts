@@ -9,6 +9,9 @@ import {
 import { assertSupportedBunVersion } from '../core/database';
 import { keepAlive } from '../utils';
 import type { Logger } from '../runner';
+import { createDepositJsonPresetStorage } from '../deposit/storage';
+import { createPayoutJsonPresetStorage } from '../payout/storage';
+import { createSubscriptionJsonPresetStorage } from '../subscription/storage';
 import { corsHeaders, json, notFound } from './http';
 import { buildErrorEnvelope, unknownErrorMessage } from './errors';
 import { handleDepositRoute } from './routes/deposit';
@@ -42,8 +45,26 @@ export type ApiServerOptions = {
  */
 export const createApiRequestHandler = (
   options: ApiServerOptions,
-): ((request: Request) => Promise<Response>) =>
-  async (request: Request): Promise<Response> => {
+): ((request: Request) => Promise<Response>) => {
+  const getEnvForTarget = (target: 'local' | 'product'): CliEnv =>
+    getCliEnvForTarget(options.envRegistry, target);
+  const localEnv = getEnvForTarget('local');
+  const depositStorage = createDepositJsonPresetStorage({
+    dirPath: options.depositPresetDirPath,
+    env: localEnv,
+    makeId: options.makeId,
+  });
+  const payoutStorage = createPayoutJsonPresetStorage({
+    dirPath: options.payoutPresetDirPath,
+    makeId: options.makeId,
+  });
+  const subscriptionStorage = createSubscriptionJsonPresetStorage({
+    dirPath: options.subscriptionPresetDirPath,
+    env: localEnv,
+    makeId: options.makeId,
+  });
+
+  return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url);
 
@@ -59,8 +80,8 @@ export const createApiRequestHandler = (
         request,
         url,
         deps: {
-          getEnvForTarget: (target) => getCliEnvForTarget(options.envRegistry, target),
-          presetDirPath: options.depositPresetDirPath,
+          getEnvForTarget,
+          storage: depositStorage,
           makeId: options.makeId,
           logger: options.logger,
         },
@@ -73,8 +94,8 @@ export const createApiRequestHandler = (
         request,
         url,
         deps: {
-          getEnvForTarget: (target) => getCliEnvForTarget(options.envRegistry, target),
-          presetDirPath: options.payoutPresetDirPath,
+          getEnvForTarget,
+          storage: payoutStorage,
           makeId: options.makeId,
           logger: options.logger,
         },
@@ -87,8 +108,8 @@ export const createApiRequestHandler = (
         request,
         url,
         deps: {
-          getEnvForTarget: (target) => getCliEnvForTarget(options.envRegistry, target),
-          presetDirPath: options.subscriptionPresetDirPath,
+          getEnvForTarget,
+          storage: subscriptionStorage,
           makeId: options.makeId,
           logger: options.logger,
         },
@@ -103,6 +124,7 @@ export const createApiRequestHandler = (
       return json(buildErrorEnvelope(500, unknownErrorMessage), { status: 500 });
     }
   };
+};
 
 /**
  * Creates the Bun HTTP server for deposit, payout, and subscription APIs.

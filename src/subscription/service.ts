@@ -1,8 +1,15 @@
-import { SUBSCRIPTION_CHANNELS, type CliEnv, type SubscriptionChannel } from '../core/env';
-import { createPresetBackedService } from '../core/createPresetBackedService';
-import { createJsonPresetStorage, stripTransientMerchantReferenceKeys } from '../core/presetStorage';
+import {
+  getDefaultChannel,
+  SUBSCRIPTION_CHANNEL_MANIFEST,
+  SUBSCRIPTION_CHANNELS,
+  type CliEnv,
+  type SubscriptionChannel,
+} from '../core/env';
+import { createPresetBackedService, mergePresetFormValues } from '../core/createPresetBackedService';
+import type { PresetStorage } from '../core/presetStorage';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type { Logger } from '../runner';
+import type { SubscriptionFormValues } from '../domains/subscription';
 import {
   buildSubscriptionCreateResponse,
   buildSubscriptionMerchantRefResponse,
@@ -10,37 +17,32 @@ import {
   buildSubscriptionRequestFromForm,
   type SubscriptionCreateResponse,
   type SubscriptionDefaultsResponse,
-  type SubscriptionFormValues,
   type SubscriptionMerchantRefResponse,
   type SubscriptionRequestValues,
 } from './web';
 import {
-  loadSubscriptionPresets,
   toSubscriptionDefaultsResponse,
-  toSubscriptionPersistentProjection,
-  updateSubscriptionPreset,
+  type SubscriptionPresetStore,
 } from './presets';
 
 export type SubscriptionServiceDeps = {
   getEnvForTarget: (target: TargetEnvironment) => CliEnv;
-  presetDirPath: string;
+  storage: PresetStorage<SubscriptionChannel, SubscriptionFormValues, SubscriptionPresetStore>;
   makeId: (prefix: string) => string;
   logger: Logger;
 };
 
-type SubscriptionPersistentFormValues = Omit<SubscriptionFormValues, 'commonValues'> & {
-  commonValues: Omit<SubscriptionFormValues['commonValues'], 'merchantRef'>;
-};
+const defaultSubscriptionChannel = getDefaultChannel(SUBSCRIPTION_CHANNEL_MANIFEST);
 
 /**
  * Resolves the requested subscription channel from the query string.
  *
  * @param url Request URL carrying the optional `channel` search param.
- * @returns A valid subscription channel, defaulting to `default`.
+ * @returns A valid subscription channel, defaulting to the manifest default.
  */
 export const getRequestedSubscriptionChannel = (url: URL): SubscriptionChannel => {
-  const channel = (url.searchParams.get('channel') || 'default') as SubscriptionChannel;
-  return SUBSCRIPTION_CHANNELS.includes(channel) ? channel : 'default';
+  const channel = (url.searchParams.get('channel') || defaultSubscriptionChannel) as SubscriptionChannel;
+  return SUBSCRIPTION_CHANNELS.includes(channel) ? channel : defaultSubscriptionChannel;
 };
 
 /**
@@ -50,54 +52,35 @@ export const getRequestedSubscriptionChannel = (url: URL): SubscriptionChannel =
  * @returns The subscription service API used by the HTTP layer.
  */
 export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
-  const storage = createJsonPresetStorage<
-    SubscriptionChannel,
-    SubscriptionFormValues,
-    Awaited<ReturnType<typeof loadSubscriptionPresets>>,
-    SubscriptionPersistentFormValues
-  >({
-    load: () =>
-      loadSubscriptionPresets({
-        dirPath: deps.presetDirPath,
-        env: deps.getEnvForTarget('local'),
-        makeId: deps.makeId,
-      }),
-    toPersistentInput: ({ channel, values }) => {
-      const { merchantRef: _merchantRef, ...commonValues } = values.commonValues;
-      return {
-        channel,
-        values: {
-          channel: values.channel,
-          commonValues,
-          channelValues: stripTransientMerchantReferenceKeys(values.channelValues),
-        },
-      };
-    },
-    save: ({ channel, values }) =>
-      updateSubscriptionPreset({
-        dirPath: deps.presetDirPath,
-        channel,
-        values,
-        env: deps.getEnvForTarget('local'),
-        makeId: deps.makeId,
-      }),
-    toPersistentProjection: toSubscriptionPersistentProjection,
-  });
-  const loadPresets = async () => (await storage.load()).presets;
+  const loadPresets = async () => deps.storage.load();
+  const toDefaultsResponse = (
+    channel: SubscriptionChannel,
+    presets: SubscriptionPresetStore,
+    target: TargetEnvironment | undefined,
+  ): SubscriptionDefaultsResponse => {
+    const resolvedTarget = target || 'local';
+    const env = deps.getEnvForTarget(resolvedTarget);
+    return toSubscriptionDefaultsResponse(channel, env, resolvedTarget, presets);
+  };
 
   const service = createPresetBackedService<
     SubscriptionChannel,
     SubscriptionRequestValues,
-    Awaited<ReturnType<typeof loadSubscriptionPresets>>,
+    SubscriptionPresetStore,
     SubscriptionDefaultsResponse,
     ReturnType<typeof buildSubscriptionPreviewResponse>,
     SubscriptionCreateResponse,
     TargetEnvironment
   >({
     loadPresets,
-    toDefaultsResponse: (channel, presets) =>
-      toSubscriptionDefaultsResponse(channel, deps.getEnvForTarget('local'), 'local', presets),
-    updatePreset: async (channel, values) => (await storage.save({ channel, values })).presets,
+    toDefaultsResponse,
+    hydrateValues: (channel, values, presets, target) =>
+      mergePresetFormValues(
+        toDefaultsResponse(channel, presets, target).form as SubscriptionRequestValues,
+        values,
+      ),
+    updatePreset: async (channel, values, expected) =>
+      (await deps.storage.save({ channel, values, expected })).presets,
     buildPreviewResponse: (values, target) =>
       buildSubscriptionPreviewResponse(deps.getEnvForTarget(target), values, deps.makeId),
     buildRequestFromForm: (values, target) =>
@@ -126,8 +109,7 @@ export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
     channel: SubscriptionChannel,
     target: TargetEnvironment,
   ): Promise<SubscriptionDefaultsResponse> => {
-    const presets = await loadPresets();
-    return toSubscriptionDefaultsResponse(channel, deps.getEnvForTarget(target), target, presets);
+    return service.getDefaults(channel, target);
   };
 
   /**
@@ -143,12 +125,7 @@ export const createSubscriptionService = (deps: SubscriptionServiceDeps) => {
     values: SubscriptionFormValues,
     target: TargetEnvironment,
   ): Promise<SubscriptionDefaultsResponse & { ok: true }> => {
-    const presets = (await storage.save({ channel, values })).presets;
-
-    return {
-      ok: true,
-      ...toSubscriptionDefaultsResponse(channel, deps.getEnvForTarget(target), target, presets),
-    };
+    return service.saveDefaults(channel, values, target);
   };
 
   return {

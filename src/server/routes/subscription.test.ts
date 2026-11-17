@@ -17,6 +17,14 @@ type SubscriptionUpstreamBody = {
   subs_plan_id: string;
 };
 
+const isSubscriptionUpstreamBody = (value: unknown): value is SubscriptionUpstreamBody =>
+  typeof value === 'object' &&
+  value !== null &&
+  'merchant_ref' in value &&
+  typeof value.merchant_ref === 'string' &&
+  'subs_plan_id' in value &&
+  typeof value.subs_plan_id === 'string';
+
 const createRequestUrl = (baseUrl: string, path: string): string => `${baseUrl}${path}`;
 
 const createValidBody = (): SubscriptionApiRequestBody => ({
@@ -279,8 +287,10 @@ describe('subscription API routes', () => {
     expect(body.status).toBe(201);
     expect(body.checkoutUrl).toBe('https://checkout.example.test/subscription/sub_123');
     expect(upstreamAuthorization).toBe('ApiKey payout-token');
-    expect(upstreamBody).not.toBeNull();
-    const capturedUpstreamBody = upstreamBody as unknown as SubscriptionUpstreamBody;
+    const capturedUpstreamBody: unknown = upstreamBody;
+    if (!isSubscriptionUpstreamBody(capturedUpstreamBody)) {
+      throw new Error('Expected the upstream subscription body to be captured.');
+    }
     expect(capturedUpstreamBody.merchant_ref).toBe('TEST_ORDER_fixed-id');
     expect(capturedUpstreamBody.subs_plan_id).toBe('PLAN-STAGE-DEFAULT');
   });
@@ -359,11 +369,11 @@ describe('subscription API routes', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(upstreamBody).not.toBeNull();
-    if (!upstreamBody) {
+    const capturedUpstreamBody: unknown = upstreamBody;
+    if (!isSubscriptionUpstreamBody(capturedUpstreamBody)) {
       throw new Error('Expected the upstream subscription body to be captured.');
     }
-    expect(upstreamBody.subs_plan_id).toBe('PLAN-DRAFT-UPSTREAM-001');
+    expect(capturedUpstreamBody.subs_plan_id).toBe('PLAN-DRAFT-UPSTREAM-001');
   });
 
   test('POST /api/subscription/create returns 400 when the selected channel is missing a configured plan id', async () => {

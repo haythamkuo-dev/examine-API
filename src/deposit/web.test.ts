@@ -17,7 +17,8 @@ import {
 } from './presets';
 import { createRunner } from '../runner';
 import { buildDepositCreateResponse } from './web';
-import { mkdtemp, readFile } from 'fs/promises';
+import { PresetStorageInvalidError } from '../core/presetStorage';
+import { cp, mkdtemp, readFile, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 
@@ -31,8 +32,26 @@ const env = getCliEnv({
 });
 
 const makeId = (prefix: string) => `${prefix}fixed-id`;
+const sourceDirPath = resolve(process.cwd(), 'data/deposit');
 
 describe('deposit web helpers', () => {
+  test('rejects an invalid channel projection instead of falling back to seed values', async () => {
+    expect.hasAssertions();
+
+    const tempDir = await mkdtemp(join(tmpdir(), 'deposit-invalid-preset-'));
+    const presetDirPath = join(tempDir, 'deposit');
+    await cp(sourceDirPath, presetDirPath, { recursive: true });
+    await writeFile(join(presetDirPath, 'channels', 'southafrica_cards.json'), '{}\n', 'utf8');
+
+    await expect(
+      loadDepositPresets({
+        dirPath: presetDirPath,
+        env,
+        makeId,
+      }),
+    ).rejects.toBeInstanceOf(PresetStorageInvalidError);
+  });
+
   test('creates seed deposit presets for all channels', () => {
     const result = createSeedDepositPresets(env, makeId);
 
@@ -1316,6 +1335,7 @@ describe('deposit web helpers', () => {
   test('updates and writes preset file by channel', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'deposit-preset-'));
     const dirPath = join(tempDir, 'deposit');
+    await cp(sourceDirPath, dirPath, { recursive: true });
     const values = toDepositDefaultsResponse('linepay', env, createSeedDepositPresets(env, makeId)).form;
     values.commonValues.productNo = 'DEP-LINEPAY-CUSTOM';
     values.commonValues.merchantRef = 'TEST_ORDER_OVERRIDDEN';

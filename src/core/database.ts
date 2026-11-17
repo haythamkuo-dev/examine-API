@@ -4,10 +4,7 @@ export const DATABASE_URL_ENV_NAME = 'DATABASE_URL';
 export const INTEGRATION_DATABASE_URL_ENV_NAME = 'INTEGRATION_DATABASE_URL';
 export const MIN_SUPPORTED_BUN_VERSION = '1.4.3';
 
-type DatabaseEnvironment = Pick<
-  NodeJS.ProcessEnv,
-  'DATABASE_URL' | 'INTEGRATION_DATABASE_URL'
->;
+type DatabaseEnvironment = NodeJS.ProcessEnv;
 
 /**
  * Describes invalid server-only database configuration.
@@ -28,7 +25,7 @@ export class DatabaseConfigurationError extends Error {
  * Describes a failed PostgreSQL connectivity probe.
  */
 export class DatabaseConnectionError extends Error {
-  readonly cause: unknown;
+  override readonly cause: unknown;
 
   /**
    * Creates a connection error while retaining the original cause for diagnostics.

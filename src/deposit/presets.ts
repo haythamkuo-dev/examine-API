@@ -1,6 +1,6 @@
-import { mkdir, readFile, writeFile } from 'fs/promises';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import {
+  DEPOSIT_CHANNEL_MANIFEST,
   DEPOSIT_CHANNELS,
   resolveDepositApiKey,
   type CliEnv,
@@ -9,13 +9,22 @@ import {
 import {
   stripTransientMerchantReferenceKeys,
   type PersistentPresetProjection,
+  writePresetJsonObject,
 } from '../core/presetStorage';
+import {
+  isNonBlankPresetString,
+  isPresetFieldMap,
+  isPresetJsonObject,
+  readValidatedPresetJsonObject,
+} from '../core/presetValidation';
 import type {
   DepositChannelValues,
   DepositCommonValues,
+  DepositFormValues,
+} from '../domains/deposit';
+import type {
   DepositDefaultsResponse,
   DepositFieldMap,
-  DepositFormValues,
 } from './web';
 
 const textField = (label: string, required = false) => ({
@@ -93,6 +102,53 @@ const COMMON_SCHEMA: DepositFieldMap = {
   amount: textField('Amount', true),
   currencyCode: textField('Currency code', true),
   returnUrl: textField('Return URL', true),
+};
+
+const REQUIRED_DEPOSIT_COMMON_SCHEMA_KEYS = ['productNo', 'amount', 'currencyCode', 'returnUrl'] as const;
+const REQUIRED_DEPOSIT_CHANNEL_COMMON_KEYS = ['productNo', 'amount', 'currencyCode'] as const;
+
+const validateDepositCommonProjection = (source: Record<string, unknown>): string | undefined => {
+  const schema = source.schema;
+  if (!isPresetFieldMap(schema)) {
+    return 'Deposit common preset schema must be a valid field map.';
+  }
+
+  if (!REQUIRED_DEPOSIT_COMMON_SCHEMA_KEYS.every((key) => key in schema)) {
+    return 'Deposit common preset schema is missing required fields.';
+  }
+
+  if (!isPresetJsonObject(source.values)) {
+    return 'Deposit common preset values must be an object.';
+  }
+
+  if (!isNonBlankPresetString(source.values.returnUrl)) {
+    return 'Deposit common preset values.returnUrl must be a non-blank string.';
+  }
+
+  return undefined;
+};
+
+const validateDepositChannelProjection = (source: Record<string, unknown>): string | undefined => {
+  if (!isPresetJsonObject(source.commonValues)) {
+    return 'Deposit channel commonValues must be an object.';
+  }
+
+  for (const key of REQUIRED_DEPOSIT_CHANNEL_COMMON_KEYS) {
+    if (!isNonBlankPresetString(source.commonValues[key])) {
+      return `Deposit channel commonValues.${key} must be a non-blank string.`;
+    }
+  }
+
+  const schema = source.schema;
+  if (!isPresetFieldMap(schema)) {
+    return 'Deposit channel schema must be a valid field map.';
+  }
+
+  if (!isPresetJsonObject(source.values)) {
+    return 'Deposit channel values must be an object.';
+  }
+
+  return undefined;
 };
 
 const SOUTH_AFRICA_SCHEMA: DepositFieldMap = {
@@ -1471,16 +1527,13 @@ export const toDepositPersistentProjection = (
 });
 
 const getCommonFilePath = (dirPath: string) => join(dirPath, 'common.json');
-const getChannelFilePath = (dirPath: string, channel: DepositChannel) =>
-  join(dirPath, 'channels', `${channel}.json`);
-
-const readJsonFile = async <T>(filePath: string): Promise<T | null> => {
-  try {
-    const content = await readFile(filePath, 'utf8');
-    return JSON.parse(content) as T;
-  } catch {
-    return null;
+const getChannelFilePath = (dirPath: string, channel: DepositChannel): string => {
+  const manifestEntry = DEPOSIT_CHANNEL_MANIFEST.find((entry) => entry.channel === channel);
+  if (!manifestEntry) {
+    throw new TypeError(`Unsupported deposit channel: ${channel}`);
   }
+
+  return join(dirPath, 'channels', manifestEntry.presetFile);
 };
 
 export const loadDepositPresets = async ({
@@ -1493,26 +1546,31 @@ export const loadDepositPresets = async ({
   makeId: (prefix: string) => string;
 }): Promise<DepositPresetStore> => {
   const seed = createSeedDepositPresets(env, makeId);
-  const commonSource = await readJsonFile<DepositCommonConfig>(getCommonFilePath(dirPath));
+  const commonFilePath = getCommonFilePath(dirPath);
+  const commonSource = await readValidatedPresetJsonObject<DepositCommonConfig>(
+    commonFilePath,
+    validateDepositCommonProjection,
+  );
   const channels = await Promise.all(
-    DEPOSIT_CHANNELS.map(async (channel) => [channel, await readJsonFile<DepositChannelConfig>(getChannelFilePath(dirPath, channel))] as const),
+    DEPOSIT_CHANNELS.map(async (channel) => {
+      const filePath = getChannelFilePath(dirPath, channel);
+      const source = await readValidatedPresetJsonObject<DepositChannelConfig>(
+        filePath,
+        validateDepositChannelProjection,
+      );
+
+      return [channel, source] as const;
+    }),
   );
 
   return normalizeDepositPresets(
     {
-      common: commonSource || seed.common,
-      // channels: Object.fromEntries(channels) as Partial<Record<DepositChannel, DepositChannelConfig>>,
+      common: commonSource,
       channels: Object.fromEntries(channels) as Record<DepositChannel, DepositChannelConfig>,
-
     },
     env,
     makeId,
   );
-};
-
-const writeJson = async (filePath: string, value: unknown): Promise<void> => {
-  await mkdir(dirname(filePath), { recursive: true });
-  await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 };
 
 export const saveDepositPresets = async ({
@@ -1523,14 +1581,14 @@ export const saveDepositPresets = async ({
   presets: DepositPresetStore;
 }): Promise<void> => {
   const { merchantRef: _merchantRef, ...persistentCommonValues } = presets.common.values;
-  await writeJson(getCommonFilePath(dirPath), {
+  await writePresetJsonObject(getCommonFilePath(dirPath), {
     ...presets.common,
     values: persistentCommonValues,
   });
 
   await Promise.all(
     DEPOSIT_CHANNELS.map((channel) =>
-      writeJson(getChannelFilePath(dirPath, channel), {
+      writePresetJsonObject(getChannelFilePath(dirPath, channel), {
         ...presets.channels[channel],
         commonValues: stripTransientMerchantReferenceKeys(presets.channels[channel].commonValues),
         values: stripTransientMerchantReferenceKeys(presets.channels[channel].values),
@@ -1589,11 +1647,11 @@ export const updateDepositPreset = async ({
   };
 
   const { merchantRef: _merchantRef, ...persistentCommonValues } = presets.common.values;
-  await writeJson(getCommonFilePath(dirPath), {
+  await writePresetJsonObject(getCommonFilePath(dirPath), {
     ...presets.common,
     values: persistentCommonValues,
   });
-  await writeJson(getChannelFilePath(dirPath, channel), {
+  await writePresetJsonObject(getChannelFilePath(dirPath, channel), {
     ...presets.channels[channel],
     commonValues: stripTransientMerchantReferenceKeys(presets.channels[channel].commonValues),
     values: persistentChannelValues,

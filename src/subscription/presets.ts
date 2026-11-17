@@ -1,8 +1,8 @@
-import { mkdir, readFile, writeFile } from 'fs/promises';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import {
   resolveSubscriptionApiKey,
   resolveSubscriptionPlan,
+  SUBSCRIPTION_CHANNEL_MANIFEST,
   SUBSCRIPTION_CHANNELS,
   type CliEnv,
   type SubscriptionChannel,
@@ -10,15 +10,23 @@ import {
 import {
   stripTransientMerchantReferenceKeys,
   type PersistentPresetProjection,
+  writePresetJsonObject,
 } from '../core/presetStorage';
+import {
+  isNonBlankPresetString,
+  isPresetJsonObject,
+  readValidatedPresetJsonObject,
+} from '../core/presetValidation';
 import type { TargetEnvironment } from '../core/targetEnvironment';
 import type {
   SubscriptionChannelValues,
   SubscriptionCommonValues,
+  SubscriptionFormValues,
+} from '../domains/subscription';
+import type {
   SubscriptionDefaultsResponse,
   SubscriptionFieldMap,
   SubscriptionFieldSchema,
-  SubscriptionFormValues,
 } from './web';
 
 const merchantReferenceKey = 'merchant_ref';
@@ -85,6 +93,80 @@ const COMMON_SCHEMA: SubscriptionFieldMap = {
   returnUrl: textField('Return URL', true),
 };
 
+const REQUIRED_SUBSCRIPTION_STRING_KEYS = [
+  'interval_unit',
+  'product_detail',
+  'product_name',
+  'consumer_id',
+  'origin',
+] as const;
+
+const isFinitePresetNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+const validateSubscriptionCommonProjection = (source: Record<string, unknown>): string | undefined => {
+  if (!isNonBlankPresetString(source[returnUrlKey])) {
+    return 'Subscription common preset return_url must be a non-blank string.';
+  }
+
+  const merchantReference = source[merchantReferenceKey];
+  if (merchantReference !== undefined && !isNonBlankPresetString(merchantReference)) {
+    return 'Subscription common preset merchant_ref must be a non-blank string when provided.';
+  }
+
+  return undefined;
+};
+
+const validateSubscriptionChannelProjection = (source: Record<string, unknown>): string | undefined => {
+  if (!isPresetJsonObject(source.amount)) {
+    return 'Subscription channel amount must be an object.';
+  }
+
+  if (!isNonBlankPresetString(source.amount.amount)) {
+    return 'Subscription channel amount.amount must be a non-blank string.';
+  }
+
+  if (!isNonBlankPresetString(source.amount.currency_code)) {
+    return 'Subscription channel amount.currency_code must be a non-blank string.';
+  }
+
+  for (const key of REQUIRED_SUBSCRIPTION_STRING_KEYS) {
+    if (!isNonBlankPresetString(source[key])) {
+      return `Subscription channel ${key} must be a non-blank string.`;
+    }
+  }
+
+  if (!isFinitePresetNumber(source.interval_count)) {
+    return 'Subscription channel interval_count must be a finite number.';
+  }
+
+  if (!isFinitePresetNumber(source.times)) {
+    return 'Subscription channel times must be a finite number.';
+  }
+
+  if (!isPresetJsonObject(source.consumer_profile)) {
+    return 'Subscription channel consumer_profile must be an object.';
+  }
+
+  for (const key of ['name', 'phone', 'email', 'country_code'] as const) {
+    if (!isNonBlankPresetString(source.consumer_profile[key])) {
+      return `Subscription channel consumer_profile.${key} must be a non-blank string.`;
+    }
+  }
+
+  if (!isPresetJsonObject(source.payment_instrument)) {
+    return 'Subscription channel payment_instrument must be an object.';
+  }
+
+  for (const key of ['os_type', 'terminal_type'] as const) {
+    if (!isNonBlankPresetString(source.payment_instrument[key])) {
+      return `Subscription channel payment_instrument.${key} must be a non-blank string.`;
+    }
+  }
+
+  return undefined;
+};
+
 const prettifyLabel = (value: string): string =>
   value
     .split('_')
@@ -142,24 +224,16 @@ const getSeedCommonConfig = (
   },
 });
 
-const getChannelPayloadFilePath = (dirPath: string, channel: SubscriptionChannel): string =>
-  join(dirPath, 'channels', `${channel}.json`);
+const getChannelPayloadFilePath = (dirPath: string, channel: SubscriptionChannel): string => {
+  const manifestEntry = SUBSCRIPTION_CHANNEL_MANIFEST.find((entry) => entry.channel === channel);
+  if (!manifestEntry) {
+    throw new TypeError(`Unsupported subscription channel: ${channel}`);
+  }
+
+  return join(dirPath, 'channels', manifestEntry.presetFile);
+};
 
 const getCommonFilePath = (dirPath: string): string => join(dirPath, 'common.json');
-
-const readJsonFile = async <T>(filePath: string): Promise<T | null> => {
-  try {
-    const content = await readFile(filePath, 'utf8');
-    return JSON.parse(content) as T;
-  } catch {
-    return null;
-  }
-};
-
-const writeJson = async (filePath: string, value: unknown): Promise<void> => {
-  await mkdir(dirname(filePath), { recursive: true });
-  await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
-};
 
 const fromCommonFile = (source: Record<string, unknown> | null): Partial<SubscriptionCommonConfig> => ({
   values: {
@@ -178,7 +252,10 @@ const getSeedChannelConfig = async (
   dirPath: string,
   channel: SubscriptionChannel,
 ): Promise<SubscriptionChannelConfig> => {
-  const payload = (await readJsonFile<Record<string, unknown>>(getChannelPayloadFilePath(dirPath, channel))) || {};
+  const payload = await readValidatedPresetJsonObject<Record<string, unknown>>(
+    getChannelPayloadFilePath(dirPath, channel),
+    validateSubscriptionChannelProjection,
+  );
   const channelValues = stripTransientMerchantReferenceKeys(stripReadonlyChannelValues(payload));
 
   return {
@@ -338,8 +415,12 @@ export const loadSubscriptionPresets = async ({
   makeId: (prefix: string) => string;
 }): Promise<SubscriptionPresetStore> => {
   const seed = await createSeedSubscriptionPresets({ dirPath, env, makeId });
+  const commonFilePath = getCommonFilePath(dirPath);
   const commonSource = fromCommonFile(
-    await readJsonFile<Record<string, unknown>>(getCommonFilePath(dirPath)),
+    await readValidatedPresetJsonObject<Record<string, unknown>>(
+      commonFilePath,
+      validateSubscriptionCommonProjection,
+    ),
   );
 
   return normalizeSubscriptionPresets(
@@ -393,8 +474,8 @@ export const updateSubscriptionPreset = async ({
   const seed = await createSeedSubscriptionPresets({ dirPath, env, makeId });
   const normalized = normalizeSubscriptionPresets(source, seed);
 
-  await writeJson(getCommonFilePath(dirPath), toCommonFile(normalized.common));
-  await writeJson(getChannelPayloadFilePath(dirPath, channel), persistentChannelValues);
+  await writePresetJsonObject(getCommonFilePath(dirPath), toCommonFile(normalized.common));
+  await writePresetJsonObject(getChannelPayloadFilePath(dirPath, channel), persistentChannelValues);
 
   return normalized;
 };

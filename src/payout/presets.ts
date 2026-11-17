@@ -1,6 +1,6 @@
-import { mkdir, readFile, writeFile } from 'fs/promises';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import {
+  PAYOUT_CHANNEL_MANIFEST,
   PAYOUT_CHANNELS,
   resolvePayoutApiKey,
   type CliEnv,
@@ -9,14 +9,22 @@ import {
 import {
   stripTransientMerchantReferenceKeys,
   type PersistentPresetProjection,
+  writePresetJsonObject,
 } from '../core/presetStorage';
+import {
+  isNonBlankPresetString,
+  isPresetJsonObject,
+  readValidatedPresetJsonObject,
+} from '../core/presetValidation';
 import type {
   PayoutChannelValues,
   PayoutCommonValues,
+  PayoutFormValues,
+} from '../domains/payout';
+import type {
   PayoutDefaultsResponse,
   PayoutFieldMap,
   PayoutFieldSchema,
-  PayoutFormValues,
 } from './web';
 
 const merchantReferenceKey = 'merchant_reference';
@@ -71,6 +79,52 @@ const COMMON_SCHEMA: PayoutFieldMap = {
   merchantReference: textField('Merchant reference'),
 };
 
+const validatePayoutCommonProjection = (source: Record<string, unknown>): string | undefined => {
+  const merchantReference = source[merchantReferenceKey];
+
+  if (merchantReference !== undefined && !isNonBlankPresetString(merchantReference)) {
+    return 'Payout common preset merchant_reference must be a non-blank string when provided.';
+  }
+
+  return undefined;
+};
+
+const validatePayoutChannelProjection = (source: Record<string, unknown>): string | undefined => {
+  if (!isNonBlankPresetString(source.product_no)) {
+    return 'Payout channel product_no must be a non-blank string.';
+  }
+
+  if (!isPresetJsonObject(source.amount)) {
+    return 'Payout channel amount must be an object.';
+  }
+
+  if (!isNonBlankPresetString(source.amount.amount)) {
+    return 'Payout channel amount.amount must be a non-blank string.';
+  }
+
+  if (!isNonBlankPresetString(source.amount.currency_code)) {
+    return 'Payout channel amount.currency_code must be a non-blank string.';
+  }
+
+  if (!isPresetJsonObject(source.payout_info)) {
+    return 'Payout channel payout_info must be an object.';
+  }
+
+  if (!isPresetJsonObject(source.payout_info.beneficiary)) {
+    return 'Payout channel payout_info.beneficiary must be an object.';
+  }
+
+  if (!isNonBlankPresetString(source.payout_info.beneficiary.name)) {
+    return 'Payout channel beneficiary.name must be a non-blank string.';
+  }
+
+  if (!isNonBlankPresetString(source.payout_info.beneficiary.account_number)) {
+    return 'Payout channel beneficiary.account_number must be a non-blank string.';
+  }
+
+  return undefined;
+};
+
 const prettifyLabel = (value: string): string =>
   value
     .split('_')
@@ -116,24 +170,16 @@ const getSeedCommonConfig = (
   values: {},
 });
 
-const getChannelPayloadFilePath = (dirPath: string, channel: PayoutChannel): string =>
-  join(dirPath, 'channels', `${channel}.json`);
+const getChannelPayloadFilePath = (dirPath: string, channel: PayoutChannel): string => {
+  const manifestEntry = PAYOUT_CHANNEL_MANIFEST.find((entry) => entry.channel === channel);
+  if (!manifestEntry) {
+    throw new TypeError(`Unsupported payout channel: ${channel}`);
+  }
+
+  return join(dirPath, 'channels', manifestEntry.presetFile);
+};
 
 const getCommonFilePath = (dirPath: string): string => join(dirPath, 'common.json');
-
-const readJsonFile = async <T>(filePath: string): Promise<T | null> => {
-  try {
-    const content = await readFile(filePath, 'utf8');
-    return JSON.parse(content) as T;
-  } catch {
-    return null;
-  }
-};
-
-const writeJson = async (filePath: string, value: unknown): Promise<void> => {
-  await mkdir(dirname(filePath), { recursive: true });
-  await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
-};
 
 const fromCommonFile = (source: Record<string, unknown> | null): Partial<PayoutCommonConfig> => ({
   values: {
@@ -148,7 +194,10 @@ const getSeedChannelConfig = async (
   dirPath: string,
   channel: PayoutChannel,
 ): Promise<PayoutChannelConfig> => {
-  const payload = (await readJsonFile<Record<string, unknown>>(getChannelPayloadFilePath(dirPath, channel))) || {};
+  const payload = await readValidatedPresetJsonObject<Record<string, unknown>>(
+    getChannelPayloadFilePath(dirPath, channel),
+    validatePayoutChannelProjection,
+  );
   const channelValues = stripTransientMerchantReferenceKeys(payload);
 
   return {
@@ -283,8 +332,12 @@ export const loadPayoutPresets = async ({
   makeId: (prefix: string) => string;
 }): Promise<PayoutPresetStore> => {
   const seed = await createSeedPayoutPresets({ dirPath, makeId });
+  const commonFilePath = getCommonFilePath(dirPath);
   const commonSource = fromCommonFile(
-    await readJsonFile<Record<string, unknown>>(getCommonFilePath(dirPath)),
+    await readValidatedPresetJsonObject<Record<string, unknown>>(
+      commonFilePath,
+      validatePayoutCommonProjection,
+    ),
   );
 
   return normalizePayoutPresets(
@@ -311,11 +364,11 @@ export const savePayoutPresets = async ({
   dirPath: string;
   presets: PayoutPresetStore;
 }): Promise<void> => {
-  await writeJson(getCommonFilePath(dirPath), toCommonFile(presets.common));
+  await writePresetJsonObject(getCommonFilePath(dirPath), toCommonFile(presets.common));
 
   await Promise.all(
     PAYOUT_CHANNELS.map((channel) =>
-      writeJson(
+      writePresetJsonObject(
         getChannelPayloadFilePath(dirPath, channel),
         stripTransientMerchantReferenceKeys(presets.channels[channel].values),
       ),
@@ -352,8 +405,8 @@ export const updatePayoutPreset = async ({
     values: persistentChannelValues,
   };
 
-  await writeJson(getCommonFilePath(dirPath), toCommonFile(presets.common));
-  await writeJson(getChannelPayloadFilePath(dirPath, channel), persistentChannelValues);
+  await writePresetJsonObject(getCommonFilePath(dirPath), toCommonFile(presets.common));
+  await writePresetJsonObject(getChannelPayloadFilePath(dirPath, channel), persistentChannelValues);
 
   return presets;
 };
