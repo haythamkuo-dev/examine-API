@@ -1444,6 +1444,11 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
     schema: clone(JCB_SCHEMA),
     values: { payment_order: { collect: { country_code: 'JP', product_detail: 'Collect order for %s', product_name: 'JCB for JPY', shopper_reference: 'CUSTOMER_001', origin: 'merchant.example.com' } } },
   },
+  'PAYPAY-JPY': {
+    commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-PAYPAY-JPY', amount: '1000', currencyCode: 'JPY' },
+    schema: clone(EMPTY_COLLECT_SCHEMA),
+    values: { payment_order: { collect: {} } },
+  },
   'ALIPAY-CNY': {
     commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-ALIPAYCN-CNY', amount: '188.00', currencyCode: 'CNY' },
     schema: clone(SIMPLE_COLLECT_SCHEMA),

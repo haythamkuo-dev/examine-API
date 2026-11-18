@@ -24,6 +24,7 @@
 │   │   │   ├── ALIPAY-HKD.json
 │   │   │   ├── JCB-JPY.json
 │   │   │   ├── JCB-USD.json
+│   │   │   ├── PAYPAY-JPY.json
 │   │   │   ├── WECHAT-6013.json
 │   │   │   ├── WECHAT-6016-USD.json
 │   │   │   ├── WECHAT-6016.json
@@ -252,4 +253,4 @@
     │       └── modal.tsx
     └── styles.css
 
-31 directories, 222 files
+31 directories, 223 files

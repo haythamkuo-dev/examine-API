@@ -33,6 +33,7 @@ export const DEPOSIT_CHANNEL_LABELS: Partial<Record<DepositChannel, string>> = {
   duitnowqr_usd: 'DUITNOW-Collect-USD',
   'JCB-USD': 'collect_USD 指定通道',
   'JCB-JPY': 'collect_JPY 指定通道',
+  'PAYPAY-JPY': 'PAYPAY-JPY',
   'ALIPAY-CNY': 'collect_CNY 通道',
   'ALIPAY-HKD': 'collect_HKD 通道',
   'WECHAT-HKD': 'collect_HKD 補充通道',

@@ -154,6 +154,14 @@ describe('deposit web helpers', () => {
     expect(result.channels['JCB-JPY'].values).toMatchObject({
       payment_order: { collect: { country_code: 'JP', product_name: 'JCB for JPY' } },
     });
+    expect(result.channels['PAYPAY-JPY'].commonValues).toEqual({
+      productNo: 'DEP-FUTUREPAY_COLLECT-PAYPAY-JPY',
+      amount: '1000',
+      currencyCode: 'JPY',
+    });
+    expect(result.channels['PAYPAY-JPY'].values).toEqual({
+      payment_order: { collect: {} },
+    });
     expect(result.channels['ALIPAY-CNY'].values).toMatchObject({
       payment_order: { collect: { country_code: 'CN', product_name: 'aliPay for CNY' } },
     });
@@ -522,6 +530,25 @@ describe('deposit web helpers', () => {
     expect(payload.return_url).toBe('https://merchant.example.com/deposit');
     expect(payload.payment_order).toMatchObject({
       collect: { country_code: 'US', product_name: 'JCB for USD' },
+    });
+  });
+
+  test('builds the PayPay JPY request with an empty collect payload', () => {
+    const defaults = toDepositDefaultsResponse(
+      'PAYPAY-JPY',
+      env,
+      createSeedDepositPresets(env, makeId),
+    );
+    const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+    const payload = request.payload as Record<string, unknown>;
+
+    expect(request.headers?.Authorization).toBe('ApiKey default-token');
+    expect(payload).toMatchObject({
+      product_no: 'DEP-FUTUREPAY_COLLECT-PAYPAY-JPY',
+      merchant_ref: 'TEST_ORDER_fixed-id',
+      amount: { amount: '1000', currency_code: 'JPY' },
+      return_url: 'https://merchant.example.com/deposit',
+      payment_order: { collect: {} },
     });
   });
 

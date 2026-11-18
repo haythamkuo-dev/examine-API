@@ -266,6 +266,7 @@ describe('DepositPage', () => {
     expect(within(channelSelect).getByRole('option', { name: '南非卡' })).toHaveValue('southafrica_cards');
     expect(within(channelSelect).getByRole('option', { name: '巴西pix支付' })).toHaveValue('pix_brl');
     expect(getDepositChannelLabel('pix_brl')).toBe('巴西pix支付');
+    expect(getDepositChannelLabel('PAYPAY-JPY')).toBe('PAYPAY-JPY');
     expect(getDepositChannelLabel('id_dana_usd')).toBe('DANA-Single-USD');
     expect(getDepositChannelLabel('duitnowqr_usd')).toBe('DUITNOW-Collect-USD');
     expect(getDepositChannelLabel('co_nequi_usd')).toBe('哥倫比亞nequi-USD');
