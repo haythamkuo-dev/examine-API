@@ -272,7 +272,7 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
         shopper_email: 'payer@example.com',
         holder_name: 'Payer Name',
         telephone_number: '573001234567',
-        bank_name: '<TEST_BANK_CODE>',
+        bank_name: '1001',
         tax_type: 'CC',
         personal_tax_id: '36570630563',
         origin: 'https://merchant.example.com',
