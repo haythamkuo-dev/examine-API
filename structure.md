@@ -34,7 +34,10 @@
 │   │   │   ├── co_bank_transfer.json
 │   │   │   ├── co_cash.json
 │   │   │   ├── co_nequi.json
+│   │   │   ├── co_nequi_usd.json
+│   │   │   ├── co_nequi_usd2.json
 │   │   │   ├── co_pse.json
+│   │   │   ├── co_pse_usd.json
 │   │   │   ├── duitnowqr_usd.json
 │   │   │   ├── ez-intercard-hkd.json
 │   │   │   ├── ez-intercard-jpy.json
@@ -76,6 +79,7 @@
 │   │   │   ├── my_tng_usd.json
 │   │   │   ├── my_tng_usd2.json
 │   │   │   ├── pix_brl.json
+│   │   │   ├── skrill_usd.json
 │   │   │   ├── southafrica_cards.json
 │   │   │   ├── th_kplus_usd.json
 │   │   │   ├── th_rabbit_linepay.json
@@ -101,14 +105,23 @@
 │   ├── ai_code_review_guide.md
 │   ├── ai_design_doc_writing.md
 │   ├── ai_reference.md
+│   ├── issue
+│   │   ├── postgres-preset-missing-row-fallback.md
+│   │   └── server-typecheck-errors.md
+│   ├── review
+│   │   ├── 2026-11-17-loki-product-family-variants-parity.md
+│   │   └── pending-dev-review.md
 │   ├── todos
-│   │   └── 2026-10-22-preset-database-migration.md
+│   │   ├── 2026-10-22-preset-database-migration.md
+│   │   ├── 2026-11-13-backend-data-flow-decoupling.md
+│   │   └── 2026-11-17-loki-product-family-variants-refactor.md
 │   └── writing
 │       └── query_merchant_turnover.sh
 ├── index.html
 ├── package.json
 ├── scripts
-│   └── database.ts
+│   ├── database.ts
+│   └── deposit-presets-parity.ts
 ├── src
 │   ├── core
 │   │   ├── codeFormatValidation.ts
@@ -119,21 +132,25 @@
 │   │   ├── database.ts
 │   │   ├── databaseMigrations.test.ts
 │   │   ├── databaseMigrations.ts
+│   │   ├── env.test.ts
 │   │   ├── env.ts
 │   │   ├── formValidation.ts
 │   │   ├── integrationDatabase.test.ts
 │   │   ├── integrationDatabase.ts
 │   │   ├── output.ts
+│   │   ├── postgresPresetStorage.ts
 │   │   ├── presetAudit.test.ts
 │   │   ├── presetAudit.ts
 │   │   ├── presetStorage.test.ts
 │   │   ├── presetStorage.ts
+│   │   ├── presetValidation.ts
 │   │   └── targetEnvironment.ts
 │   ├── deposit
 │   │   ├── failureHint.ts
 │   │   ├── presets.ts
 │   │   ├── service.test.ts
 │   │   ├── service.ts
+│   │   ├── storage.ts
 │   │   ├── validation.test.ts
 │   │   ├── validation.ts
 │   │   ├── web.test.ts
@@ -145,12 +162,12 @@
 │   ├── payout
 │   │   ├── presets.ts
 │   │   ├── service.ts
+│   │   ├── storage.ts
 │   │   ├── validation.test.ts
 │   │   ├── validation.ts
 │   │   ├── web.test.ts
 │   │   └── web.ts
 │   ├── runner.ts
-│   ├── schema
 │   ├── server
 │   │   ├── errors.test.ts
 │   │   ├── errors.ts
@@ -168,6 +185,7 @@
 │   ├── subscription
 │   │   ├── presets.ts
 │   │   ├── service.ts
+│   │   ├── storage.ts
 │   │   ├── validation.test.ts
 │   │   ├── validation.ts
 │   │   ├── web.test.ts
@@ -187,7 +205,9 @@
 │   └── web-setup.ts
 ├── tsconfig.json
 ├── tsconfig.server.json
+├── tsconfig.server.tsbuildinfo
 ├── tsconfig.web.json
+├── tsconfig.web.tsbuildinfo
 ├── vite.config.ts
 └── web
     ├── App.test.tsx
@@ -232,4 +252,4 @@
     │       └── modal.tsx
     └── styles.css
 
-30 directories, 203 files
+31 directories, 222 files

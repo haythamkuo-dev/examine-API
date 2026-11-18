@@ -216,6 +216,32 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  co_nequi_usd: {
+    product_no: 'DEP-FUTUREPAY_COLLECT-CONEQUICO-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {},
+    },
+  },
+  co_nequi_usd2: {
+    product_no: 'DEP-SINGLEPAYMENT-NEQUICO-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      country_code: 'CO',
+      product_detail: 'Nequico USD test order',
+      singlepayment_nequico: {
+        shopper_email: 'payer@example.com',
+        holder_name: 'Payer Name',
+        telephone_number: '573001234567',
+        tax_type: 'CC',
+        personal_tax_id: '1020870281',
+        origin: 'https://merchant.example.com',
+        shopper_reference: 'PAYER-001',
+      },
+    },
+  },
   co_pse: {
     product_no: 'DEP-SINGLEPAYMENT-PSECO-COP',
     amount: { amount: '1000', currency_code: 'COP' },
@@ -232,6 +258,36 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
         personal_tax_id: '36570630563',
         origin: 'merchant.example.com',
         shopper_reference: 'CUSTOMER_001',
+      },
+    },
+  },
+  co_pse_usd: {
+    product_no: 'DEP-SINGLEPAYMENT-PSECO-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      country_code: 'CO',
+      product_detail: 'PSE USD test order',
+      singlepayment_pseco: {
+        shopper_email: 'payer@example.com',
+        holder_name: 'Payer Name',
+        telephone_number: '573001234567',
+        bank_name: '<TEST_BANK_CODE>',
+        tax_type: 'CC',
+        personal_tax_id: '36570630563',
+        origin: 'https://merchant.example.com',
+        shopper_reference: 'PAYER-001',
+      },
+    },
+  },
+  skrill_usd: {
+    product_no: 'DEP-FUTUREPAY_COLLECT-SKRILL-USD',
+    amount: { amount: '10.00', currency_code: 'USD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        shopper_email: 'payer@example.com',
+        holder_name: 'Jane Doe',
       },
     },
   },

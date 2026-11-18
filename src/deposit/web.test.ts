@@ -74,6 +74,74 @@ describe('deposit web helpers', () => {
     expect(result.common.values.returnUrl).toBe('https://merchant.example.com/deposit');
   });
 
+  test('builds the new Colombia USD and Skrill product payloads from their presets', () => {
+    const presets = createSeedDepositPresets(env, makeId);
+    const cases = [
+      {
+        channel: 'co_nequi_usd',
+        productNo: 'DEP-FUTUREPAY_COLLECT-CONEQUICO-USD',
+        paymentOrder: { collect: {} },
+      },
+      {
+        channel: 'co_nequi_usd2',
+        productNo: 'DEP-SINGLEPAYMENT-NEQUICO-USD',
+        paymentOrder: {
+          country_code: 'CO',
+          product_detail: 'Nequico USD test order',
+          singlepayment_nequico: {
+            shopper_email: 'payer@example.com',
+            holder_name: 'Payer Name',
+            telephone_number: '573001234567',
+            tax_type: 'CC',
+            personal_tax_id: '1020870281',
+            origin: 'https://merchant.example.com',
+            shopper_reference: 'PAYER-001',
+          },
+        },
+      },
+      {
+        channel: 'co_pse_usd',
+        productNo: 'DEP-SINGLEPAYMENT-PSECO-USD',
+        paymentOrder: {
+          country_code: 'CO',
+          product_detail: 'PSE USD test order',
+          singlepayment_pseco: {
+            shopper_email: 'payer@example.com',
+            holder_name: 'Payer Name',
+            telephone_number: '573001234567',
+            bank_name: '<TEST_BANK_CODE>',
+            tax_type: 'CC',
+            personal_tax_id: '36570630563',
+            origin: 'https://merchant.example.com',
+            shopper_reference: 'PAYER-001',
+          },
+        },
+      },
+      {
+        channel: 'skrill_usd',
+        productNo: 'DEP-FUTUREPAY_COLLECT-SKRILL-USD',
+        paymentOrder: {
+          collect: {
+            shopper_email: 'payer@example.com',
+            holder_name: 'Jane Doe',
+          },
+        },
+      },
+    ] as const;
+
+    for (const product of cases) {
+      const defaults = toDepositDefaultsResponse(product.channel, env, presets);
+      const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+
+      expect(request.payload).toMatchObject({
+        product_no: product.productNo,
+        amount: { amount: '10.00', currency_code: 'USD' },
+        return_url: 'https://merchant.example.com/deposit',
+        payment_order: product.paymentOrder,
+      });
+    }
+  });
+
   // Regional Loki presets share one product contract; retain canonical and special variants only.
   test('includes deposit channel presets and representative Loki variants', () => {
     const result = createSeedDepositPresets(env, makeId);

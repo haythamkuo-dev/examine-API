@@ -492,6 +492,21 @@ const EMAIL_COLLECT_SCHEMA: DepositFieldMap = {
   }),
 };
 
+const EMPTY_COLLECT_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {}),
+  }),
+};
+
+const SKRILL_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {
+      shopper_email: textField('Shopper email', true),
+      holder_name: textField('Holder name', true),
+    }),
+  }),
+};
+
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const getSeedCommonConfig = (env: CliEnv, makeId: (prefix: string) => string): DepositCommonConfig => ({
@@ -988,6 +1003,42 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       },
     },
   },
+  co_nequi_usd: {
+    commonValues: {
+      productNo: 'DEP-FUTUREPAY_COLLECT-CONEQUICO-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(EMPTY_COLLECT_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {},
+      },
+    },
+  },
+  co_nequi_usd2: {
+    commonValues: {
+      productNo: 'DEP-SINGLEPAYMENT-NEQUICO-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(CO_NEQUI_SCHEMA),
+    values: {
+      payment_order: {
+        country_code: 'CO',
+        product_detail: 'Nequico USD test order',
+        singlepayment_nequico: {
+          shopper_email: 'payer@example.com',
+          holder_name: 'Payer Name',
+          telephone_number: '573001234567',
+          tax_type: 'CC',
+          personal_tax_id: '1020870281',
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'PAYER-001',
+        },
+      },
+    },
+  },
   co_pse: {
     commonValues: {
       productNo: 'DEP-SINGLEPAYMENT-PSECO-COP',
@@ -1008,6 +1059,46 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
           personal_tax_id: '36570630563',
           origin: 'merchant.example.com',
           shopper_reference: 'CUSTOMER_001',
+        },
+      },
+    },
+  },
+  co_pse_usd: {
+    commonValues: {
+      productNo: 'DEP-SINGLEPAYMENT-PSECO-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(CO_PSE_SCHEMA),
+    values: {
+      payment_order: {
+        country_code: 'CO',
+        product_detail: 'PSE USD test order',
+        singlepayment_pseco: {
+          shopper_email: 'payer@example.com',
+          holder_name: 'Payer Name',
+          telephone_number: '573001234567',
+          bank_name: '<TEST_BANK_CODE>',
+          tax_type: 'CC',
+          personal_tax_id: '36570630563',
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'PAYER-001',
+        },
+      },
+    },
+  },
+  skrill_usd: {
+    commonValues: {
+      productNo: 'DEP-FUTUREPAY_COLLECT-SKRILL-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(SKRILL_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          shopper_email: 'payer@example.com',
+          holder_name: 'Jane Doe',
         },
       },
     },
