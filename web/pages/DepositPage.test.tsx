@@ -268,6 +268,10 @@ describe('DepositPage', () => {
     expect(getDepositChannelLabel('pix_brl')).toBe('巴西pix支付');
     expect(getDepositChannelLabel('id_dana_usd')).toBe('DANA-Single-USD');
     expect(getDepositChannelLabel('duitnowqr_usd')).toBe('DUITNOW-Collect-USD');
+    expect(getDepositChannelLabel('co_nequi_usd')).toBe('哥倫比亞nequi-USD');
+    expect(getDepositChannelLabel('co_nequi_usd2')).toBe('nequi-single-USD');
+    expect(getDepositChannelLabel('co_pse_usd')).toBe('pse-single-USD');
+    expect(getDepositChannelLabel('skrill_usd')).toBe('skrill-USD');
     expect(getDepositChannelLabel('my_tng_usd')).toBe('馬來西亞-tng-single-美金');
     expect(getDepositChannelLabel('my_boost_usd')).toBe('馬來西亞-boost-USD');
     expect(getDepositChannelLabel('my_tng_usd2')).toBe('馬來西亞-tng-collect-美金');

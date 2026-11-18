@@ -1,0 +1,45 @@
+{
+  "commonValues": {
+    "productNo": "DEP-SINGLEPAYMENT-NEQUICO-USD",
+    "amount": "10.00",
+    "currencyCode": "USD"
+  },
+  "schema": {
+    "payment_order": {
+      "kind": "object",
+      "label": "Payment order",
+      "fields": {
+        "country_code": { "kind": "text", "label": "Country code", "required": true },
+        "product_detail": { "kind": "textarea", "label": "Product detail", "required": true },
+        "singlepayment_nequico": {
+          "kind": "object",
+          "label": "Nequi",
+          "fields": {
+            "shopper_email": { "kind": "text", "label": "Shopper email", "required": true },
+            "holder_name": { "kind": "text", "label": "Holder name", "required": true },
+            "telephone_number": { "kind": "text", "label": "Telephone number", "required": true },
+            "tax_type": { "kind": "text", "label": "Tax type", "required": true },
+            "personal_tax_id": { "kind": "text", "label": "Personal tax ID", "required": true },
+            "origin": { "kind": "text", "label": "Origin", "required": true },
+            "shopper_reference": { "kind": "text", "label": "Shopper reference", "required": true }
+          }
+        }
+      }
+    }
+  },
+  "values": {
+    "payment_order": {
+      "country_code": "CO",
+      "product_detail": "Nequico USD test order",
+      "singlepayment_nequico": {
+        "shopper_email": "payer@example.com",
+        "holder_name": "Payer Name",
+        "telephone_number": "573001234567",
+        "tax_type": "CC",
+        "personal_tax_id": "1020870281",
+        "origin": "https://merchant.example.com",
+        "shopper_reference": "PAYER-001"
+      }
+    }
+  }
+}

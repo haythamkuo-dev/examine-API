@@ -578,6 +578,10 @@ describe('deposit API routes', () => {
     const form = body.form as Record<string, unknown>;
     const commonValues = form.commonValues as Record<string, unknown>;
     const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
 
     expect(body.channel).toBe('loki-applepay-jp-jpy');
     expect(commonValues).toMatchObject({
@@ -590,9 +594,11 @@ describe('deposit API routes', () => {
       payment_order: {
         collect: {
           product_name: 'Apple Pay Japan Test',
+          telephone_number: '+819012345678',
         },
       },
     });
+    expect(collectFields.telephone_number).toMatchObject({ required: true });
   });
 
   test('GET /api/deposit/defaults returns the Mexico SPEI USD defaults with only shopper email required', async () => {

@@ -492,6 +492,21 @@ const EMAIL_COLLECT_SCHEMA: DepositFieldMap = {
   }),
 };
 
+const EMPTY_COLLECT_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {}),
+  }),
+};
+
+const SKRILL_SCHEMA: DepositFieldMap = {
+  payment_order: objectField('Payment order', {
+    collect: objectField('Collect payload', {
+      shopper_email: textField('Shopper email', true),
+      holder_name: textField('Holder name', true),
+    }),
+  }),
+};
+
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const getSeedCommonConfig = (env: CliEnv, makeId: (prefix: string) => string): DepositCommonConfig => ({
@@ -501,7 +516,311 @@ const getSeedCommonConfig = (env: CliEnv, makeId: (prefix: string) => string): D
   },
 });
 
+type DepositChannelCommonValues = Pick<DepositCommonValues, 'productNo' | 'amount' | 'currencyCode'>;
+
+type LokiIntercardChannel = Extract<DepositChannel, `loki-intercard-${string}`>;
+type GooglePayChannel = Extract<DepositChannel, 'googlepay_usd' | `loki-googlepay-${string}`>;
+type ApplePayChannel = Extract<DepositChannel, `loki-applepay-${string}`>;
+
+type DepositFamilyBase = {
+  schema: DepositFieldMap;
+  values: DepositChannelValues;
+};
+
+type DepositFamilyVariant<Channel extends DepositChannel = DepositChannel> = {
+  channel: Channel;
+  commonValues: DepositChannelCommonValues;
+  schema?: DepositFieldMap;
+  values?: DepositChannelValues;
+};
+
+const createFamilyChannelConfigs = <FamilyChannel extends DepositChannel>(
+  familyName: string,
+  base: DepositFamilyBase,
+  variants: readonly DepositFamilyVariant<FamilyChannel>[],
+): Record<FamilyChannel, DepositChannelConfig> => {
+  const configs: Partial<Record<FamilyChannel, DepositChannelConfig>> = {};
+
+  for (const variant of variants) {
+    if (configs[variant.channel]) {
+      throw new TypeError(`Duplicate ${familyName} deposit variant: ${variant.channel}`);
+    }
+
+    configs[variant.channel] = {
+      commonValues: clone(variant.commonValues),
+      schema: clone(variant.schema ?? base.schema),
+      values: clone(variant.values ?? base.values),
+    };
+  }
+
+  return configs as Record<FamilyChannel, DepositChannelConfig>;
+};
+
+const LOKI_INTERCARD_FAMILY: DepositFamilyBase = {
+  schema: EMAIL_COLLECT_SCHEMA,
+  values: {
+    payment_order: {
+      collect: {
+        shopper_email: 'test@example.com',
+      },
+    },
+  },
+};
+
+const LOKI_INTERCARD_VARIANTS = [
+  {
+    channel: 'loki-intercard-usd',
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDMY-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-intercard-sg-usd',
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDSG-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-intercard-vn-usd',
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDVN-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-intercard-th-usd',
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDTH-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-intercard-ph-usd',
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDPH-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-intercard-id-usd',
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDID-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-intercard-hk-usd',
+    commonValues: { productNo: 'DEP-LOKI-INTERCARDHK-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+] satisfies readonly DepositFamilyVariant<LokiIntercardChannel>[];
+
+const GOOGLEPAY_FAMILY: DepositFamilyBase = {
+  schema: {},
+  values: {},
+};
+
+const GOOGLEPAY_VARIANTS = [
+  {
+    channel: 'googlepay_usd',
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAY-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-googlepay-my-usd',
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYMY-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-googlepay-sg-usd',
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYSG-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-googlepay-vn-usd',
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYVN-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-googlepay-th-usd',
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYTH-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-googlepay-ph-usd',
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYPH-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-googlepay-id-usd',
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYID-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-googlepay-hk-usd',
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYHK-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-googlepay-jp-jpy',
+    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYJP-JPY', amount: '100', currencyCode: 'JPY' },
+    schema: GOOGLEPAY_JP_SCHEMA,
+    values: {
+      payment_order: {
+        collect: {
+          product_name: 'Google Pay Japan Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+819012345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    },
+  },
+] satisfies readonly DepositFamilyVariant<GooglePayChannel>[];
+
+type ApplePayCollectValues = Record<string, string>;
+
+type ApplePayPaymentOrderValues = {
+  collect: ApplePayCollectValues;
+  [key: string]: unknown;
+};
+
+type ApplePayValues = {
+  checkout_url_type: string;
+  payment_order: ApplePayPaymentOrderValues;
+  [key: string]: unknown;
+};
+
+type ApplePayValuesOverride = {
+  payment_order: {
+    collect: {
+      product_name: string;
+      telephone_number: string;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+};
+
+type ApplePayVariant = Omit<DepositFamilyVariant<ApplePayChannel>, 'channel' | 'schema' | 'values'> & {
+  values: ApplePayValuesOverride;
+};
+
+const APPLEPAY_FAMILY_VALUES: ApplePayValues = {
+  checkout_url_type: 'direct',
+  payment_order: {
+    collect: {
+      product_detail: 'Test order for %s',
+      shopper_reference: 'shopper-test-001',
+      shopper_email: 'shopper@example.com',
+      origin: 'https://merchant.example.com',
+    },
+  },
+};
+
+const APPLEPAY_FAMILY: DepositFamilyBase = {
+  schema: APPLEPAY_SCHEMA,
+  values: APPLEPAY_FAMILY_VALUES,
+};
+
+const APPLEPAY_VARIANTS = {
+  'loki-applepay-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAY-USD', amount: '10.00', currencyCode: 'USD' },
+    values: {
+      payment_order: { collect: { product_name: 'Apple Pay USD Test', telephone_number: '+14155550100' } },
+    },
+  },
+  'loki-applepay-my-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYMY-USD', amount: '10.00', currencyCode: 'USD' },
+    values: {
+      payment_order: { collect: { product_name: 'Apple Pay Malaysia Test', telephone_number: '+60123456789' } },
+    },
+  },
+  'loki-applepay-ph-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYPH-USD', amount: '10.00', currencyCode: 'USD' },
+    values: {
+      payment_order: { collect: { product_name: 'Apple Pay Philippines Test', telephone_number: '+639123456789' } },
+    },
+  },
+  'loki-applepay-sg-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYSG-USD', amount: '10.00', currencyCode: 'USD' },
+    values: {
+      payment_order: { collect: { product_name: 'Apple Pay Singapore Test', telephone_number: '+6591234567' } },
+    },
+  },
+  'loki-applepay-th-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYTH-USD', amount: '10.00', currencyCode: 'USD' },
+    values: {
+      payment_order: { collect: { product_name: 'Apple Pay Thailand Test', telephone_number: '+66812345678' } },
+    },
+  },
+  'loki-applepay-vn-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYVN-USD', amount: '10.00', currencyCode: 'USD' },
+    values: {
+      payment_order: { collect: { product_name: 'Apple Pay Vietnam Test', telephone_number: '+84912345678' } },
+    },
+  },
+  'loki-applepay-hk-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYHK-USD', amount: '10.00', currencyCode: 'USD' },
+    values: {
+      payment_order: { collect: { product_name: 'Apple Pay Hong Kong Test', telephone_number: '+85291234567' } },
+    },
+  },
+  'loki-applepay-id-usd': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYID-USD', amount: '10.00', currencyCode: 'USD' },
+    values: {
+      payment_order: { collect: { product_name: 'Apple Pay Indonesia Test', telephone_number: '+6281234567890' } },
+    },
+  },
+  'loki-applepay-jp-jpy': {
+    commonValues: { productNo: 'DEP-LOKI-APPLEPAYJP-JPY', amount: '100', currencyCode: 'JPY' },
+    values: {
+      payment_order: { collect: { product_name: 'Apple Pay Japan Test', telephone_number: '+819012345678' } },
+    },
+  },
+} satisfies Record<ApplePayChannel, ApplePayVariant>;
+
+const composeApplePayValues = (variant: ApplePayVariant): DepositChannelValues => {
+  const familyBaseValues = clone(APPLEPAY_FAMILY_VALUES);
+  const variantValues = clone(variant.values);
+  const { payment_order: variantPaymentOrder, ...variantTopLevelValues } = variantValues;
+  const { collect: variantCollect, ...variantPaymentOrderValues } = variantPaymentOrder ?? {};
+
+  return {
+    ...familyBaseValues,
+    ...variantTopLevelValues,
+    payment_order: {
+      ...familyBaseValues.payment_order,
+      ...variantPaymentOrderValues,
+      collect: {
+        ...familyBaseValues.payment_order.collect,
+        ...variantCollect,
+      },
+    },
+  };
+};
+
+const isApplePayChannel = (channel: DepositChannel): channel is ApplePayChannel =>
+  channel.startsWith('loki-applepay-');
+
+const createApplePayChannelConfigs = (): Record<ApplePayChannel, DepositChannelConfig> => {
+  const manifestChannels = DEPOSIT_CHANNELS.filter(isApplePayChannel);
+  const catalogChannels = Object.keys(APPLEPAY_VARIANTS);
+  const manifestChannelSet = new Set<string>(manifestChannels);
+  const catalogChannelSet = new Set(catalogChannels);
+  const missingChannels = manifestChannels.filter((channel) => !catalogChannelSet.has(channel));
+  const unexpectedChannels = catalogChannels.filter((channel) => !manifestChannelSet.has(channel));
+
+  if (missingChannels.length > 0 || unexpectedChannels.length > 0) {
+    throw new TypeError(
+      `Apple Pay deposit catalog does not match the channel manifest (missing: ${missingChannels.join(', ') || 'none'}; unexpected: ${unexpectedChannels.join(', ') || 'none'})`,
+    );
+  }
+
+  return Object.fromEntries(
+    manifestChannels.map((channel) => {
+      const variant = APPLEPAY_VARIANTS[channel];
+
+      return [
+        channel,
+        {
+          commonValues: clone(variant.commonValues),
+          schema: clone(APPLEPAY_FAMILY.schema),
+          values: composeApplePayValues(variant),
+        },
+      ] as const;
+    }),
+  );
+};
+
+const createLokiIntercardChannelConfigs = (): Record<LokiIntercardChannel, DepositChannelConfig> =>
+  createFamilyChannelConfigs('Loki international card', LOKI_INTERCARD_FAMILY, LOKI_INTERCARD_VARIANTS);
+
+const createGooglePayChannelConfigs = (): Record<GooglePayChannel, DepositChannelConfig> =>
+  createFamilyChannelConfigs('Google Pay', GOOGLEPAY_FAMILY, GOOGLEPAY_VARIANTS);
+
 const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChannelConfig> => ({
+  ...createLokiIntercardChannelConfigs(),
+  ...createGooglePayChannelConfigs(),
+  ...createApplePayChannelConfigs(),
   southafrica_cards: {
     commonValues: {
       productNo: env.depositSouthAfricaCardsProductNo,
@@ -684,6 +1003,42 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       },
     },
   },
+  co_nequi_usd: {
+    commonValues: {
+      productNo: 'DEP-FUTUREPAY_COLLECT-CONEQUICO-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(EMPTY_COLLECT_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {},
+      },
+    },
+  },
+  co_nequi_usd2: {
+    commonValues: {
+      productNo: 'DEP-SINGLEPAYMENT-NEQUICO-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(CO_NEQUI_SCHEMA),
+    values: {
+      payment_order: {
+        country_code: 'CO',
+        product_detail: 'Nequico USD test order',
+        singlepayment_nequico: {
+          shopper_email: 'payer@example.com',
+          holder_name: 'Payer Name',
+          telephone_number: '573001234567',
+          tax_type: 'CC',
+          personal_tax_id: '1020870281',
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'PAYER-001',
+        },
+      },
+    },
+  },
   co_pse: {
     commonValues: {
       productNo: 'DEP-SINGLEPAYMENT-PSECO-COP',
@@ -704,6 +1059,46 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
           personal_tax_id: '36570630563',
           origin: 'merchant.example.com',
           shopper_reference: 'CUSTOMER_001',
+        },
+      },
+    },
+  },
+  co_pse_usd: {
+    commonValues: {
+      productNo: 'DEP-SINGLEPAYMENT-PSECO-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(CO_PSE_SCHEMA),
+    values: {
+      payment_order: {
+        country_code: 'CO',
+        product_detail: 'PSE USD test order',
+        singlepayment_pseco: {
+          shopper_email: 'payer@example.com',
+          holder_name: 'Payer Name',
+          telephone_number: '573001234567',
+          bank_name: '<TEST_BANK_CODE>',
+          tax_type: 'CC',
+          personal_tax_id: '36570630563',
+          origin: 'https://merchant.example.com',
+          shopper_reference: 'PAYER-001',
+        },
+      },
+    },
+  },
+  skrill_usd: {
+    commonValues: {
+      productNo: 'DEP-FUTUREPAY_COLLECT-SKRILL-USD',
+      amount: '10.00',
+      currencyCode: 'USD',
+    },
+    schema: clone(SKRILL_SCHEMA),
+    values: {
+      payment_order: {
+        collect: {
+          shopper_email: 'payer@example.com',
+          holder_name: 'Jane Doe',
         },
       },
     },
@@ -976,11 +1371,6 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       },
     },
   },
-  googlepay_usd: {
-    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAY-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: {},
-    values: {},
-  },
   pix_brl: {
     commonValues: {
       productNo: 'DEP-FUTUREPAY_COLLECT-PIX-USD',
@@ -1080,287 +1470,6 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
     commonValues: { productNo: 'DEP-CMONEY-INTERCARD-USD', amount: '100.00', currencyCode: 'USD' },
     schema: {},
     values: {},
-  },
-  'loki-intercard-usd': {
-    commonValues: { productNo: 'DEP-LOKI-INTERCARDMY-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(EMAIL_COLLECT_SCHEMA),
-    values: {
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    },
-  },
-  'loki-googlepay-my-usd': {
-    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYMY-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: {},
-    values: {},
-  },
-  'loki-googlepay-sg-usd': {
-    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYSG-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: {},
-    values: {},
-  },
-  'loki-googlepay-vn-usd': {
-    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYVN-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: {},
-    values: {},
-  },
-  'loki-googlepay-th-usd': {
-    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYTH-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: {},
-    values: {},
-  },
-  'loki-googlepay-ph-usd': {
-    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYPH-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: {},
-    values: {},
-  },
-  'loki-googlepay-id-usd': {
-    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYID-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: {},
-    values: {},
-  },
-  'loki-googlepay-hk-usd': {
-    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYHK-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: {},
-    values: {},
-  },
-  'loki-googlepay-jp-jpy': {
-    commonValues: { productNo: 'DEP-LOKI-GOOGLEPAYJP-JPY', amount: '100', currencyCode: 'JPY' },
-    schema: clone(GOOGLEPAY_JP_SCHEMA),
-    values: {
-      payment_order: {
-        collect: {
-          product_name: 'Google Pay Japan Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+819012345678',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    },
-  },
-  'loki-applepay-usd': {
-    commonValues: { productNo: 'DEP-LOKI-APPLEPAY-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(APPLEPAY_SCHEMA),
-    values: {
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay USD Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+14155550100',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    },
-  },
-  'loki-applepay-my-usd': {
-    commonValues: { productNo: 'DEP-LOKI-APPLEPAYMY-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(APPLEPAY_SCHEMA),
-    values: {
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Malaysia Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+60123456789',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    },
-  },
-  'loki-applepay-ph-usd': {
-    commonValues: { productNo: 'DEP-LOKI-APPLEPAYPH-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(APPLEPAY_SCHEMA),
-    values: {
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Philippines Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+639123456789',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    },
-  },
-  'loki-applepay-sg-usd': {
-    commonValues: { productNo: 'DEP-LOKI-APPLEPAYSG-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(APPLEPAY_SCHEMA),
-    values: {
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Singapore Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+6591234567',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    },
-  },
-  'loki-applepay-th-usd': {
-    commonValues: { productNo: 'DEP-LOKI-APPLEPAYTH-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(APPLEPAY_SCHEMA),
-    values: {
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Thailand Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+66812345678',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    },
-  },
-  'loki-applepay-vn-usd': {
-    commonValues: { productNo: 'DEP-LOKI-APPLEPAYVN-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(APPLEPAY_SCHEMA),
-    values: {
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Vietnam Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+84912345678',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    },
-  },
-  'loki-applepay-hk-usd': {
-    commonValues: { productNo: 'DEP-LOKI-APPLEPAYHK-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(APPLEPAY_SCHEMA),
-    values: {
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Hong Kong Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+85291234567',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    },
-  },
-  'loki-applepay-id-usd': {
-    commonValues: { productNo: 'DEP-LOKI-APPLEPAYID-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(APPLEPAY_SCHEMA),
-    values: {
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Indonesia Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+6281234567890',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    },
-  },
-  'loki-applepay-jp-jpy': {
-    commonValues: { productNo: 'DEP-LOKI-APPLEPAYJP-JPY', amount: '100', currencyCode: 'JPY' },
-    schema: clone(APPLEPAY_SCHEMA),
-    values: {
-      checkout_url_type: 'direct',
-      payment_order: {
-        collect: {
-          product_name: 'Apple Pay Japan Test',
-          product_detail: 'Test order for %s',
-          shopper_reference: 'shopper-test-001',
-          shopper_email: 'shopper@example.com',
-          telephone_number: '+819012345678',
-          origin: 'https://merchant.example.com',
-        },
-      },
-    },
-  },
-  'loki-intercard-sg-usd': {
-    commonValues: { productNo: 'DEP-LOKI-INTERCARDSG-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(EMAIL_COLLECT_SCHEMA),
-    values: {
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    },
-  },
-  'loki-intercard-vn-usd': {
-    commonValues: { productNo: 'DEP-LOKI-INTERCARDVN-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(EMAIL_COLLECT_SCHEMA),
-    values: {
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    },
-  },
-  'loki-intercard-th-usd': {
-    commonValues: { productNo: 'DEP-LOKI-INTERCARDTH-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(EMAIL_COLLECT_SCHEMA),
-    values: {
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    },
-  },
-  'loki-intercard-ph-usd': {
-    commonValues: { productNo: 'DEP-LOKI-INTERCARDPH-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(EMAIL_COLLECT_SCHEMA),
-    values: {
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    },
-  },
-  'loki-intercard-id-usd': {
-    commonValues: { productNo: 'DEP-LOKI-INTERCARDID-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(EMAIL_COLLECT_SCHEMA),
-    values: {
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    },
-  },
-  'loki-intercard-hk-usd': {
-    commonValues: { productNo: 'DEP-LOKI-INTERCARDHK-USD', amount: '10.00', currencyCode: 'USD' },
-    schema: clone(EMAIL_COLLECT_SCHEMA),
-    values: {
-      payment_order: {
-        collect: {
-          shopper_email: 'test@example.com',
-        },
-      },
-    },
   },
   'ez-intercard-usd': {
     commonValues: { productNo: 'DEP-EZPAY-INTERCARD-USD', amount: '99.99', currencyCode: 'USD' },

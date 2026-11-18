@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { DEPOSIT_CHANNELS, getCliEnv } from '../core/env';
+import { DEPOSIT_CHANNEL_MANIFEST, DEPOSIT_CHANNELS, getCliEnv } from '../core/env';
 import {
   buildDepositPreviewResponse,
   buildDepositRequestFromForm,
@@ -72,6 +72,74 @@ describe('deposit web helpers', () => {
     });
     expect(result.common.values).not.toHaveProperty('merchantRef');
     expect(result.common.values.returnUrl).toBe('https://merchant.example.com/deposit');
+  });
+
+  test('builds the new Colombia USD and Skrill product payloads from their presets', () => {
+    const presets = createSeedDepositPresets(env, makeId);
+    const cases = [
+      {
+        channel: 'co_nequi_usd',
+        productNo: 'DEP-FUTUREPAY_COLLECT-CONEQUICO-USD',
+        paymentOrder: { collect: {} },
+      },
+      {
+        channel: 'co_nequi_usd2',
+        productNo: 'DEP-SINGLEPAYMENT-NEQUICO-USD',
+        paymentOrder: {
+          country_code: 'CO',
+          product_detail: 'Nequico USD test order',
+          singlepayment_nequico: {
+            shopper_email: 'payer@example.com',
+            holder_name: 'Payer Name',
+            telephone_number: '573001234567',
+            tax_type: 'CC',
+            personal_tax_id: '1020870281',
+            origin: 'https://merchant.example.com',
+            shopper_reference: 'PAYER-001',
+          },
+        },
+      },
+      {
+        channel: 'co_pse_usd',
+        productNo: 'DEP-SINGLEPAYMENT-PSECO-USD',
+        paymentOrder: {
+          country_code: 'CO',
+          product_detail: 'PSE USD test order',
+          singlepayment_pseco: {
+            shopper_email: 'payer@example.com',
+            holder_name: 'Payer Name',
+            telephone_number: '573001234567',
+            bank_name: '<TEST_BANK_CODE>',
+            tax_type: 'CC',
+            personal_tax_id: '36570630563',
+            origin: 'https://merchant.example.com',
+            shopper_reference: 'PAYER-001',
+          },
+        },
+      },
+      {
+        channel: 'skrill_usd',
+        productNo: 'DEP-FUTUREPAY_COLLECT-SKRILL-USD',
+        paymentOrder: {
+          collect: {
+            shopper_email: 'payer@example.com',
+            holder_name: 'Jane Doe',
+          },
+        },
+      },
+    ] as const;
+
+    for (const product of cases) {
+      const defaults = toDepositDefaultsResponse(product.channel, env, presets);
+      const request = buildDepositRequestFromForm(env, defaults.form, makeId);
+
+      expect(request.payload).toMatchObject({
+        product_no: product.productNo,
+        amount: { amount: '10.00', currency_code: 'USD' },
+        return_url: 'https://merchant.example.com/deposit',
+        payment_order: product.paymentOrder,
+      });
+    }
   });
 
   // Regional Loki presets share one product contract; retain canonical and special variants only.
@@ -255,9 +323,83 @@ describe('deposit web helpers', () => {
       payment_order: {
         collect: {
           product_name: 'Apple Pay Japan Test',
+          telephone_number: '+819012345678',
         },
       },
     });
+  });
+
+  test('keeps family catalog mappings, special variants, and sibling references independent', async () => {
+    const result = createSeedDepositPresets(env, makeId);
+
+    expect(Object.keys(result.channels).sort()).toEqual([...DEPOSIT_CHANNELS].sort());
+
+    const familyEntries = DEPOSIT_CHANNEL_MANIFEST.filter(
+      ({ channel }) =>
+        channel === 'googlepay_usd' ||
+        channel.startsWith('loki-intercard-') ||
+        channel.startsWith('loki-googlepay-') ||
+        channel.startsWith('loki-applepay-'),
+    );
+
+    for (const entry of DEPOSIT_CHANNEL_MANIFEST) {
+      expect(result.channels[entry.channel]).toBeDefined();
+      const presetFile = await readFile(join(sourceDirPath, 'channels', entry.presetFile));
+      expect(presetFile.byteLength).toBeGreaterThan(0);
+    }
+
+    for (const entry of familyEntries) {
+      const source = JSON.parse(
+        await readFile(join(sourceDirPath, 'channels', entry.presetFile), 'utf8'),
+      ) as { commonValues: Record<string, string> };
+
+      expect(result.channels[entry.channel].commonValues).toEqual(source.commonValues);
+    }
+
+    expect(result.channels.googlepay_usd.schema).toEqual({});
+    expect(result.channels.googlepay_usd.values).toEqual({});
+    expect(result.channels['loki-googlepay-jp-jpy'].commonValues.currencyCode).toBe('JPY');
+    expect(result.channels['loki-googlepay-jp-jpy'].schema).not.toBe(result.channels.googlepay_usd.schema);
+
+    const intercardUsd = result.channels['loki-intercard-usd'];
+    const intercardRegional = result.channels['loki-intercard-sg-usd'];
+    expect(intercardUsd.schema).toEqual(intercardRegional.schema);
+    expect(intercardUsd.schema).not.toBe(intercardRegional.schema);
+    expect(intercardUsd.values).not.toBe(intercardRegional.values);
+
+    const appleUsd = result.channels['loki-applepay-usd'];
+    const appleRegional = result.channels['loki-applepay-my-usd'];
+    const appleJapan = result.channels['loki-applepay-jp-jpy'];
+    const appleUsdPaymentOrder = appleUsd.values.payment_order as Record<string, unknown>;
+    const appleUsdCollect = appleUsdPaymentOrder.collect as Record<string, unknown>;
+    const appleJapanPaymentOrder = appleJapan.values.payment_order as Record<string, unknown>;
+    const appleJapanCollect = appleJapanPaymentOrder.collect as Record<string, unknown>;
+
+    expect(appleUsdCollect).toMatchObject({
+      product_detail: 'Test order for %s',
+      shopper_reference: 'shopper-test-001',
+      shopper_email: 'shopper@example.com',
+      origin: 'https://merchant.example.com',
+    });
+    expect(appleJapan.commonValues).toEqual({
+      productNo: 'DEP-LOKI-APPLEPAYJP-JPY',
+      amount: '100',
+      currencyCode: 'JPY',
+    });
+    expect(appleJapan.values).toMatchObject({ checkout_url_type: 'direct' });
+    expect(appleJapanCollect).toMatchObject({
+      product_name: 'Apple Pay Japan Test',
+      telephone_number: '+819012345678',
+    });
+
+    expect(appleUsd.schema).not.toBe(appleRegional.schema);
+    expect(appleUsd.values).not.toBe(appleRegional.values);
+    expect(appleUsdPaymentOrder).not.toBe(appleRegional.values.payment_order);
+    expect(appleUsdCollect).not.toBe(
+      (appleRegional.values.payment_order as Record<string, unknown>).collect,
+    );
+    expect(appleUsd.schema).toEqual(appleRegional.schema);
+    expect(appleUsd.schema).toEqual(appleJapan.schema);
   });
 
   test('builds the Boost USD request with the provider-specific payload key', () => {
@@ -574,6 +716,7 @@ describe('deposit web helpers', () => {
       payment_order: {
         collect: {
           product_name: 'Apple Pay Japan Test',
+          telephone_number: '+819012345678',
         },
       },
     });
@@ -796,6 +939,42 @@ describe('deposit web helpers', () => {
     expect(normalized.channels.linepay.commonValues.productNo).toBe('DEP-LINEPAY_ONLINE-ONLINE-TWD');
     expect(normalized.channels.international_credit_cards.commonValues.productNo).toBe(
       'DEP-FUTUREPAY_COLLECT-COLLECT-USD',
+    );
+  });
+
+  test('preserves partial common fallback and whole-field schema and values precedence', () => {
+    const sourceSchema = {
+      source_only: { kind: 'text' as const, label: 'Source only', required: true },
+    };
+    const sourceValues = {
+      payment_order: {
+        collect: { product_name: 'Source only value' },
+      },
+    };
+
+    const normalized = normalizeDepositPresets(
+      {
+        channels: {
+          'loki-applepay-usd': {
+            commonValues: { productNo: 'DEP-SOURCE-ONLY' },
+            schema: sourceSchema,
+            values: sourceValues,
+          },
+        },
+      } satisfies DepositPresetSource,
+      env,
+      makeId,
+    );
+
+    expect(normalized.channels['loki-applepay-usd'].commonValues).toEqual({
+      productNo: 'DEP-SOURCE-ONLY',
+      amount: '10.00',
+      currencyCode: 'USD',
+    });
+    expect(normalized.channels['loki-applepay-usd'].schema).toEqual(sourceSchema);
+    expect(normalized.channels['loki-applepay-usd'].values).toEqual(sourceValues);
+    expect(normalized.channels['loki-applepay-usd'].values).not.toHaveProperty(
+      'checkout_url_type',
     );
   });
 
