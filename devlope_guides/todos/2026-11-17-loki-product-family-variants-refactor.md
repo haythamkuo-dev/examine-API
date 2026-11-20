@@ -3,7 +3,7 @@
 ## 文件定位
 
 - 文件等級：完整開發設計書。
-- 文件狀態：草案，待確認。
+- 文件狀態：實作中。
 - 文件日期：2026-11-17。
 - 主要規範：[AGENTS.md](../../AGENTS.md)。
 - 設計文件規範：[ai_design_doc_writing.md](../ai_design_doc_writing.md)。
@@ -62,6 +62,8 @@ Phase 0 的測試收斂已移除重複的地區案例，但 Apple Pay Japan 的�
 - 不修改 React route、page、hook 或 UI label。
 - 不在本階段移除 `src/domains/deposit.ts` 的舊 template export。
 - 不把所有地區變體合併成單一對外 channel。
+- 不在本階段把 parity harness 的候選程式碼放入 sandbox。任意 untrusted
+  worktree 仍受既有安全 issue 限制。
 
 ## 設計結論
 
@@ -327,6 +329,28 @@ DATA_SOURCE=<兩個 worktree 使用的同一份 data/deposit source>
 
 `BASE_REF` 與 `HEAD_REF` 必須在兩個不同的隔離 worktree 執行。兩個 worktree 必須使用相同的 `.env.test`、固定的 `makeId`、相同的 `data/deposit` source 與相同的 parity harness。`.env.test` 的值不寫入 parity artifact，只記錄使用的 source identity。
 
+#### Parity harness 的候選程式碼隔離：延後處理
+
+Parity harness 是 Phase 1 的驗收工具，不是 production runtime。現行 harness
+會從 `--worktree` 動態 import `src/core/env.ts` 與 `src/deposit/presets.ts`。
+候選模組會在執行 harness 的 Bun process 中執行。`resolve()` 只正規化路徑，
+不會建立 trust boundary 或 sandbox。
+
+**狀態：Deferred。** 在 Docker 或更強的 sandbox 完成前，CI 與 review 流程不
+得把任意 PR worktree 傳給 `--worktree`。目前只允許已核准且已驗證的 clean
+checkout。這項限制不等同於技術隔離。
+
+| 項目 | 設計要求 |
+| --- | --- |
+| 觸發條件 | CI 或 review 流程對不可信 worktree 執行 parity harness。 |
+| 主要風險 | 候選程式碼可能讀取 harness process 的 environment、檔案系統與可達網路服務。 |
+| 暫時限制 | 只使用已核准且已驗證的 clean checkout，不接受任意 PR worktree。 |
+| 解決方向 | 在 Docker 或更強 sandbox 中執行 candidate loader，使用唯讀 worktree、最小環境、無網路、非 root 使用者與資源限制。 |
+| Reviewer 判定 | 在隔離完成前，不得把 parity harness 描述成可安全執行任意 worktree。 |
+
+詳細 issue 與 acceptance criteria 見
+[`parity-harness-untrusted-worktree.md`](../issue/parity-harness-untrusted-worktree.md)。
+
 Parity 必須分別比較：
 
 - `createSeedDepositPresets` 的完整 `DepositPresetStore`。
@@ -372,6 +396,7 @@ Phase 1 diff 應主要限制在 `src/deposit/presets.ts` 與最低必要的 pres
 | Variant channel ID 與 preset file mapping 變更 | 驗證 manifest channel 與 preset loader 的 mapping | preset/config layer |
 | JSON source 優先順序或 fallback 語意改變 | 使用 partial `commonValues`、whole-field schema 與 whole-field values source override 的 normalization case；另驗證不完整 JSON projection 仍回傳 validation error | preset/service layer |
 | 既有必填欄位或邊界驗證回歸 | 沿用目前 validation 與 API negative cases | validation/API boundary |
+| Candidate code 可使用 harness process 權限 | 在隔離環境執行 candidate fixture，驗證 secret、network、host-file 與 process boundary 限制 | harness security integration |
 | UI label 被錯誤合併 | 保留全部 channel label mapping test | frontend boundary |
 | 舊 template export 被不相容地移除 | 在 cleanup phase 先完成 repo search 與外部 caller 確認，再增加相容性 test | domain/API contract |
 
@@ -379,15 +404,17 @@ Phase 1 diff 應主要限制在 `src/deposit/presets.ts` 與最低必要的 pres
 
 ## 實作分期
 
-### Phase 0：測試收斂，需補正
+### Phase 0：測試收斂，已完成
 
-Phase 0 已合併重複的地區測試，也沒有改變 production runtime。但 Apple Pay Japan 的三個 special cases 沒有完整斷言 `telephone_number`，因此目前只完成測試收斂，尚未完成特殊資料契約的風險保留。
+Phase 0 已合併重複的地區測試，也沒有改變 production runtime。Apple Pay Japan 的三個 special cases 已補回 `telephone_number` 的精確斷言，特殊資料契約的風險保留已完成。
 
-Phase 0 的測試保留 canonical product cases 與 special variant cases。補回 `telephone_number=+819012345678` 的 seed、request payload 與 API defaults assertion，並重新執行適用 gate 後，才能將 Phase 0 標記為完成。
+Phase 0 的測試保留 canonical product cases 與 special variant cases。`telephone_number=+819012345678` 的 seed、request payload 與 API defaults assertion 已加入，且適用的 API test、型別檢查與 diff gate 已通過。
 
-### Phase 1：建立 family catalog，待確認
+### Phase 1：建立 family catalog，已完成實作，Parity 驗收待補正
 
 Phase 1 只修改 seed config 的組織方式。Phase 1 不修改 JSON、manifest、API route、domain payload 或 UI。
+
+Phase 1 的 production code、必要測試、型別檢查與 API build gate 已完成。既有 parity record 以 `48cc6f2` 為 candidate，但目前 HEAD 是 `d1d89a2`，因此 parity evidence 仍需補正後，才能將整個 Phase 1 標記為完成。
 
 Phase 1 必須完成以下事項：
 
@@ -497,7 +524,7 @@ Phase 1 完成時，必須滿足以下條件：
 
 上述紀錄只證明當時的測試 assertion 通過，不證明 Apple Pay Japan 的 `telephone_number` 已被完整保護。Phase 0 補正與 Phase 1 實作後，必須重新執行 `bun run test:api`、`tsc --noEmit`、`bun run build:api` 與 `git diff --check`。文件更新本身不需要執行 frontend 或 database gate。`bun run test:db` 仍由使用者或 CI 執行。Phase 1 不預期需要該 gate。
 
-Phase 1 的前後 parity 已依相同 `.env.test`、固定 `makeId`、相同 `data/deposit` source 與兩個隔離 worktree 完成；seed store 與 normalized store 均為 zero byte diff，完整紀錄、artifact 名稱與 checksum 保存在 [`2026-11-17-loki-product-family-variants-parity.md`](../review/2026-11-17-loki-product-family-variants-parity.md)。
+Phase 1 candidate `48cc6f2` 的前後 parity 已依相同 `.env.test`、固定 `makeId`、相同 `data/deposit` source 與兩個隔離 worktree 完成；seed store 與 normalized store 均為 zero byte diff，完整紀錄、artifact 名稱與 checksum 保存在 [`2026-11-17-loki-product-family-variants-parity.md`](../review/2026-11-17-loki-product-family-variants-parity.md)。該 record 不涵蓋目前的 `d1d89a2` HEAD，因此目前 Phase 1 狀態為「已完成實作，Parity 驗收待補正」。
 
 ## 已確認、假設與待確認事項
 

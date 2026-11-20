@@ -10,10 +10,9 @@
 ├── .env.production
 ├── .env.test
 ├── AGENTS.md
-├── CLAUDE.md
-├── README.md
 ├── bun.lock
 ├── bunfig.toml
+├── CLAUDE.md
 ├── data
 │   ├── deposit
 │   │   ├── channels
@@ -22,22 +21,15 @@
 │   │   │   ├── ALIPAY-8000.json
 │   │   │   ├── ALIPAY-CNY.json
 │   │   │   ├── ALIPAY-HKD.json
-│   │   │   ├── JCB-JPY.json
-│   │   │   ├── JCB-USD.json
-│   │   │   ├── WECHAT-6013.json
-│   │   │   ├── WECHAT-6016-USD.json
-│   │   │   ├── WECHAT-6016.json
-│   │   │   ├── WECHAT-6038.json
-│   │   │   ├── WECHAT-HKD.json
 │   │   │   ├── bdt_worldpay.json
 │   │   │   ├── cmoney-intercard.json
 │   │   │   ├── co_bank_transfer.json
 │   │   │   ├── co_cash.json
-│   │   │   ├── co_nequi.json
 │   │   │   ├── co_nequi_usd.json
 │   │   │   ├── co_nequi_usd2.json
-│   │   │   ├── co_pse.json
+│   │   │   ├── co_nequi.json
 │   │   │   ├── co_pse_usd.json
+│   │   │   ├── co_pse.json
 │   │   │   ├── duitnowqr_usd.json
 │   │   │   ├── ez-intercard-hkd.json
 │   │   │   ├── ez-intercard-jpy.json
@@ -46,8 +38,10 @@
 │   │   │   ├── id_dana_usd.json
 │   │   │   ├── inr_upi.json
 │   │   │   ├── international_credit_cards.json
-│   │   │   ├── linepay.json
+│   │   │   ├── JCB-JPY.json
+│   │   │   ├── JCB-USD.json
 │   │   │   ├── linepay_invoice.json
+│   │   │   ├── linepay.json
 │   │   │   ├── loki-applepay-hk-usd.json
 │   │   │   ├── loki-applepay-id-usd.json
 │   │   │   ├── loki-applepay-jp-jpy.json
@@ -75,17 +69,22 @@
 │   │   │   ├── mx_spei_usd.json
 │   │   │   ├── my_boost_usd.json
 │   │   │   ├── my_fpx_usd.json
-│   │   │   ├── my_tng.json
 │   │   │   ├── my_tng_usd.json
 │   │   │   ├── my_tng_usd2.json
+│   │   │   ├── my_tng.json
 │   │   │   ├── pix_brl.json
 │   │   │   ├── skrill_usd.json
 │   │   │   ├── southafrica_cards.json
 │   │   │   ├── th_kplus_usd.json
-│   │   │   ├── th_rabbit_linepay.json
 │   │   │   ├── th_rabbit_linepay_usd.json
 │   │   │   ├── th_rabbit_linepay_usd2.json
-│   │   │   └── th_tmn_usd.json
+│   │   │   ├── th_rabbit_linepay.json
+│   │   │   ├── th_tmn_usd.json
+│   │   │   ├── WECHAT-6013.json
+│   │   │   ├── WECHAT-6016-USD.json
+│   │   │   ├── WECHAT-6016.json
+│   │   │   ├── WECHAT-6038.json
+│   │   │   └── WECHAT-HKD.json
 │   │   └── common.json
 │   ├── payout
 │   │   ├── channels
@@ -106,6 +105,7 @@
 │   ├── ai_design_doc_writing.md
 │   ├── ai_reference.md
 │   ├── issue
+│   │   ├── parity-harness-untrusted-worktree.md
 │   │   ├── postgres-preset-missing-row-fallback.md
 │   │   └── server-typecheck-errors.md
 │   ├── review
@@ -119,8 +119,10 @@
 │       └── query_merchant_turnover.sh
 ├── index.html
 ├── package.json
+├── README.md
 ├── scripts
 │   ├── database.ts
+│   ├── deposit-presets-parity.test.ts
 │   └── deposit-presets-parity.ts
 ├── src
 │   ├── core
@@ -224,13 +226,6 @@
     │   ├── ApiKeyEditorTrigger.tsx
     │   ├── DepositPage.test.tsx
     │   ├── DepositPage.tsx
-    │   ├── JsonCopyButton.test.tsx
-    │   ├── JsonCopyButton.tsx
-    │   ├── PayoutPage.test.tsx
-    │   ├── PayoutPage.tsx
-    │   ├── ScrollToTopButton.tsx
-    │   ├── SubscriptionPage.test.tsx
-    │   ├── SubscriptionPage.tsx
     │   ├── helper
     │   │   ├── depositChannelLabels.ts
     │   │   ├── operatorApi.ts
@@ -243,13 +238,20 @@
     │   │   ├── operatorTransport.ts
     │   │   ├── payoutChannelLabels.ts
     │   │   └── subscriptionChannelLabels.ts
+    │   ├── JsonCopyButton.test.tsx
+    │   ├── JsonCopyButton.tsx
     │   ├── pageChrome.tsx
+    │   ├── PayoutPage.test.tsx
+    │   ├── PayoutPage.tsx
     │   ├── requestBuilder.test.tsx
     │   ├── requestBuilder.tsx
+    │   ├── ScrollToTopButton.tsx
+    │   ├── SubscriptionPage.test.tsx
+    │   ├── SubscriptionPage.tsx
     │   ├── testUtils.tsx
     │   └── utils
     │       ├── modal.test.tsx
     │       └── modal.tsx
     └── styles.css
 
-31 directories, 222 files
+31 directories, 224 files
