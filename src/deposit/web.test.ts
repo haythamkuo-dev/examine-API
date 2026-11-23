@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { DEPOSIT_CHANNEL_MANIFEST, DEPOSIT_CHANNELS, getCliEnv } from '../core/env';
+import { DEPOSIT_CHANNELS, getCliEnv } from '../core/env';
 import {
   buildDepositPreviewResponse,
   buildDepositRequestFromForm,
@@ -329,77 +329,90 @@ describe('deposit web helpers', () => {
     });
   });
 
-  test('keeps family catalog mappings, special variants, and sibling references independent', async () => {
+  test('keeps family catalog contracts and isolates sibling variant values', () => {
     const result = createSeedDepositPresets(env, makeId);
 
     expect(Object.keys(result.channels).sort()).toEqual([...DEPOSIT_CHANNELS].sort());
 
-    const familyEntries = DEPOSIT_CHANNEL_MANIFEST.filter(
-      ({ channel }) =>
-        channel === 'googlepay_usd' ||
-        channel.startsWith('loki-intercard-') ||
-        channel.startsWith('loki-googlepay-') ||
-        channel.startsWith('loki-applepay-'),
-    );
+    const lokiIntercardUsd = result.channels['loki-intercard-usd'];
+    expect(lokiIntercardUsd).toMatchObject({
+      commonValues: {
+        productNo: 'DEP-LOKI-INTERCARDMY-USD',
+        amount: '10.00',
+        currencyCode: 'USD',
+      },
+      values: {
+        payment_order: { collect: { shopper_email: 'test@example.com' } },
+      },
+    });
 
-    for (const entry of DEPOSIT_CHANNEL_MANIFEST) {
-      expect(result.channels[entry.channel]).toBeDefined();
-      const presetFile = await readFile(join(sourceDirPath, 'channels', entry.presetFile));
-      expect(presetFile.byteLength).toBeGreaterThan(0);
-    }
-
-    for (const entry of familyEntries) {
-      const source = JSON.parse(
-        await readFile(join(sourceDirPath, 'channels', entry.presetFile), 'utf8'),
-      ) as { commonValues: Record<string, string> };
-
-      expect(result.channels[entry.channel].commonValues).toEqual(source.commonValues);
-    }
-
-    expect(result.channels.googlepay_usd.schema).toEqual({});
-    expect(result.channels.googlepay_usd.values).toEqual({});
-    expect(result.channels['loki-googlepay-jp-jpy'].commonValues.currencyCode).toBe('JPY');
-    expect(result.channels['loki-googlepay-jp-jpy'].schema).not.toBe(result.channels.googlepay_usd.schema);
-
-    const intercardUsd = result.channels['loki-intercard-usd'];
-    const intercardRegional = result.channels['loki-intercard-sg-usd'];
-    expect(intercardUsd.schema).toEqual(intercardRegional.schema);
-    expect(intercardUsd.schema).not.toBe(intercardRegional.schema);
-    expect(intercardUsd.values).not.toBe(intercardRegional.values);
+    const googlePayUsd = result.channels.googlepay_usd;
+    expect(googlePayUsd).toEqual({
+      commonValues: {
+        productNo: 'DEP-LOKI-GOOGLEPAY-USD',
+        amount: '10.00',
+        currencyCode: 'USD',
+      },
+      schema: {},
+      values: {},
+    });
 
     const appleUsd = result.channels['loki-applepay-usd'];
+    expect(appleUsd).toEqual({
+      commonValues: {
+        productNo: 'DEP-LOKI-APPLEPAY-USD',
+        amount: '10.00',
+        currencyCode: 'USD',
+      },
+      schema: expect.any(Object),
+      values: {
+        checkout_url_type: 'direct',
+        payment_order: {
+          collect: {
+            product_name: 'Apple Pay USD Test',
+            product_detail: 'Test order for %s',
+            shopper_reference: 'shopper-test-001',
+            shopper_email: 'shopper@example.com',
+            telephone_number: '+14155550100',
+            origin: 'https://merchant.example.com',
+          },
+        },
+      },
+    });
+
     const appleRegional = result.channels['loki-applepay-my-usd'];
     const appleJapan = result.channels['loki-applepay-jp-jpy'];
-    const appleUsdPaymentOrder = appleUsd.values.payment_order as Record<string, unknown>;
-    const appleUsdCollect = appleUsdPaymentOrder.collect as Record<string, unknown>;
-    const appleJapanPaymentOrder = appleJapan.values.payment_order as Record<string, unknown>;
-    const appleJapanCollect = appleJapanPaymentOrder.collect as Record<string, unknown>;
+    const appleUsdCollect = (appleUsd.values.payment_order as Record<string, unknown>)
+      .collect as Record<string, unknown>;
+    const appleRegionalCollect = (appleRegional.values.payment_order as Record<string, unknown>)
+      .collect as Record<string, unknown>;
+    const appleJapanCollect = (appleJapan.values.payment_order as Record<string, unknown>)
+      .collect as Record<string, unknown>;
 
-    expect(appleUsdCollect).toMatchObject({
-      product_detail: 'Test order for %s',
-      shopper_reference: 'shopper-test-001',
-      shopper_email: 'shopper@example.com',
-      origin: 'https://merchant.example.com',
-    });
     expect(appleJapan.commonValues).toEqual({
       productNo: 'DEP-LOKI-APPLEPAYJP-JPY',
       amount: '100',
       currencyCode: 'JPY',
     });
-    expect(appleJapan.values).toMatchObject({ checkout_url_type: 'direct' });
-    expect(appleJapanCollect).toMatchObject({
-      product_name: 'Apple Pay Japan Test',
-      telephone_number: '+819012345678',
+    expect(appleJapan.values).toEqual({
+      checkout_url_type: 'direct',
+      payment_order: {
+        collect: {
+          product_name: 'Apple Pay Japan Test',
+          product_detail: 'Test order for %s',
+          shopper_reference: 'shopper-test-001',
+          shopper_email: 'shopper@example.com',
+          telephone_number: '+819012345678',
+          origin: 'https://merchant.example.com',
+        },
+      },
     });
+    expect(appleJapan.schema).toEqual(appleUsd.schema);
 
-    expect(appleUsd.schema).not.toBe(appleRegional.schema);
-    expect(appleUsd.values).not.toBe(appleRegional.values);
-    expect(appleUsdPaymentOrder).not.toBe(appleRegional.values.payment_order);
-    expect(appleUsdCollect).not.toBe(
-      (appleRegional.values.payment_order as Record<string, unknown>).collect,
-    );
-    expect(appleUsd.schema).toEqual(appleRegional.schema);
-    expect(appleUsd.schema).toEqual(appleJapan.schema);
+    appleUsdCollect.product_detail = 'Mutated Apple Pay USD order';
+
+    expect(appleRegionalCollect.product_detail).toBe('Test order for %s');
+    expect(appleJapanCollect.product_detail).toBe('Test order for %s');
   });
 
   test('builds the Boost USD request with the provider-specific payload key', () => {

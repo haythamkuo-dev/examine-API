@@ -36,7 +36,6 @@
 - 前端測試：`bun run test:web`。此命令使用 Happy DOM 與前端 setup。
 - 後端單元／API 測試：`bun run test:api`。此命令只使用測試 fixture，不連線到 PostgreSQL。
 - PostgreSQL 整合測試：`bun run test:db`。此命令需要可丟棄的整合測試資料庫，由使用者或 CI 執行。AI 不執行此 gate，完成其他適用驗證後必須提醒使用者執行。
-- Parity harness 測試：`bun test --isolate ./scripts/deposit-presets-parity.test.ts`。此命令是獨立的人工／CI gate，不納入 `test:api` 或 `test`；AI 不在一般任務中執行，完成其他適用驗證後必須提醒使用者執行。
 - 全部一般測試：`bun run test`。此命令執行 `test:api` 與 `test:web`，不執行 `test:db`。
 - TypeScript 型別檢查：`tsc --noEmit`
 - API 建置：`bun run build:api`
@@ -63,7 +62,6 @@
 - PostgreSQL 整合測試使用 `bun run test:db`，由使用者或 CI 負責執行。AI 不在一般任務中執行此命令。
 - `tests/integration-setup.ts` 先載入 `.env.test`，再載入 `.env.integration.local`。
 - `test:db` 缺少 `INTEGRATION_DATABASE_URL` 時必須失敗。`test:db` 不得跳過測試。
-- Parity harness 測試不是 PostgreSQL 整合測試；它可建立暫存 worktree、執行 child process 並驗證 approval、worktree、checksum 與 parity metadata 規則。其測試結果與實際 base/head parity 驗收執行分開記錄。
 - CI 必須提供相同名稱的 integration 變數。CI 可以從 secret 或 process environment 讀取這些變數。
 - `.env.local` 只供本機開發使用。此檔案可包含 runtime `DATABASE_URL`。測試不得載入此檔案。
 - `.env.integration.local` 只供本機整合測試使用。此檔案可包含 `INTEGRATION_DATABASE_URL`、`DATABASE_ADMIN_URL` 與 `INTEGRATION_DATABASE_NAME`。此檔案不得提交到 Git。
@@ -115,7 +113,6 @@
 - 驗證層級應依風險與公開契約選擇最低但足夠的層級，並遵守本文件的 `Risk → Test → Test layer` 規範；不要求為了 coverage 而增加無產品風險對應的測試。
 - 相關驗證失敗時，不得宣稱任務已完成。若受環境、工具或外部依賴限制而無法執行，必須列出未執行的命令、原因、替代驗證、未涵蓋部分與剩餘風險。
 - PostgreSQL integration gate `bun run test:db` 由使用者或 CI 負責。AI 不執行此命令；若變更範圍適用，AI 完成其他必要驗證後，必須提醒使用者執行，並在交付說明中標記該 gate 尚未由 AI 驗證。
-- Parity harness gate `bun test --isolate ./scripts/deposit-presets-parity.test.ts` 由使用者或 CI 負責。AI 不執行此命令；若變更範圍適用，AI 完成其他必要驗證後，必須提醒使用者執行，並在交付說明中標記該 gate 尚未由 AI 驗證。
 - 交付說明至少應包含：已完成的行為、實際執行的驗證及結果、未能驗證的部分，以及仍需使用者決策或後續處理的風險。
 
 

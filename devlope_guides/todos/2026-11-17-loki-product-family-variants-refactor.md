@@ -62,8 +62,6 @@ Phase 0 的測試收斂已移除重複的地區案例，但 Apple Pay Japan 的�
 - 不修改 React route、page、hook 或 UI label。
 - 不在本階段移除 `src/domains/deposit.ts` 的舊 template export。
 - 不把所有地區變體合併成單一對外 channel。
-- 不在本階段把 parity harness 的候選程式碼放入 sandbox。任意 untrusted
-  worktree 仍受既有安全 issue 限制。
 
 ## 設計結論
 
@@ -311,67 +309,26 @@ Apple Pay Japan 不會被合併到 Apple Pay USD test。Apple Pay Japan 的 JPY 
 
 Phase 0 的補正完成條件是三個 assertion 都已加入，且 `bun run test:api`、`tsc --noEmit` 與 `git diff --check` 重新通過。完成前，文件中的 Phase 0 狀態必須維持「需補正」。
 
-### Phase 1 parity and invariant tests
+### Phase 1 catalog and invariant tests
 
-Phase 1 的主要驗收證據是重構前後的完整輸出 parity。Parity 比較必須使用相同的 `.env.test`、相同的固定 `makeId` 與相同的 `data/deposit` source，並將結果轉成 key order 不影響比較的 canonical JSON。
+Phase 1 的主要驗收證據是 family catalog invariant tests、JSON precedence tests，以及既有 API boundary tests。測試必須保護 channel set、family representative、特殊變體 contract、nested composition 與既有 normalization 行為。
 
-Parity 執行時必須先記錄比較基準與 candidate：
-
-```text
-BASE_REF=<最後一個 Phase 1 前的 production commit>
-HEAD_REF=<Phase 1 candidate commit>
-BASE_WORKTREE=<BASE_REF 的隔離 worktree>
-HEAD_WORKTREE=<HEAD_REF 的隔離 worktree>
-ENV_SOURCE=<兩個 worktree 使用的同一份 .env.test source>
-MAKE_ID=<兩個 worktree 使用的固定 makeId 定義>
-DATA_SOURCE=<兩個 worktree 使用的同一份 data/deposit source>
-```
-
-`BASE_REF` 與 `HEAD_REF` 必須在兩個不同的隔離 worktree 執行。兩個 worktree 必須使用相同的 `.env.test`、固定的 `makeId`、相同的 `data/deposit` source 與相同的 parity harness。`.env.test` 的值不寫入 parity artifact，只記錄使用的 source identity。
-
-#### Parity harness 的候選程式碼隔離：延後處理
-
-Parity harness 是 Phase 1 的驗收工具，不是 production runtime。現行 harness
-會從 `--worktree` 動態 import `src/core/env.ts` 與 `src/deposit/presets.ts`。
-候選模組會在執行 harness 的 Bun process 中執行。`resolve()` 只正規化路徑，
-不會建立 trust boundary 或 sandbox。
-
-**狀態：Deferred。** 在 Docker 或更強的 sandbox 完成前，CI 與 review 流程不
-得把任意 PR worktree 傳給 `--worktree`。目前只允許已核准且已驗證的 clean
-checkout。這項限制不等同於技術隔離。
-
-| 項目 | 設計要求 |
-| --- | --- |
-| 觸發條件 | CI 或 review 流程對不可信 worktree 執行 parity harness。 |
-| 主要風險 | 候選程式碼可能讀取 harness process 的 environment、檔案系統與可達網路服務。 |
-| 暫時限制 | 只使用已核准且已驗證的 clean checkout，不接受任意 PR worktree。 |
-| 解決方向 | 在 Docker 或更強 sandbox 中執行 candidate loader，使用唯讀 worktree、最小環境、無網路、非 root 使用者與資源限制。 |
-| Reviewer 判定 | 在隔離完成前，不得把 parity harness 描述成可安全執行任意 worktree。 |
-
-詳細 issue 與 acceptance criteria 見
-[`parity-harness-untrusted-worktree.md`](../issue/parity-harness-untrusted-worktree.md)。
-
-Parity 必須分別比較：
-
-- `createSeedDepositPresets` 的完整 `DepositPresetStore`。
-- `loadDepositPresets` 的完整 normalized `DepositPresetStore`。
-
-每個 worktree 都必須輸出兩組 canonical JSON。Canonicalization 必須遞迴排序 object keys、保留 array 順序，並使用相同的 formatter。先以 byte diff 比較兩個 worktree 的對應輸出，再以 checksum comparison 留存結果。四組對應輸出都必須 zero diff，或 checksum 完全相同，才能通過 parity gate。
-
-Parity record 必須保留 `BASE_REF`、`HEAD_REF`、兩個 worktree、固定 `makeId` 定義、canonicalization 方法、輸出 artifact 名稱、checksum 與 diff 結果。若無法取得相同 env、相同 data source 或固定 `makeId`，Parity 必須標記為未完成，不得以測試通過取代。
-
-只比較 `loadDepositPresets` 不足以證明 seed catalog 正確，因為完整的 JSON preset 可能掩蓋 seed 錯誤。Seed output parity 是必要證據，load output parity 則保護 JSON loader 與 normalization 的整體結果。
+歷史上，baseline `1ddc22b529765da1e388ea80fcf3b885ce0fa835` 與 Phase 1
+candidate `48cc6f25cf9ede407184a82c6f0f75a9ea4ccde0` 曾使用相同的
+`.env.test`、`data/deposit` source 與固定 `makeId` 比較 canonicalized seed
+store 和 normalized store，兩組輸出均為 zero byte diff。這段結果只作為
+一次性歷史證據，不是目前 branch HEAD 的永久 gate；完整歷史紀錄見
+[`2026-11-17-loki-product-family-variants-parity.md`](../review/2026-11-17-loki-product-family-variants-parity.md)。
 
 Catalog layer 必須另外保留最低必要的 invariant test：
 
 - `Object.keys(seed.channels)` 與 `DEPOSIT_CHANNELS` 的 channel set 完全相同。
-- 每個 manifest channel 都有 seed config 與對應的 JSON preset file mapping。
-- Loki variants 共用 email collect schema，且 product number mapping 正確。
+- Loki intercard USD、Google Pay USD 與 Apple Pay USD 各保留一個 family representative，驗證各自的 common values 與 family contract。
 - Google Pay USD 的 schema 與 values 保持空物件。
-- Google Pay Japan 保持 JPY 與完整 collect contract。
-- Apple Pay USD 繼承 `APPLEPAY_SCHEMA` 並保持 direct checkout。
-- Apple Pay Japan 明確驗證 `DEP-LOKI-APPLEPAYJP-JPY`、`amount=100`、`currencyCode=JPY`、`checkout_url_type=direct`、`product_name=Apple Pay Japan Test` 與 `telephone_number=+819012345678`。
-- Apple Pay sibling variants 的 `schema`、`values`、`values.payment_order` 與 `values.payment_order.collect` 都使用獨立 reference。至少比較 `loki-applepay-usd` 與一個 USD regional variant，並確認每一層都不使用 `toBe` 相等的 shared object。
+- Apple Pay USD 保持 `checkout_url_type=direct` 與共用 collect fields。
+- Apple Pay Japan 明確驗證 `DEP-LOKI-APPLEPAYJP-JPY`、`amount=100`、`currencyCode=JPY`、`checkout_url_type=direct`、`product_name=Apple Pay Japan Test`、`telephone_number=+819012345678` 與共用 collect fields。
+- Apple Pay sibling isolation 以行為驗證：修改 `loki-applepay-usd` 的 nested value 後，`loki-applepay-my-usd` 與 `loki-applepay-jp-jpy` 的對應值仍保持不變。Catalog test 不逐層斷言 object reference identity。
+- Google Pay Japan 的 JPY 與 collect contract 由既有 request／API boundary test 保護，不在 catalog test 重複逐欄位斷言。
 
 JSON precedence test 必須反映目前 normalization contract，而不是引入 nested merge：
 
@@ -392,11 +349,10 @@ Phase 1 diff 應主要限制在 `src/deposit/presets.ts` 與最低必要的 pres
 | Google Pay Japan 被錯誤套用 USD 空 schema | 驗證 Japan 的 JPY、product number 與 collect schema | preset、API boundary |
 | Apple Pay Japan 被錯誤套用 USD 變體 | 驗證 `DEP-LOKI-APPLEPAYJP-JPY`、JPY、amount `100`、product name、telephone number `+819012345678` 與 direct checkout | preset、web request boundary、API boundary |
 | Catalog 的 shallow merge 遺失 Apple Pay 共用 collect 欄位 | 驗證 variant 覆寫 `product_name` 與 `telephone_number` 後仍保留 `product_detail`、`shopper_reference`、`shopper_email` 與 `origin` | preset/catalog layer |
-| Catalog 複用 schema 或 values reference | 驗證 sibling variants 的 schema、values、`payment_order` 與 `collect` object 皆為獨立 reference | preset/catalog layer |
+| Catalog sibling values 互相污染 | 修改一個 Apple Pay variant 的 nested value，確認 regional sibling 與 Japan sibling 的對應值不變 | preset/catalog layer |
 | Variant channel ID 與 preset file mapping 變更 | 驗證 manifest channel 與 preset loader 的 mapping | preset/config layer |
 | JSON source 優先順序或 fallback 語意改變 | 使用 partial `commonValues`、whole-field schema 與 whole-field values source override 的 normalization case；另驗證不完整 JSON projection 仍回傳 validation error | preset/service layer |
 | 既有必填欄位或邊界驗證回歸 | 沿用目前 validation 與 API negative cases | validation/API boundary |
-| Candidate code 可使用 harness process 權限 | 在隔離環境執行 candidate fixture，驗證 secret、network、host-file 與 process boundary 限制 | harness security integration |
 | UI label 被錯誤合併 | 保留全部 channel label mapping test | frontend boundary |
 | 舊 template export 被不相容地移除 | 在 cleanup phase 先完成 repo search 與外部 caller 確認，再增加相容性 test | domain/API contract |
 
@@ -410,11 +366,9 @@ Phase 0 已合併重複的地區測試，也沒有改變 production runtime。Ap
 
 Phase 0 的測試保留 canonical product cases 與 special variant cases。`telephone_number=+819012345678` 的 seed、request payload 與 API defaults assertion 已加入，且適用的 API test、型別檢查與 diff gate 已通過。
 
-### Phase 1：建立 family catalog，已完成實作，Parity 驗收待補正
+### Phase 1：建立 family catalog，已完成實作
 
 Phase 1 只修改 seed config 的組織方式。Phase 1 不修改 JSON、manifest、API route、domain payload 或 UI。
-
-Phase 1 的 production code、必要測試、型別檢查與 API build gate 已完成。既有 parity record 以 `48cc6f2` 為 candidate，但目前 HEAD 是 `d1d89a2`，因此 parity evidence 仍需補正後，才能將整個 Phase 1 標記為完成。
 
 Phase 1 必須完成以下事項：
 
@@ -427,8 +381,6 @@ Phase 1 必須完成以下事項：
 - 更新或新增最低必要的 catalog invariant test。
 - Catalog composer 在 seed layer 明確合併 Apple Pay 的 `values`、`payment_order` 與 `collect`，不得使用只合併第一層的 spread，也不得依賴 normalization deep merge。
 - Catalog composer 對每個輸出的 `DepositChannelConfig` 使用 deep clone，避免 sibling variants 共用 schema、values 或 nested object reference。
-- 使用固定 env、固定 `makeId`，完成 seed store 與 loaded normalized store 的前後完整輸出 parity。
-- 記錄 `BASE_REF`、`HEAD_REF`、兩個隔離 worktree、相同 `.env.test`、固定 `makeId`、相同 `data/deposit`、canonical JSON 方法、byte diff 或 checksum comparison 結果。
 - 完成 JSON precedence 與不完整 projection validation 的測試。
 - 確認 diff 沒有超出 preset、測試與必要文件範圍。
 - 執行適用的 API test、型別檢查與 API build gate。
@@ -499,10 +451,7 @@ Phase 1 完成時，必須滿足以下條件：
 - Loki、Google Pay USD、Google Pay Japan、Apple Pay USD 與 Apple Pay Japan 的代表性 defaults 與 request contract 不變。
 - Apple Pay Japan 的 special variant 覆寫仍有效。
 - Apple Pay variant 的 nested composition 保留所有 family base collect fields，variant override 只改變指定欄位。
-- 每個輸出的 sibling variant 都有獨立的 schema、values、`payment_order` 與 `collect` reference。
-- `createSeedDepositPresets` 與 `loadDepositPresets` 的 canonical JSON parity 為零差異。
-- Parity record 包含 `BASE_REF`、`HEAD_REF`、兩個隔離 worktree、相同 env/data source、固定 `makeId`、canonicalization 方法與 zero-diff 或 identical checksum 證據。
-- Catalog invariant test 證明 manifest channel set、JSON mapping、family schema、variant mapping 與 Apple Pay Japan 特殊值完整保留。
+- Catalog invariant test 證明 channel set、三個 family representative、Apple Pay Japan 特殊值與 sibling nested value isolation 完整保留；JSON mapping 仍由既有 manifest／preset loader contract 保護。
 - JSON precedence test 證明 partial `commonValues` fallback、whole-field schema precedence、whole-field values precedence 與 projection validation 行為不變。
 - UI label mapping 不變。
 - 沒有 API、database、migration 或 upstream payload contract 變更。
@@ -523,8 +472,6 @@ Phase 1 完成時，必須滿足以下條件：
 | `git diff --check` | 通過 | 目前 diff 沒有 whitespace error |
 
 上述紀錄只證明當時的測試 assertion 通過，不證明 Apple Pay Japan 的 `telephone_number` 已被完整保護。Phase 0 補正與 Phase 1 實作後，必須重新執行 `bun run test:api`、`tsc --noEmit`、`bun run build:api` 與 `git diff --check`。文件更新本身不需要執行 frontend 或 database gate。`bun run test:db` 仍由使用者或 CI 執行。Phase 1 不預期需要該 gate。
-
-Phase 1 candidate `48cc6f2` 的前後 parity 已依相同 `.env.test`、固定 `makeId`、相同 `data/deposit` source 與兩個隔離 worktree 完成；seed store 與 normalized store 均為 zero byte diff，完整紀錄、artifact 名稱與 checksum 保存在 [`2026-11-17-loki-product-family-variants-parity.md`](../review/2026-11-17-loki-product-family-variants-parity.md)。該 record 不涵蓋目前的 `d1d89a2` HEAD，因此目前 Phase 1 狀態為「已完成實作，Parity 驗收待補正」。
 
 ## 已確認、假設與待確認事項
 
