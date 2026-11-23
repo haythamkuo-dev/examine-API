@@ -534,8 +534,36 @@ type DepositFamilyVariant<Channel extends DepositChannel = DepositChannel> = {
   values?: DepositChannelValues;
 };
 
+const isLokiIntercardChannel = (
+  channel: DepositChannel,
+): channel is LokiIntercardChannel => channel.startsWith('loki-intercard-');
+
+const isGooglePayChannel = (channel: DepositChannel): channel is GooglePayChannel =>
+  channel === 'googlepay_usd' || channel.startsWith('loki-googlepay-');
+
+const LOKI_INTERCARD_CHANNELS = DEPOSIT_CHANNELS.filter(isLokiIntercardChannel);
+const GOOGLEPAY_CHANNELS = DEPOSIT_CHANNELS.filter(isGooglePayChannel);
+
+const assertFamilyCatalogComplete = <FamilyChannel extends string>(
+  familyName: string,
+  expectedChannels: readonly FamilyChannel[],
+  actualChannels: readonly string[],
+): void => {
+  const expectedChannelSet = new Set<string>(expectedChannels);
+  const actualChannelSet = new Set(actualChannels);
+  const missingChannels = expectedChannels.filter((channel) => !actualChannelSet.has(channel));
+  const unexpectedChannels = actualChannels.filter((channel) => !expectedChannelSet.has(channel));
+
+  if (missingChannels.length > 0 || unexpectedChannels.length > 0) {
+    throw new TypeError(
+      `${familyName} deposit catalog does not match the channel manifest (missing: ${missingChannels.join(', ') || 'none'}; unexpected: ${unexpectedChannels.join(', ') || 'none'})`,
+    );
+  }
+};
+
 const createFamilyChannelConfigs = <FamilyChannel extends DepositChannel>(
   familyName: string,
+  expectedChannels: readonly FamilyChannel[],
   base: DepositFamilyBase,
   variants: readonly DepositFamilyVariant<FamilyChannel>[],
 ): Record<FamilyChannel, DepositChannelConfig> => {
@@ -552,6 +580,12 @@ const createFamilyChannelConfigs = <FamilyChannel extends DepositChannel>(
       values: clone(variant.values ?? base.values),
     };
   }
+
+  assertFamilyCatalogComplete(
+    familyName,
+    expectedChannels,
+    variants.map(({ channel }) => channel),
+  );
 
   return configs as Record<FamilyChannel, DepositChannelConfig>;
 };
@@ -783,17 +817,7 @@ const isApplePayChannel = (channel: DepositChannel): channel is ApplePayChannel 
 
 const createApplePayChannelConfigs = (): Record<ApplePayChannel, DepositChannelConfig> => {
   const manifestChannels = DEPOSIT_CHANNELS.filter(isApplePayChannel);
-  const catalogChannels = Object.keys(APPLEPAY_VARIANTS);
-  const manifestChannelSet = new Set<string>(manifestChannels);
-  const catalogChannelSet = new Set(catalogChannels);
-  const missingChannels = manifestChannels.filter((channel) => !catalogChannelSet.has(channel));
-  const unexpectedChannels = catalogChannels.filter((channel) => !manifestChannelSet.has(channel));
-
-  if (missingChannels.length > 0 || unexpectedChannels.length > 0) {
-    throw new TypeError(
-      `Apple Pay deposit catalog does not match the channel manifest (missing: ${missingChannels.join(', ') || 'none'}; unexpected: ${unexpectedChannels.join(', ') || 'none'})`,
-    );
-  }
+  assertFamilyCatalogComplete('Apple Pay', manifestChannels, Object.keys(APPLEPAY_VARIANTS));
 
   return Object.fromEntries(
     manifestChannels.map((channel) => {
@@ -812,10 +836,15 @@ const createApplePayChannelConfigs = (): Record<ApplePayChannel, DepositChannelC
 };
 
 const createLokiIntercardChannelConfigs = (): Record<LokiIntercardChannel, DepositChannelConfig> =>
-  createFamilyChannelConfigs('Loki international card', LOKI_INTERCARD_FAMILY, LOKI_INTERCARD_VARIANTS);
+  createFamilyChannelConfigs(
+    'Loki international card',
+    LOKI_INTERCARD_CHANNELS,
+    LOKI_INTERCARD_FAMILY,
+    LOKI_INTERCARD_VARIANTS,
+  );
 
 const createGooglePayChannelConfigs = (): Record<GooglePayChannel, DepositChannelConfig> =>
-  createFamilyChannelConfigs('Google Pay', GOOGLEPAY_FAMILY, GOOGLEPAY_VARIANTS);
+  createFamilyChannelConfigs('Google Pay', GOOGLEPAY_CHANNELS, GOOGLEPAY_FAMILY, GOOGLEPAY_VARIANTS);
 
 const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChannelConfig> => ({
   ...createLokiIntercardChannelConfigs(),
