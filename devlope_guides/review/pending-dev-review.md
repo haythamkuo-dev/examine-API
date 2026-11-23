@@ -3,12 +3,12 @@
 ## Review 基準
 
 - Review 模式：PR Reviewer 全域審核。
-- Review 深度：Deep；目前 cleanup diff 為 9 個檔案，`+150 / -1722`，涉及 Deposit/payment、catalog tests 與 obsolete verification cleanup。
-- Base：`1ddc22b529765da1e388ea80fcf3b885ce0fa835`。
-- Head：`f1caba8d588b4604020fe4596775dcd7fa4e91`，包含 Phase 1 candidate 及後續 cleanup。
-- Phase 1 candidate `48cc6f2` 的產品行為仍以歷史 review 範圍判定；目前 worktree 的 cleanup 只移除 obsolete verification artifacts，不改變 family catalog 或 API contract。
-- Worktree 在本輪 review 前包含使用者的 cleanup 變更。`d1d89a2`、`be50f99` 及其他產品變更仍不納入 Phase 1 product verdict。
-- Specialist ledger：Security、Architecture 均完成 read-only review；HIGH security finding 已由獨立 skeptic 重新讀取候選程式碼並確認成立。四個 Deep adversarial angles 已完成。
+- Review 深度：Deep；目前 base-to-head diff 為 7 個檔案，`+195 / -420`，涉及 Deposit/payment family catalog guard、catalog tests 與 obsolete verification cleanup。
+- Base：`d1d89a2ab191ef222099a4d86a176c354cc39aaa`（`merge-base(origin/dev, dev)`）。
+- Head：`b7c559f7c3db85845ad076610d65f361c4baea0a`（`fix: enhance family catalog completness guard`）。
+- Phase 1 candidate `48cc6f2` 的產品行為仍以歷史 review 範圍判定；`a1334bb` 的 cleanup 保留，`b7c559f` 另外補上 generic family catalog 的 runtime completeness guard。
+- Worktree 在本輪 review 前為 clean；`d1d89a2`、`be50f99` 及其他產品變更仍不納入 Phase 1 product verdict。
+- Specialist ledger：本輪沒有新增 Security／Architecture specialist；這次是單檔 internal guard 修正，由主 reviewer 完成呼叫鏈與 Deep adversarial pass。
 - 歷史 parity record 只作為 `1ddc22b → 48cc6f2` 的一次性證據，不是目前 branch HEAD 的驗證，也不是 repository gate。
 
 ## Gate 1：分支實作目標、完整性與範圍
@@ -17,10 +17,11 @@
 
 1. 在 `src/deposit/presets.ts` 以 Loki intercard、Google Pay 與 Apple Pay 的 family base 加 variant override 重組 seed config，保留既有 channel ID、JSON mapping、normalization、API request 與 UI label contract。
 2. 補回 Apple Pay Japan 的三個 `telephone_number=+819012345678` boundary assertions，新增 catalog invariant、JSON precedence 與 sibling nested-value isolation coverage。
+3. 對每個 family catalog 與 manifest family subset 執行 completeness 檢查，設定錯誤需列出 family、missing channels 與 unexpected channels。
 
 ### 完整性與範圍結果
 
-實作、測試與歷史 evidence 均存在，`src/core/env.ts`、domain、route、JSON data、UI route 與 label 沒有被 Phase 1 candidate 修改。Family composer、Apple Pay nested composition、JSON whole-field precedence 與 API defaults contract 均符合目標。
+實作、測試與歷史 evidence 均存在，`src/core/env.ts`、domain、route、JSON data、UI route 與 label 沒有被 Phase 1 candidate 修改。Family composer、Apple Pay nested composition、generic family completeness guard、JSON whole-field precedence 與 API defaults contract 均符合目標。
 
 範圍備註：`devlope_guides/ai_design_doc_writing.md` 的一般性表格與 Mermaid 寫作規則依目前要求保留，不在本次 cleanup 範圍內。
 
@@ -31,26 +32,23 @@
 - Apple Pay 新增明確的 top-level、`payment_order` 與 `collect` composition，variant 只覆寫 product name 與 telephone number 等指定欄位，且每個輸出使用 clone。
 - `src/deposit/web.test.ts` 保留 catalog set、Loki／Google Pay／Apple Pay representative、Apple Pay Japan exact contract 與 sibling nested-value isolation；三個 Apple Pay Japan case 補回 exact telephone assertion。
 - 後續 cleanup 移除 obsolete verification scripts 與 issue tracking，不修改 production API route、domain payload、signature、database 或 JSON source。
+- `assertFamilyCatalogComplete` 以 `DEPOSIT_CHANNELS` 的 family subset 比對實際 variant keys；Loki intercard、Google Pay 與 Apple Pay 共用 missing／unexpected channel guard。
 
 ## Gate 3：原有 Runtime 潛在錯誤風險
 
-既有 active route 仍經由 `createDepositService`、`loadDepositPresets`、`normalizeDepositPresets`、`buildDepositRequestFromForm` 與 structured request path。候選 diff 沒有改變 route mount、service wiring、normalization precedence、error boundary 或 persistent JSON writer。未發現由 family refactor 造成的既有成功／失敗路徑中斷。
+既有 active route 仍經由 `createDepositService`、`loadDepositPresets`、`normalizeDepositPresets`、`buildDepositRequestFromForm` 與 structured request path。Completeness guard 只在 seed catalog 建立時檢查設定，完整 catalog 的既有輸出與 route wiring 不變；未發現既有成功／失敗路徑中斷。
 
 ## Gate 4：新增錯誤風險
 
-本次 cleanup 只移除 obsolete verification artifacts 與其文件規範，沒有新增 runtime entry point、外部 process、檔案輸出或 API 行為。未發現新增錯誤風險。
+新增的 catalog 設定錯誤分支會在 seed config 建立時以 `TypeError` 明確列出 family、missing channels 與 unexpected channels；正常 catalog 不新增外部副作用或 API 契約變更。未發現未處理的新增錯誤風險。
 
 ## Gate 5：架構、封裝與依賴
 
-### Advisory：Generic family builder 將不完整 variants 強制 cast 成完整 Record
+### PASS：Family catalog completeness guard 已補正
 
-**主要 Gate：Gate 5。原始嚴重度：MEDIUM。處理結果：ADVISORY，不阻塞。**
+`src/deposit/presets.ts:547-562` 新增共用 `assertFamilyCatalogComplete`，以 manifest-derived family subset 對照實際 variant keys，並在 `createFamilyChannelConfigs` 回傳前拒絕 missing／unexpected channels。Apple Pay 也改用同一 guard；錯誤訊息包含 family 與 channel identifiers。原先的 MEDIUM advisory 已由 `b7c559f` 修正。
 
-- 位置：`src/deposit/presets.ts:522-542`，呼叫位置 `799-803`。
-- 觸發條件：從 `LOKI_INTERCARD_VARIANTS` 或 `GOOGLEPAY_VARIANTS` 移除／拼錯一個 channel。`satisfies readonly DepositFamilyVariant<...>[]` 只驗證陣列元素型別，不要求涵蓋完整 union。
-- 依據：composer 只檢查 duplicate，最後以 `configs as Record<FamilyChannel, DepositChannelConfig>` 回傳；沒有與 `DEPOSIT_CHANNELS` 的 family subset 做 missing／unexpected set comparison。後續 `normalizeDepositPresets` 在 `src/deposit/presets.ts:1491` 取 `seed.channels[channel]` 時才會遇到 undefined，錯誤不會指出遺失的 channel。
-- 影響：若未來只修改 family variant array，型別本身不會要求完整 union coverage。
-- 重新判定：`src/deposit/web.test.ts:332-415` 在 `test:api` 中驗證 seed output 的 channel key set、三個 family representative、Apple Pay Japan contract 與 sibling nested-value isolation。這保留產品行為風險的最低必要 coverage；generic family array completeness 仍是非阻塞 advisory。
+既有 `src/deposit/web.test.ts:335` 仍驗證最終 seed channel set 與 manifest 完全一致；本次沒有新增測試案例，guard 的新增分支由靜態呼叫鏈、型別檢查、API test 與 API build 驗證。
 
 ## Gate 6：重要資料持久化靜態安全性
 
@@ -58,30 +56,30 @@ Phase 1 candidate 沒有修改 `data/*.json`、JSON save path、database、migra
 
 ## Gate 7：本機單元測試
 
-- 目前 worktree 執行 `bun run test:api`：182 pass、0 fail、754 `expect()` calls，21 files。
-- 目前 worktree 執行 `tsc --noEmit`：pass。
-- 目前 worktree 執行 `bun run build:api`：pass，Bundled 36 modules。
+- 目前 `HEAD=b7c559f` 執行 `bun run test:api`：182 pass、0 fail、754 `expect()` calls，21 files。
+- 目前 `HEAD=b7c559f` 執行 `tsc --noEmit`：pass。
+- 目前 `HEAD=b7c559f` 執行 `bun run build:api`：pass，Bundled 36 modules。
 - `git diff --check`：pass。
 - `bun run test:web`：未執行。Phase 1 candidate 沒有 frontend source、route 或 UI behavior change。
 - `bun run test:db`：未由 AI 執行。Phase 1 沒有 database／migration change，且依 `AGENTS.md` 由使用者或 CI 負責。
 
 ## Review 結論
 
-- `APPROVE`。Phase 1 family refactor、Apple Pay nested composition、Apple Pay Japan contract assertions、JSON precedence test 與 API build/test evidence 均已完成；obsolete verification artifacts、issue tracking 與永久 gate 已移除，family builder 缺口維持不阻塞 advisory。
+- `APPROVE`。`b7c559f` 已補上 generic family catalog completeness guard，並完成 Phase 1 family refactor、Apple Pay nested composition、Apple Pay Japan contract assertions、JSON precedence test 與 API build/test evidence；obsolete verification artifacts 與永久 parity gate 已移除。
 - 歷史 parity evidence 只保留為一次性 baseline-to-candidate 紀錄，不驗證目前 branch HEAD，也不形成 repository gate。
 - `48cc6f2` 之後的 `d1d89a2`、`be50f99` 及其他產品變更不在 Phase 1 product verdict 範圍。
 - `bun run test:db` 未由 AI 執行；本階段沒有 database／migration change，依 `AGENTS.md` 由使用者或 CI 負責。
 
-status:           APPROVE for Phase 1 product scope; historical parity evidence is non-gating
-files changed:    catalog test and obsolete verification/docs cleanup; production runtime unchanged
+status:           APPROVE for HEAD b7c559f; historical parity evidence is non-gating
+files changed:    7 (+195 -420) in base-to-head review scope
 scope:            on target; Phase 1 family catalog plus focused cleanup
 user-visible delta: none
 review depth:     deep
-risk tier:        deposit/payment; no executable verification CLI remains
-hard stops:       0 found, 0 fixed, 0 deferred; 0 blocking findings, 1 advisory remains
-sibling sweep:    family catalog variants checked; no unreviewed sibling in the fixed Phase 1 diff
-specialists:      security, architecture, independent HIGH-finding skeptic
-new tests:        0; existing catalog test narrowed to representative contracts and nested-value isolation
+risk tier:        deposit/payment; human review pending
+hard stops:       0 found, 1 fixed, 0 deferred; no blocking findings remain
+sibling sweep:    generic family helper and Apple Pay shared guard checked; no unreviewed same-shape builder
+specialists:      none activated this round; primary reviewer adversarial pass completed
+new tests:        0; existing catalog set invariant retained
 public actions:   none
-doc debt:         none from the removed verification surface; the generic design-guide addition remains intentionally unchanged
-verification:     current worktree `bun run test:api`, `tsc --noEmit`, `bun run build:api`, and `git diff --check` -> pass
+doc debt:         none
+verification:     `bun run test:api`, `tsc --noEmit`, `bun run build:api`, and `git diff --check` at HEAD b7c559f -> pass
