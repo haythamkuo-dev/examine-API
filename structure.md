@@ -121,8 +121,7 @@
 ├── index.html
 ├── package.json
 ├── scripts
-│   ├── database.ts
-│   └── deposit-presets-parity.ts
+│   └── database.ts
 ├── src
 │   ├── core
 │   │   ├── codeFormatValidation.ts
@@ -253,4 +252,4 @@
     │       └── modal.tsx
     └── styles.css
 
-31 directories, 223 files
+31 directories, 222 files
