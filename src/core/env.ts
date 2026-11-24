@@ -89,6 +89,7 @@ export const DEPOSIT_CHANNEL_MANIFEST = [
   createChannelManifestEntry('deposit', 'duitnowqr_usd', { tokenKey: MerchantTokenKey.Normal }),
   createChannelManifestEntry('deposit', 'JCB-USD', { tokenKey: MerchantTokenKey.Normal, deferred: true }),
   createChannelManifestEntry('deposit', 'JCB-JPY', { tokenKey: MerchantTokenKey.Normal, deferred: true }),
+  createChannelManifestEntry('deposit', 'PAYPAY-JPY', { tokenKey: MerchantTokenKey.Normal }),
   createChannelManifestEntry('deposit', 'ALIPAY-CNY', { tokenKey: MerchantTokenKey.Normal }),
   createChannelManifestEntry('deposit', 'ALIPAY-HKD', { tokenKey: MerchantTokenKey.Normal }),
   createChannelManifestEntry('deposit', 'WECHAT-HKD', { tokenKey: MerchantTokenKey.Normal }),

@@ -554,6 +554,7 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
   },
   'JCB-USD': { product_no: 'DEP-FUTUREPAY_COLLECT-GENERALJCBCOLLECT-USD', amount: { amount: '99.99', currency_code: 'USD' }, return_url: env.callbackUrlDeposit },
   'JCB-JPY': { product_no: 'DEP-FUTUREPAY_COLLECT-GENERALJCBCOLLECT-JPY', amount: { amount: '1000', currency_code: 'JPY' }, return_url: env.callbackUrlDeposit },
+  'PAYPAY-JPY': { product_no: 'DEP-FUTUREPAY_COLLECT-PAYPAY-JPY', amount: { amount: '1000', currency_code: 'JPY' }, return_url: env.callbackUrlDeposit, payment_order: { collect: {} } },
   'ALIPAY-CNY': { product_no: 'DEP-FUTUREPAY_COLLECT-ALIPAYCN-CNY', amount: { amount: '188.00', currency_code: 'CNY' }, return_url: env.callbackUrlDeposit },
   'ALIPAY-HKD': { product_no: 'DEP-FUTUREPAY_COLLECT-ALIPAYHK-HKD', amount: { amount: '188.00', currency_code: 'HKD' }, return_url: env.callbackUrlDeposit },
   'WECHAT-HKD': { product_no: 'DEP-FUTUREPAY_COLLECT-HKWECHATPAYST-HKD', amount: { amount: '188.00', currency_code: 'HKD' }, return_url: env.callbackUrlDeposit },
