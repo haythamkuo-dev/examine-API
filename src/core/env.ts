@@ -120,6 +120,7 @@ export const DEPOSIT_CHANNEL_MANIFEST = [
   createChannelManifestEntry('deposit', 'loki-applepay-id-usd', { tokenKey: MerchantTokenKey.Normal }),
   createChannelManifestEntry('deposit', 'loki-applepay-jp-jpy', { tokenKey: MerchantTokenKey.Normal }),
   createChannelManifestEntry('deposit', 'loki-intercard-sg-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'loki-intercard-sg-sgd', { tokenKey: MerchantTokenKey.Normal }),
   createChannelManifestEntry('deposit', 'loki-intercard-vn-usd', { tokenKey: MerchantTokenKey.Normal }),
   createChannelManifestEntry('deposit', 'loki-intercard-th-usd', { tokenKey: MerchantTokenKey.Normal }),
   createChannelManifestEntry('deposit', 'loki-intercard-ph-usd', { tokenKey: MerchantTokenKey.Normal }),

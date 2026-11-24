@@ -7,11 +7,14 @@ import {
   useMemo,
   useRef,
   useState,
+  type AnimationEvent,
   type MouseEvent,
   type PropsWithChildren,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+
+const modalExitDurationMs = 240;
 
 type ModalOptions = {
   title: string;
@@ -47,15 +50,17 @@ const getFirstFocusableElement = (root: HTMLElement | null): HTMLElement | null 
 };
 
 /**
- * Provides the global modal state and portal rendering surface.
+ * Provides modal state and a portal rendering surface for the current UI scope.
  *
  * @param props Standard React children rendered inside the modal provider.
- * @returns Context provider that enables app-wide modal opening and closing.
+ * @returns Context provider that enables modal opening and closing within its scope.
  */
 export function ModalProvider({ children }: PropsWithChildren) {
   const [modalOptions, setModalOptions] = useState<ModalOptions | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
   const [portalRoot, setPortalRoot] = useState<HTMLDivElement | null>(null);
   const lastActiveElementRef = useRef<HTMLElement | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleId = useId();
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -89,17 +94,68 @@ export function ModalProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    const element = getFirstFocusableElement(panelRef.current) ?? panelRef.current;
+    const element =
+      panelRef.current?.querySelector<HTMLElement>('[data-modal-autofocus="true"]') ??
+      getFirstFocusableElement(panelRef.current) ??
+      panelRef.current;
     element?.focus?.();
   }, [modalOptions]);
 
-  const closeModal = useCallback(() => {
-    setModalOptions(null);
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
   }, []);
 
+  const finishClose = useCallback(() => {
+    clearCloseTimer();
+    setModalOptions(null);
+    setIsClosing(false);
+  }, [clearCloseTimer]);
+
+  const closeModal = useCallback(() => {
+    setIsClosing(true);
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(finishClose, modalExitDurationMs);
+  }, [clearCloseTimer, finishClose]);
+
   const openModal = useCallback((options: ModalOptions) => {
+    clearCloseTimer();
+    setIsClosing(false);
     setModalOptions(options);
-  }, []);
+  }, [clearCloseTimer]);
+
+  useEffect(
+    () => () => {
+      clearCloseTimer();
+
+      if (typeof document === 'undefined') {
+        return;
+      }
+
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+
+      const previousElement = lastActiveElementRef.current;
+      lastActiveElementRef.current = null;
+      if (previousElement?.isConnected) {
+        previousElement.focus();
+      }
+    },
+    [clearCloseTimer],
+  );
+
+  const handleExitAnimationEnd = useCallback(
+    (event: AnimationEvent<HTMLDivElement>) => {
+      if (!isClosing || event.target !== event.currentTarget || event.animationName !== 'modal-backdrop-exit') {
+        return;
+      }
+
+      finishClose();
+    },
+    [finishClose, isClosing],
+  );
 
   const handleOverlayClick = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
@@ -146,8 +202,11 @@ export function ModalProvider({ children }: PropsWithChildren) {
       {modalOptions && portalRoot
         ? createPortal(
             <div
-              className="fixed inset-0 z-[1000] flex items-center justify-center bg-[var(--modal-backdrop-bg)] px-4 py-6 backdrop-blur-sm"
+              className={`${
+                isClosing ? 'modal-backdrop-exit pointer-events-none' : 'modal-backdrop-enter'
+              } fixed inset-0 z-[1000] flex items-center justify-center bg-[var(--modal-backdrop-bg)] px-4 py-6 backdrop-blur-sm`}
               onMouseDown={handleOverlayClick}
+              onAnimationEnd={handleExitAnimationEnd}
             >
               <div
                 ref={panelRef}
@@ -156,7 +215,9 @@ export function ModalProvider({ children }: PropsWithChildren) {
                 aria-labelledby={titleId}
                 aria-describedby={modalOptions.description ? descriptionId : undefined}
                 tabIndex={-1}
-                className="w-full max-w-[min(92vw,640px)] rounded-[28px] border border-[var(--operator-card-border)] bg-[var(--operator-panel-bg)] p-6 text-[var(--color-text)] shadow-[var(--modal-shadow)] outline-none sm:p-8"
+                className={`${
+                  isClosing ? 'modal-panel-exit' : 'modal-panel-enter'
+                } w-full max-w-[min(92vw,640px)] rounded-[28px] border border-[var(--operator-card-border)] bg-[var(--operator-panel-bg)] p-6 text-[var(--color-text)] shadow-[var(--modal-shadow)] outline-none sm:p-8`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
@@ -189,7 +250,7 @@ export function ModalProvider({ children }: PropsWithChildren) {
 }
 
 /**
- * Reads the global modal controller exposed by {@link ModalProvider}.
+ * Reads the modal controller exposed by the nearest {@link ModalProvider}.
  *
  * @returns Modal control methods plus the current open state.
  * @throws {Error} When used outside `ModalProvider`.

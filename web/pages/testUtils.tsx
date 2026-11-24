@@ -53,7 +53,7 @@ export const textResponse = (body: string, init?: ResponseInit): Response =>
   });
 
 /**
- * Renders a page with the providers required by the application shell.
+ * Renders a page with the providers required by page-level tests.
  *
  * @param ui Page element to render.
  * @returns Testing Library queries scoped to the rendered page container.
@@ -137,6 +137,38 @@ export const createFetchHarness = <TBody,>(options: FetchHarnessOptions<TBody>) 
   return { records, reset, setHandler, setHandlers, install };
 };
 
+const waitForModalClose = async (view: PageTestView, dialog: HTMLElement): Promise<void> => {
+  await waitFor(() => expect(dialog).toHaveClass('modal-panel-exit'));
+
+  const overlay = dialog.parentElement;
+  if (!overlay) {
+    throw new Error('Modal dialog is missing its overlay element.');
+  }
+
+  await act(async () => {
+    fireEvent.animationEnd(overlay, { animationName: 'modal-backdrop-exit' });
+  });
+
+  await waitFor(() => expect(view.queryByRole('dialog')).not.toBeInTheDocument());
+};
+
+/**
+ * Closes the currently open modal and waits for its exit lifecycle to finish.
+ *
+ * @param view Rendered page queries.
+ * @returns A promise that resolves after the modal is removed from the document.
+ * @throws {Error} When no modal close button or modal overlay can be found.
+ */
+export const closeModal = async (view: PageTestView): Promise<void> => {
+  const dialog = view.getByRole('dialog');
+
+  await act(async () => {
+    fireEvent.click(view.getByRole('button', { name: 'Close modal' }));
+  });
+
+  await waitForModalClose(view, dialog);
+};
+
 /**
  * Updates a text field through the shared modal editor.
  *
@@ -155,8 +187,9 @@ export const updateModalField = async (
   value: string,
   action: 'Confirm' | 'Cancel' = 'Confirm',
 ): Promise<void> => {
+  const trigger = await waitFor(() => view.getByRole('button', { name: buttonName }));
   await act(async () => {
-    fireEvent.click(view.getByRole('button', { name: buttonName }));
+    fireEvent.click(trigger);
   });
 
   await waitFor(() => {
@@ -169,9 +202,12 @@ export const updateModalField = async (
     });
   });
 
+  const dialog = view.getByRole('dialog');
   await act(async () => {
     fireEvent.click(view.getByRole('button', { name: action }));
   });
+
+  await waitForModalClose(view, dialog);
 };
 
 /**
@@ -188,3 +224,50 @@ export const updateApiKeyFromModal = (
   value: string,
   action: 'Confirm' | 'Cancel' = 'Confirm',
 ): Promise<void> => updateModalField(view, 'Edit API key', 'API key', value, action);
+
+/**
+ * Opens the shared channel selector modal.
+ *
+ * @param view Rendered page queries.
+ * @returns A promise that resolves after the channel selector modal is visible.
+ * @throws {Error} When the channel selector trigger or modal cannot be found.
+ */
+export const openRequestBuilderChannel = async (view: PageTestView): Promise<void> => {
+  await act(async () => {
+    fireEvent.click(view.getByRole('button', { name: /Open channel selector/ }));
+  });
+
+  await waitFor(() => {
+    expect(view.getByRole('dialog', { name: 'Select channel' })).toBeInTheDocument();
+  });
+};
+
+/**
+ * Selects a product through the shared searchable channel modal.
+ *
+ * @param view Rendered page queries.
+ * @param searchValue Value used to filter the product list, usually the raw channel ID.
+ * @param optionLabel Accessible product label rendered in the option.
+ * @returns A promise that resolves after the option selection event has been dispatched.
+ * @throws {Error} When the channel trigger, combobox, or matching product option cannot be found.
+ */
+export const selectRequestBuilderChannel = async (
+  view: PageTestView,
+  searchValue: string,
+  optionLabel: string,
+): Promise<void> => {
+  await openRequestBuilderChannel(view);
+  const combobox = view.getByRole('combobox', { name: 'Channel' });
+  await act(async () => {
+    fireEvent.input(combobox, { target: { value: searchValue } });
+  });
+
+  const option = await waitFor(() => view.getByRole('option', { name: optionLabel }));
+  const dialog = view.getByRole('dialog');
+
+  await act(async () => {
+    fireEvent.click(option);
+  });
+
+  await waitForModalClose(view, dialog);
+};

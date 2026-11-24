@@ -59,7 +59,7 @@ afterEach(() => {
   document.body.style.removeProperty('padding-right');
 });
 
-describe('global modal', () => {
+describe('scoped modal', () => {
   test('opens content through a portal and moves focus into the dialog', async () => {
     const view = renderModalHarness();
     const scope = within(view.container);
@@ -81,17 +81,26 @@ describe('global modal', () => {
     await scope.findByRole('dialog', { name: 'Confirm action' });
 
     fireEvent.keyDown(window, { key: 'Escape' });
+    expect(scope.getByRole('dialog', { name: 'Confirm action' })).toHaveClass('modal-panel-exit');
+    fireEvent.animationEnd(scope.getByRole('dialog', { name: 'Confirm action' }).parentElement!, {
+      animationName: 'modal-backdrop-exit',
+    });
     await waitFor(() => expect(scope.queryByRole('dialog', { name: 'Confirm action' })).not.toBeInTheDocument());
 
     fireEvent.click(scope.getByRole('button', { name: openButtonLabel }));
     await scope.findByRole('dialog', { name: 'Confirm action' });
 
-    fireEvent.mouseDown(scope.getByRole('dialog', { name: 'Confirm action' }).parentElement!);
+    const overlay = scope.getByRole('dialog', { name: 'Confirm action' }).parentElement!;
+    fireEvent.mouseDown(overlay);
+    fireEvent.animationEnd(overlay, { animationName: 'modal-backdrop-exit' });
     await waitFor(() => expect(scope.queryByRole('dialog', { name: 'Confirm action' })).not.toBeInTheDocument());
 
     fireEvent.click(scope.getByRole('button', { name: openButtonLabel }));
     await scope.findByRole('dialog', { name: 'Confirm action' });
     fireEvent.click(scope.getByRole('button', { name: 'Close modal' }));
+    fireEvent.animationEnd(scope.getByRole('dialog', { name: 'Confirm action' }).parentElement!, {
+      animationName: 'modal-backdrop-exit',
+    });
 
     await waitFor(() => expect(scope.queryByRole('dialog', { name: 'Confirm action' })).not.toBeInTheDocument());
   });
@@ -106,9 +115,26 @@ describe('global modal', () => {
 
     await scope.findByRole('dialog', { name: 'Confirm action' });
     fireEvent.click(scope.getByRole('button', { name: 'Close modal' }));
+    fireEvent.animationEnd(scope.getByRole('dialog', { name: 'Confirm action' }).parentElement!, {
+      animationName: 'modal-backdrop-exit',
+    });
 
     await waitFor(() => expect(scope.queryByRole('dialog', { name: 'Confirm action' })).not.toBeInTheDocument());
     expect(document.body.style.overflow).toBe('');
     expect(document.activeElement).toBe(opener);
+  });
+
+  test('restores scroll state when the provider unmounts with an open modal', async () => {
+    const view = renderModalHarness();
+    const scope = within(view.container);
+
+    fireEvent.click(scope.getByRole('button', { name: openButtonLabel }));
+    await scope.findByRole('dialog', { name: 'Confirm action' });
+    expect(document.body.style.overflow).toBe('hidden');
+
+    view.unmount();
+
+    expect(document.body.style.overflow).toBe('');
+    expect(document.body.style.paddingRight).toBe('');
   });
 });

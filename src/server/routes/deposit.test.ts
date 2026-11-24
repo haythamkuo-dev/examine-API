@@ -476,6 +476,44 @@ describe('deposit API routes', () => {
     expect((collectFields.shopper_email as Record<string, unknown>).required).toBe(true);
   });
 
+  test('GET /api/deposit/defaults returns the Loki Singapore SGD intercard product fields', async () => {
+    const response = await context.requestApi('/api/deposit/defaults?channel=loki-intercard-sg-sgd');
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    const form = body.form as Record<string, unknown>;
+    const commonValues = form.commonValues as Record<string, unknown>;
+    const channelValues = form.channelValues as Record<string, unknown>;
+    const channelSchema = body.channelSchema as Record<string, unknown>;
+    const paymentOrderSchema = channelSchema.payment_order as Record<string, unknown>;
+    const collectSchema = (paymentOrderSchema.fields as Record<string, unknown>).collect as Record<string, unknown>;
+    const collectFields = collectSchema.fields as Record<string, unknown>;
+
+    expect(body.channel).toBe('loki-intercard-sg-sgd');
+    expect(commonValues).toMatchObject({
+      productNo: 'DEP-LOKI-INTERCARD-SGD',
+      amount: '10.00',
+      currencyCode: 'SGD',
+    });
+    expect(channelValues).toEqual({
+      payment_order: {
+        collect: {
+          product_name: 'Test Order',
+          product_detail: 'Test order',
+          shopper_email: 'test@example.com',
+          origin: 'https://merchant.example.com',
+        },
+      },
+    });
+    expect(collectFields).toMatchObject({
+      product_name: { required: true },
+      product_detail: { required: true },
+      shopper_email: { required: true },
+      origin: { required: true },
+    });
+  });
+
   test('GET /api/deposit/defaults returns the Japan Google Pay JPY product defaults', async () => {
     const response = await context.requestApi('/api/deposit/defaults?channel=loki-googlepay-jp-jpy');
 

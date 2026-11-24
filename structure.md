@@ -69,6 +69,7 @@
 │   │   │   ├── loki-intercard-hk-usd.json
 │   │   │   ├── loki-intercard-id-usd.json
 │   │   │   ├── loki-intercard-ph-usd.json
+│   │   │   ├── loki-intercard-sg-sgd.json
 │   │   │   ├── loki-intercard-sg-usd.json
 │   │   │   ├── loki-intercard-th-usd.json
 │   │   │   ├── loki-intercard-usd.json
@@ -252,4 +253,4 @@
     │       └── modal.tsx
     └── styles.css
 
-31 directories, 222 files
+31 directories, 223 files

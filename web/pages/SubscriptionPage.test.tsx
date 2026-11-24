@@ -17,9 +17,12 @@ import { normalizeCreateResult, SubscriptionPage } from './SubscriptionPage';
 import { getSubscriptionChannelLabel } from './helper/subscriptionChannelLabels';
 import {
   createFetchHarness,
+  closeModal,
   jsonResponse,
+  openRequestBuilderChannel,
   readJsonBody,
   renderPage,
+  selectRequestBuilderChannel,
   textResponse,
   updateApiKeyFromModal,
   updateModalField,
@@ -232,8 +235,11 @@ describe('SubscriptionPage', () => {
     await view.findByRole('heading', { name: 'Subscription' });
     await view.findByText('Request builder');
 
-    const channelSelect = view.getByLabelText('Channel');
-    expect(within(channelSelect).getByRole('option', { name: '南非卡' })).toHaveValue('default');
+    await openRequestBuilderChannel(view);
+    const channelCombobox = view.getByRole('combobox', { name: 'Channel' });
+    fireEvent.input(channelCombobox, { target: { value: '' } });
+    expect(view.getByRole('option', { name: '南非卡' })).toHaveValue('default');
+    await closeModal(view);
     expect(getSubscriptionChannelLabel('unknown_channel')).toBe('unknown_channel');
   });
 
@@ -530,11 +536,11 @@ describe('SubscriptionPage', () => {
 
     await updateApiKeyFromModal(view, 'typed-subscription-key');
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: 'rabbitLinePay' },
-      });
-    });
+    await selectRequestBuilderChannel(
+      view,
+      'rabbitLinePay',
+      getSubscriptionChannelLabel('rabbitLinePay'),
+    );
 
     await waitFor(() => {
       expect(view.getByText('plan-rabbit-linepay')).toBeInTheDocument();
@@ -578,19 +584,23 @@ describe('SubscriptionPage', () => {
 
     await view.findByRole('heading', { name: 'Subscription' });
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: 'rabbitLinePay' },
-      });
-    });
+    await selectRequestBuilderChannel(
+      view,
+      'rabbitLinePay',
+      getSubscriptionChannelLabel('rabbitLinePay'),
+    );
 
     await waitFor(() => {
-      expect(view.getByLabelText('Channel')).toHaveValue('rabbitLinePay');
+      expect(view.getByRole('button', { name: /Open channel selector/ })).toHaveTextContent(
+        getSubscriptionChannelLabel('rabbitLinePay'),
+      );
     });
 
     await waitFor(() => {
       expect(view.getByText('plan-rabbit-linepay')).toBeInTheDocument();
-      expect(view.getByLabelText('Channel')).toHaveValue('rabbitLinePay');
+      expect(view.getByRole('button', { name: /Open channel selector/ })).toHaveTextContent(
+        getSubscriptionChannelLabel('rabbitLinePay'),
+      );
     });
   });
 
@@ -656,14 +666,16 @@ describe('SubscriptionPage', () => {
 
     await view.findByRole('heading', { name: 'Subscription' });
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: 'rabbitLinePay' },
-      });
-    });
+    await selectRequestBuilderChannel(
+      view,
+      'rabbitLinePay',
+      getSubscriptionChannelLabel('rabbitLinePay'),
+    );
 
     await waitFor(() => {
-      expect(view.getByLabelText('Channel')).toHaveValue('rabbitLinePay');
+      expect(view.getByRole('button', { name: /Open channel selector/ })).toHaveTextContent(
+        getSubscriptionChannelLabel('rabbitLinePay'),
+      );
       expect(view.getByRole('alert')).toHaveTextContent(missingPlanMessage);
     });
 

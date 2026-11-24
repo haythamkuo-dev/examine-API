@@ -3,7 +3,7 @@
 ## 文件定位
 
 - 文件等級：完整開發設計書。
-- 文件狀態：實作中。
+- 文件狀態：實作完成。
 - 文件日期：2026-11-17。
 - 主要規範：[AGENTS.md](../../AGENTS.md)。
 - 設計文件規範：[ai_design_doc_writing.md](../ai_design_doc_writing.md)。

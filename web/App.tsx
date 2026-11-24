@@ -22,8 +22,7 @@ const AppShell = () => {
 
   return (
     <AppThemeFrame mode={theme.colorTheme}>
-      <ModalProvider>
-        <main className="relative mx-auto min-h-screen w-full max-w-[1440px] px-4 pb-16 pt-6 sm:px-6 lg:px-8">
+      <main className="relative mx-auto min-h-screen w-full max-w-[1440px] px-4 pb-16 pt-6 sm:px-6 lg:px-8">
           <ScrollToTopButton />
           <header className="mb-8 overflow-hidden rounded-[32px] border border-[var(--app-shell-header-border)] bg-[var(--app-shell-header-bg)] p-6 shadow-[var(--shadow-xl)] backdrop-blur-xl sm:p-8">
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)] lg:items-end">
@@ -103,8 +102,7 @@ const AppShell = () => {
           </header>
 
           <Outlet />
-        </main>
-      </ModalProvider>
+      </main>
     </AppThemeFrame>
   );
 };
@@ -120,9 +118,30 @@ export function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<HomePage />} />
-          <Route path="/deposit" element={<DepositPage />} />
-          <Route path="/payout" element={<PayoutPage />} />
-          <Route path="/subscription" element={<SubscriptionPage />} />
+          <Route
+            path="/deposit"
+            element={
+              <ModalProvider key="deposit">
+                <DepositPage />
+              </ModalProvider>
+            }
+          />
+          <Route
+            path="/payout"
+            element={
+              <ModalProvider key="payout">
+                <PayoutPage />
+              </ModalProvider>
+            }
+          />
+          <Route
+            path="/subscription"
+            element={
+              <ModalProvider key="subscription">
+                <SubscriptionPage />
+              </ModalProvider>
+            }
+          />
         </Route>
       </Routes>
     </AppThemeProvider>

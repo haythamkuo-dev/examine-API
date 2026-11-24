@@ -80,11 +80,13 @@ describe('deposit web helpers', () => {
       {
         channel: 'co_nequi_usd',
         productNo: 'DEP-FUTUREPAY_COLLECT-CONEQUICO-USD',
+        currencyCode: 'USD',
         paymentOrder: { collect: {} },
       },
       {
         channel: 'co_nequi_usd2',
         productNo: 'DEP-SINGLEPAYMENT-NEQUICO-USD',
+        currencyCode: 'USD',
         paymentOrder: {
           country_code: 'CO',
           product_detail: 'Nequico USD test order',
@@ -102,6 +104,7 @@ describe('deposit web helpers', () => {
       {
         channel: 'co_pse_usd',
         productNo: 'DEP-SINGLEPAYMENT-PSECO-USD',
+        currencyCode: 'USD',
         paymentOrder: {
           country_code: 'CO',
           product_detail: 'PSE USD test order',
@@ -120,10 +123,24 @@ describe('deposit web helpers', () => {
       {
         channel: 'skrill_usd',
         productNo: 'DEP-FUTUREPAY_COLLECT-SKRILL-USD',
+        currencyCode: 'USD',
         paymentOrder: {
           collect: {
             shopper_email: 'payer@example.com',
             holder_name: 'Jane Doe',
+          },
+        },
+      },
+      {
+        channel: 'loki-intercard-sg-sgd',
+        productNo: 'DEP-LOKI-INTERCARD-SGD',
+        currencyCode: 'SGD',
+        paymentOrder: {
+          collect: {
+            product_name: 'Test Order',
+            product_detail: 'Test order',
+            shopper_email: 'test@example.com',
+            origin: 'https://merchant.example.com',
           },
         },
       },
@@ -135,7 +152,7 @@ describe('deposit web helpers', () => {
 
       expect(request.payload).toMatchObject({
         product_no: product.productNo,
-        amount: { amount: '10.00', currency_code: 'USD' },
+        amount: { amount: '10.00', currency_code: product.currencyCode },
         return_url: 'https://merchant.example.com/deposit',
         payment_order: product.paymentOrder,
       });
@@ -201,6 +218,21 @@ describe('deposit web helpers', () => {
       payment_order: {
         collect: {
           shopper_email: 'test@example.com',
+        },
+      },
+    });
+    expect(result.channels['loki-intercard-sg-sgd'].commonValues).toEqual({
+      productNo: 'DEP-LOKI-INTERCARD-SGD',
+      amount: '10.00',
+      currencyCode: 'SGD',
+    });
+    expect(result.channels['loki-intercard-sg-sgd'].values).toEqual({
+      payment_order: {
+        collect: {
+          product_name: 'Test Order',
+          product_detail: 'Test order',
+          shopper_email: 'test@example.com',
+          origin: 'https://merchant.example.com',
         },
       },
     });

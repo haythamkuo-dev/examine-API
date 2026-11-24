@@ -20,9 +20,12 @@ import { DepositPage } from './DepositPage';
 import { getDepositChannelLabel } from './helper/depositChannelLabels';
 import {
   createFetchHarness,
+  closeModal,
   jsonResponse,
+  openRequestBuilderChannel,
   readJsonBody,
   renderPage,
+  selectRequestBuilderChannel,
   textResponse,
   updateApiKeyFromModal,
 } from './testUtils';
@@ -262,9 +265,12 @@ describe('DepositPage', () => {
     await view.findByRole('heading', { name: 'Deposit' });
     await view.findByText('Request builder');
 
-    const channelSelect = view.getByLabelText('Channel');
-    expect(within(channelSelect).getByRole('option', { name: '南非卡' })).toHaveValue('southafrica_cards');
-    expect(within(channelSelect).getByRole('option', { name: '巴西pix支付' })).toHaveValue('pix_brl');
+    await openRequestBuilderChannel(view);
+    const channelCombobox = view.getByRole('combobox', { name: 'Channel' });
+    fireEvent.input(channelCombobox, { target: { value: '' } });
+    expect(view.getByRole('option', { name: '南非卡' })).toHaveValue('southafrica_cards');
+    expect(view.getByRole('option', { name: '巴西pix支付' })).toHaveValue('pix_brl');
+    await closeModal(view);
     expect(getDepositChannelLabel('pix_brl')).toBe('巴西pix支付');
     expect(getDepositChannelLabel('PAYPAY-JPY')).toBe('PAYPAY-JPY');
     expect(getDepositChannelLabel('id_dana_usd')).toBe('DANA-Single-USD');
@@ -296,6 +302,7 @@ describe('DepositPage', () => {
     expect(getDepositChannelLabel('loki-applepay-id-usd')).toBe('Apple pay-ID');
     expect(getDepositChannelLabel('loki-applepay-jp-jpy')).toBe('Apple pay-JP');
     expect(getDepositChannelLabel('loki-intercard-sg-usd')).toBe('loki-SG');
+    expect(getDepositChannelLabel('loki-intercard-sg-sgd')).toBe('loki-intercard-SGD');
     expect(getDepositChannelLabel('loki-intercard-vn-usd')).toBe('loki-VN');
     expect(getDepositChannelLabel('loki-intercard-th-usd')).toBe('loki-TH');
     expect(getDepositChannelLabel('loki-intercard-ph-usd')).toBe('loki-PH');
@@ -329,7 +336,9 @@ describe('DepositPage', () => {
     await view.findByText('Request builder');
 
     expect(view.getByText('Request builder')).toBeInTheDocument();
-    expect(view.getByLabelText('Channel')).toHaveValue(primaryChannel);
+    expect(view.getByRole('button', { name: /Open channel selector/ })).toHaveTextContent(
+      getDepositChannelLabel(primaryChannel),
+    );
     expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();
     expect(view.getByRole('button', { name: 'Edit API key' })).toBeInTheDocument();
     expect(view.getByLabelText('Merchant reference')).toHaveValue('');
@@ -464,11 +473,7 @@ describe('DepositPage', () => {
 
     await view.findByText('Merchant reference generated.');
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: secondaryChannel },
-      });
-    });
+    await selectRequestBuilderChannel(view, secondaryChannel, getDepositChannelLabel(secondaryChannel));
 
     await waitFor(() => {
       expect(view.getByLabelText('Merchant reference')).toHaveValue('');
@@ -478,11 +483,7 @@ describe('DepositPage', () => {
     expect(view.getByText('typed-deposit-key')).toBeInTheDocument();
     expect(view.queryByText(`api-key-${secondaryChannel}`)).toBeNull();
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: primaryChannel },
-      });
-    });
+    await selectRequestBuilderChannel(view, primaryChannel, getDepositChannelLabel(primaryChannel));
 
     await waitFor(() => {
       expect(view.getByLabelText('Merchant reference')).toHaveValue('');
@@ -511,11 +512,11 @@ describe('DepositPage', () => {
     await view.findByRole('button', { name: 'Edit API key' });
     await updateApiKeyFromModal(view, 'typed-deposit-key');
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: firstSpecialDepositChannel },
-      });
-    });
+    await selectRequestBuilderChannel(
+      view,
+      firstSpecialDepositChannel,
+      getDepositChannelLabel(firstSpecialDepositChannel),
+    );
 
     await waitFor(() => {
       expect(view.getByText(`api-key-${firstSpecialDepositChannel}`)).toBeInTheDocument();
@@ -548,11 +549,11 @@ describe('DepositPage', () => {
 
     await view.findByRole('heading', { name: 'Deposit' });
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: firstSpecialDepositChannel },
-      });
-    });
+    await selectRequestBuilderChannel(
+      view,
+      firstSpecialDepositChannel,
+      getDepositChannelLabel(firstSpecialDepositChannel),
+    );
 
     await waitFor(() => {
       expect(view.getByText(`api-key-${firstSpecialDepositChannel}`)).toBeInTheDocument();
@@ -560,11 +561,7 @@ describe('DepositPage', () => {
 
     await updateApiKeyFromModal(view, 'typed-special-deposit-key');
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: primaryChannel },
-      });
-    });
+    await selectRequestBuilderChannel(view, primaryChannel, getDepositChannelLabel(primaryChannel));
 
     await waitFor(() => {
       expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();

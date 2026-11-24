@@ -64,6 +64,7 @@ export const DEPOSIT_CHANNEL_LABELS: Partial<Record<DepositChannel, string>> = {
   'loki-applepay-id-usd': 'Apple pay-ID',
   'loki-applepay-jp-jpy': 'Apple pay-JP',
   'loki-intercard-sg-usd': 'loki-SG',
+  'loki-intercard-sg-sgd': 'loki-intercard-SGD',
   'loki-intercard-vn-usd': 'loki-VN',
   'loki-intercard-th-usd': 'loki-TH',
   'loki-intercard-ph-usd': 'loki-PH',

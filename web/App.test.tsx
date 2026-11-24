@@ -2,11 +2,11 @@
 
 import '../tests/web-setup';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { fireEvent, render, within } from '@testing-library/react';
+import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
 import { renderToString } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
-import { DEPOSIT_CHANNELS } from '../src/core/env';
+import { DEPOSIT_CHANNELS, PAYOUT_CHANNELS } from '../src/core/env';
 import type { DepositDefaultsResponse } from '../src/deposit/web';
 import { App } from './App';
 
@@ -21,9 +21,10 @@ const renderApp = (initialEntries: string[]) => {
 };
 
 const primaryDepositChannel = DEPOSIT_CHANNELS[0];
+const primaryPayoutChannel = PAYOUT_CHANNELS[0];
 
-if (!primaryDepositChannel) {
-  throw new Error('Deposit channels are not configured.');
+if (!primaryDepositChannel || !primaryPayoutChannel) {
+  throw new Error('Operator channels are not configured.');
 }
 
 const createDepositDefaultsResponse = (): DepositDefaultsResponse => ({
@@ -52,6 +53,19 @@ const createDepositDefaultsResponse = (): DepositDefaultsResponse => ({
       currencyCode: 'USD',
       returnUrl: 'https://merchant.example.com/return',
     },
+    channelValues: {},
+  },
+});
+
+const createPayoutDefaultsResponse = () => ({
+  apiKey: 'payout-api-key',
+  availableChannels: [primaryPayoutChannel],
+  channel: primaryPayoutChannel,
+  commonSchema: {},
+  channelSchema: {},
+  form: {
+    channel: primaryPayoutChannel,
+    commonValues: {},
     channelValues: {},
   },
 });
@@ -88,6 +102,47 @@ describe('web app routing', () => {
 
     expect(html).toContain('Payment Test Workbench');
     expect(html).toContain('Deposit');
+  });
+
+  test('unmounts the page-scoped modal when navigating to another operator route', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: string | URL | Request): Promise<Response> => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+
+      if (url === '/api/deposit/defaults') {
+        return new Response(JSON.stringify(createDepositDefaultsResponse()), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url === '/api/payout/defaults') {
+        return new Response(JSON.stringify(createPayoutDefaultsResponse()), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request: ${url}`);
+    }) as typeof fetch;
+
+    try {
+      const view = renderApp(['/deposit']);
+      const selectorTrigger = await view.findByRole('button', { name: /Open channel selector/ });
+
+      fireEvent.click(selectorTrigger);
+      const dialog = view.getByRole('dialog', { name: 'Select channel' });
+      expect(dialog).toBeInTheDocument();
+
+      fireEvent.click(view.getByRole('link', { name: 'Payout' }));
+
+      await waitFor(() => {
+        expect(view.getByRole('heading', { name: 'Payout' })).toBeInTheDocument();
+        expect(dialog.isConnected).toBe(false);
+        expect(document.body.style.overflow).toBe('');
+        expect(document.body.style.paddingRight).toBe('');
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   test('renders the payout workbench on the payout route', () => {

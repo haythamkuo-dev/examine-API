@@ -19,9 +19,12 @@ import { normalizeCreateResult, PayoutPage, shouldHidePayoutField } from './Payo
 import { getPayoutChannelLabel } from './helper/payoutChannelLabels';
 import {
   createFetchHarness,
+  closeModal,
   jsonResponse,
+  openRequestBuilderChannel,
   readJsonBody,
   renderPage,
+  selectRequestBuilderChannel,
   textResponse,
   updateApiKeyFromModal,
 } from './testUtils';
@@ -290,8 +293,11 @@ describe('PayoutPage', () => {
     await view.findByRole('heading', { name: 'Payout' });
     await view.findByText('Request builder');
 
-    const channelSelect = view.getByLabelText('Channel');
-    expect(within(channelSelect).getByRole('option', { name: '哥倫比亞銀行轉帳' })).toHaveValue('co_bank');
+    await openRequestBuilderChannel(view);
+    const channelCombobox = view.getByRole('combobox', { name: 'Channel' });
+    fireEvent.input(channelCombobox, { target: { value: '' } });
+    expect(view.getByRole('option', { name: '哥倫比亞銀行轉帳' })).toHaveValue('co_bank');
+    await closeModal(view);
     expect(getPayoutChannelLabel('unknown_channel')).toBe('unknown_channel');
   });
 
@@ -427,11 +433,7 @@ describe('PayoutPage', () => {
 
     await updateApiKeyFromModal(view, 'typed-payout-key');
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: secondaryChannel },
-      });
-    });
+    await selectRequestBuilderChannel(view, secondaryChannel, getPayoutChannelLabel(secondaryChannel));
 
     await waitFor(() => {
       expect(view.getByLabelText('Merchant reference')).toHaveValue('');
@@ -447,11 +449,7 @@ describe('PayoutPage', () => {
     expect(view.getByText('typed-payout-key')).toBeInTheDocument();
     expect(view.queryByText(`api-key-${secondaryChannel}`)).toBeNull();
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: primaryChannel },
-      });
-    });
+    await selectRequestBuilderChannel(view, primaryChannel, getPayoutChannelLabel(primaryChannel));
 
     await waitFor(() => {
       expect(view.getByLabelText('Merchant reference')).toHaveValue('');
@@ -500,11 +498,11 @@ describe('PayoutPage', () => {
 
     await updateApiKeyFromModal(view, 'typed-payout-key');
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: firstSpecialPayoutChannel },
-      });
-    });
+    await selectRequestBuilderChannel(
+      view,
+      firstSpecialPayoutChannel,
+      getPayoutChannelLabel(firstSpecialPayoutChannel),
+    );
 
     await waitFor(() => {
       expect(view.getByText(`api-key-${firstSpecialPayoutChannel}`)).toBeInTheDocument();
@@ -557,11 +555,11 @@ describe('PayoutPage', () => {
       expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
     });
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: firstSpecialPayoutChannel },
-      });
-    });
+    await selectRequestBuilderChannel(
+      view,
+      firstSpecialPayoutChannel,
+      getPayoutChannelLabel(firstSpecialPayoutChannel),
+    );
 
     await waitFor(() => {
       expect(view.getByText(`api-key-${firstSpecialPayoutChannel}`)).toBeInTheDocument();
@@ -569,11 +567,7 @@ describe('PayoutPage', () => {
 
     await updateApiKeyFromModal(view, 'typed-special-payout-key');
 
-    await act(async () => {
-      fireEvent.change(view.getByLabelText('Channel'), {
-        target: { value: primaryChannel },
-      });
-    });
+    await selectRequestBuilderChannel(view, primaryChannel, getPayoutChannelLabel(primaryChannel));
 
     await waitFor(() => {
       expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();

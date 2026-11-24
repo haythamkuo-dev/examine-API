@@ -1,5 +1,7 @@
-import type { ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { ActionButton, PageCard, SectionHeading } from './pageChrome';
+import { FaChevronDown } from 'react-icons/fa';
+import { useModal } from './utils/modal';
 
 const fieldsetClassName =
   'mb-4 rounded-[22px] border border-[var(--operator-card-soft-border)] bg-[var(--operator-card-soft-bg)] p-4';
@@ -111,6 +113,275 @@ const parseNumericInputValue = (value: string): number | '' => {
   const parsedValue = Number(trimmedValue);
   return Number.isFinite(parsedValue) ? parsedValue : '';
 };
+
+const normalizeChannelSearchText = (value: string): string =>
+  value.toLocaleLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+const channelShortcut =
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
+    ? { label: '⌘K', ariaKey: 'Meta+K' }
+    : { label: 'Ctrl K', ariaKey: 'Control+K' };
+
+const isEditableElement = (element: EventTarget | null): boolean => {
+  if (!(element instanceof HTMLElement)) {
+    return false;
+  }
+
+  return element.isContentEditable || Boolean(element.closest('input, textarea, select, [contenteditable]'));
+};
+
+type ChannelPickerDialogProps = {
+  channels: string[];
+  selectedChannel: string;
+  onChannelChange: (channel: string) => void;
+  channelLabel: (channel: string) => string;
+};
+
+function ChannelPickerDialog({
+  channels,
+  selectedChannel,
+  onChannelChange,
+  channelLabel,
+}: ChannelPickerDialogProps) {
+  const selectorId = useId();
+  const listboxId = `${selectorId}-products`;
+  const [channelSearch, setChannelSearch] = useState('');
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const { closeModal } = useModal();
+  const normalizedSearch = normalizeChannelSearchText(channelSearch);
+  const filteredChannels = useMemo(() => {
+    if (!normalizedSearch) {
+      return channels;
+    }
+
+    return channels.filter((channel) =>
+      normalizeChannelSearchText(`${channel} ${channelLabel(channel)}`).includes(normalizedSearch),
+    );
+  }, [channels, channelLabel, normalizedSearch]);
+  const productLabel = channels.length === 1 ? 'product' : 'products';
+  const activeIndex = filteredChannels.length > 0 ? Math.min(highlightedIndex, filteredChannels.length - 1) : -1;
+
+  const selectChannel = (channel: string) => {
+    onChannelChange(channel);
+    closeModal();
+  };
+
+  return (
+    <div className="grid gap-4">
+      <label className="relative block">
+        <input
+          type="search"
+          className={`${inputClassName} pr-11`}
+          aria-label="Channel"
+          aria-autocomplete="list"
+          aria-controls={listboxId}
+          aria-expanded="true"
+          aria-haspopup="listbox"
+          aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+          role="combobox"
+          data-modal-autofocus="true"
+          placeholder="Search products or channel ID"
+          value={channelSearch}
+          onInput={(event) => {
+            setChannelSearch(event.currentTarget.value);
+            setHighlightedIndex(0);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowDown') {
+              event.preventDefault();
+              setHighlightedIndex((currentIndex) =>
+                filteredChannels.length > 0 ? (currentIndex + 1) % filteredChannels.length : -1,
+              );
+              return;
+            }
+
+            if (event.key === 'ArrowUp') {
+              event.preventDefault();
+              setHighlightedIndex((currentIndex) =>
+                filteredChannels.length > 0
+                  ? (currentIndex - 1 + filteredChannels.length) % filteredChannels.length
+                  : -1,
+              );
+              return;
+            }
+
+            if (event.key === 'Enter') {
+              const channel = filteredChannels[activeIndex];
+              if (channel) {
+                event.preventDefault();
+                selectChannel(channel);
+              }
+              return;
+            }
+
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              closeModal();
+            }
+          }}
+          autoComplete="off"
+        />
+      </label>
+
+      <div className="overflow-hidden rounded-2xl border border-[var(--operator-card-border)] bg-[var(--operator-card-bg)] shadow-[var(--operator-input-shadow)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-[color:var(--color-text-muted)]">
+          <span>Products</span>
+          <span aria-live="polite" className="tabular-nums">
+            {filteredChannels.length} of {channels.length} {productLabel}
+          </span>
+        </div>
+
+        {filteredChannels.length > 0 ? (
+          <div
+            id={listboxId}
+            role="listbox"
+            aria-label="Products"
+            className="grid max-h-64 gap-1 overflow-y-auto border-t border-[var(--operator-card-soft-border)] p-1"
+          >
+            {filteredChannels.map((channel, index) => {
+              const isHighlighted = index === activeIndex;
+              const isSelected = channel === selectedChannel;
+
+              return (
+                <button
+                  key={channel}
+                  id={`${listboxId}-option-${index}`}
+                  type="button"
+                  role="option"
+                  value={channel}
+                  aria-label={channelLabel(channel)}
+                  aria-selected={isSelected}
+                  tabIndex={-1}
+                  className={`grid min-h-11 w-full cursor-pointer gap-0.5 rounded-xl px-3 py-2 text-left text-sm transition duration-200 ${
+                    isHighlighted
+                      ? 'bg-[var(--app-option-card-hover-bg)] text-[var(--color-text)]'
+                      : 'text-[color:var(--color-text-muted)]'
+                  } ${isSelected ? 'ring-1 ring-[var(--color-primary)]/60' : ''}`}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => selectChannel(channel)}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                >
+                  <span className="truncate">{channelLabel(channel)}</span>
+                  <span className="truncate text-xs text-[color:var(--color-text-muted)]">{channel}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p
+            className="border-t border-[var(--operator-card-soft-border)] px-4 py-3 text-sm text-[color:var(--color-text-muted)]"
+            role="status"
+          >
+            {normalizedSearch
+              ? `No products match “${channelSearch.trim()}”.`
+              : 'No products are available.'}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProductChannelSelector(props: {
+  channels: string[];
+  selectedChannel: string;
+  onChannelChange: (channel: string) => void;
+  channelLabel: (channel: string) => string;
+  disabled: boolean;
+}) {
+  const { channels, selectedChannel, onChannelChange, channelLabel, disabled } = props;
+  const { openModal, closeModal, isOpen } = useModal();
+
+  const openSelector = useCallback(() => {
+    if (disabled) {
+      return;
+    }
+
+    openModal({
+      title: 'Select channel',
+      description: 'Search by channel name or ID, then choose a channel to continue.',
+      dismissible: true,
+      children: (
+        <ChannelPickerDialog
+          channels={channels}
+          selectedChannel={selectedChannel}
+          onChannelChange={onChannelChange}
+          channelLabel={channelLabel}
+        />
+      ),
+    });
+  }, [channelLabel, channels, disabled, onChannelChange, openModal, selectedChannel]);
+
+  useEffect(() => {
+    if (disabled && isOpen) {
+      closeModal();
+    }
+  }, [closeModal, disabled, isOpen]);
+
+  useEffect(() => {
+    const handleGlobalShortcut = (event: KeyboardEvent) => {
+      if (
+        disabled ||
+        isOpen ||
+        event.defaultPrevented ||
+        event.key.toLocaleLowerCase() !== 'k' ||
+        (!event.metaKey && !event.ctrlKey) ||
+        event.altKey ||
+        event.shiftKey ||
+        isEditableElement(event.target) ||
+        isEditableElement(document.activeElement)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      openSelector();
+    };
+
+    window.addEventListener('keydown', handleGlobalShortcut);
+    return () => window.removeEventListener('keydown', handleGlobalShortcut);
+  }, [disabled, isOpen, openSelector]);
+
+  return (
+    <div className="grid gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-2">
+          <span className={fieldLabelTextClassName}>Channel</span>
+          <kbd
+            aria-hidden="true"
+            className="rounded-md border border-[var(--operator-card-border)] bg-[var(--operator-ghost-button-bg)] px-1.5 py-0.5 font-mono text-[11px] font-medium text-[color:var(--color-text-muted)]"
+          >
+            {channelShortcut.label}
+          </kbd>
+        </span>
+        <span className="text-xs text-[color:var(--color-text-muted)]">Search by name or ID</span>
+      </div>
+
+      <button
+        type="button"
+        aria-label={`Open channel selector. Current channel: ${
+          selectedChannel ? channelLabel(selectedChannel) : 'none'
+        }`}
+        aria-keyshortcuts={channelShortcut.ariaKey}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        disabled={disabled}
+        onClick={openSelector}
+        className="flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-[var(--operator-input-border)] bg-[var(--operator-input-bg)] px-4 py-3 text-left text-[var(--color-text)] shadow-[var(--operator-input-shadow)] transition duration-200 hover:border-[var(--color-primary)]/60 hover:bg-[var(--app-option-card-hover-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/60 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span className="truncate text-sm font-medium">
+          {selectedChannel ? channelLabel(selectedChannel) : 'Select a channel'}
+        </span>
+        <FaChevronDown
+          aria-hidden="true"
+          className={`shrink-0 text-xs text-[color:var(--color-text-muted)] transition duration-200 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
 
 /**
  * Renders a schema-driven nested form using recursive object and array traversal.
@@ -387,16 +658,13 @@ export function RequestBuilderCard(props: {
         className="max-h-[32rem] min-w-0 overflow-y-auto rounded-2xl border border-[var(--operator-card-border)] bg-[var(--operator-card-bg)] p-4 shadow-[var(--operator-input-shadow)] lg:max-h-[calc(100vh-18rem)]"
         data-testid="request-builder-fields"
       >
-        <label className={fieldLabelClassName}>
-          <span className={fieldLabelTextClassName}>Channel</span>
-          <select className={inputClassName} value={selectedChannel} onChange={(event) => onChannelChange(event.target.value)}>
-            {channels.map((channel) => (
-              <option key={channel} value={channel}>
-                {channelLabel(channel)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ProductChannelSelector
+          channels={channels}
+          selectedChannel={selectedChannel}
+          onChannelChange={onChannelChange}
+          channelLabel={channelLabel}
+          disabled={disabled}
+        />
         {channelDetail ? <div className="mt-3">{channelDetail}</div> : null}
 
         <div className="mt-4 border-t border-[var(--operator-card-soft-border)] pt-5">

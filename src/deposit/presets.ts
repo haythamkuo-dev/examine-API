@@ -484,13 +484,24 @@ const SPEI_SCHEMA: DepositFieldMap = {
   }),
 };
 
-const EMAIL_COLLECT_SCHEMA: DepositFieldMap = {
+const SHOPPER_EMAIL_FIELD = textField('Shopper email', true);
+
+const createEmailCollectSchema = (additionalFields: DepositFieldMap = {}): DepositFieldMap => ({
   payment_order: objectField('Payment order', {
     collect: objectField('Collect payload', {
-      shopper_email: textField('Shopper email', true),
+      ...additionalFields,
+      shopper_email: SHOPPER_EMAIL_FIELD,
     }),
   }),
-};
+});
+
+const EMAIL_COLLECT_SCHEMA = createEmailCollectSchema();
+
+const LOKI_INTERCARD_SGD_SCHEMA = createEmailCollectSchema({
+  product_name: textField('Product name', true),
+  product_detail: textareaField('Product detail', true),
+  origin: textField('Origin', true),
+});
 
 const EMPTY_COLLECT_SCHEMA: DepositFieldMap = {
   payment_order: objectField('Payment order', {
@@ -590,13 +601,26 @@ const createFamilyChannelConfigs = <FamilyChannel extends DepositChannel>(
   return configs as Record<FamilyChannel, DepositChannelConfig>;
 };
 
+const LOKI_INTERCARD_SHOPPER_EMAIL = 'test@example.com';
+
 const LOKI_INTERCARD_FAMILY: DepositFamilyBase = {
   schema: EMAIL_COLLECT_SCHEMA,
   values: {
     payment_order: {
       collect: {
-        shopper_email: 'test@example.com',
+        shopper_email: LOKI_INTERCARD_SHOPPER_EMAIL,
       },
+    },
+  },
+};
+
+const LOKI_INTERCARD_SGD_VALUES: DepositChannelValues = {
+  payment_order: {
+    collect: {
+      product_name: 'Test Order',
+      product_detail: 'Test order',
+      shopper_email: LOKI_INTERCARD_SHOPPER_EMAIL,
+      origin: 'https://merchant.example.com',
     },
   },
 };
@@ -609,6 +633,12 @@ const LOKI_INTERCARD_VARIANTS = [
   {
     channel: 'loki-intercard-sg-usd',
     commonValues: { productNo: 'DEP-LOKI-INTERCARDSG-USD', amount: '10.00', currencyCode: 'USD' },
+  },
+  {
+    channel: 'loki-intercard-sg-sgd',
+    commonValues: { productNo: 'DEP-LOKI-INTERCARD-SGD', amount: '10.00', currencyCode: 'SGD' },
+    schema: LOKI_INTERCARD_SGD_SCHEMA,
+    values: LOKI_INTERCARD_SGD_VALUES,
   },
   {
     channel: 'loki-intercard-vn-usd',

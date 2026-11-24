@@ -780,6 +780,19 @@ const createDepositTemplates = (env: CliEnv): Record<DepositChannel, DepositTemp
       },
     },
   },
+  'loki-intercard-sg-sgd': {
+    product_no: 'DEP-LOKI-INTERCARD-SGD',
+    amount: { amount: '10.00', currency_code: 'SGD' },
+    return_url: env.callbackUrlDeposit,
+    payment_order: {
+      collect: {
+        product_name: 'Test Order',
+        product_detail: 'Test order',
+        shopper_email: 'test@example.com',
+        origin: 'https://merchant.example.com',
+      },
+    },
+  },
   'loki-intercard-vn-usd': {
     product_no: 'DEP-LOKI-INTERCARDVN-USD',
     amount: { amount: '10.00', currency_code: 'USD' },
