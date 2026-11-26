@@ -313,7 +313,7 @@ export function useSubscriptionOperator(mode: OperatorEnvironmentMode) {
 
   const commonFieldOverrides: Record<string, RequestBuilderFieldOverride> = {
     [merchantRefFieldKey]: {
-      readOnly: true,
+      displayOnly: true,
       action: {
         label: 'Generate',
         tone: 'secondary',

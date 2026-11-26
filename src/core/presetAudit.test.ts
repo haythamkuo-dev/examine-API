@@ -1,9 +1,17 @@
 import { describe, expect, test } from 'bun:test';
 import { auditPresetData } from './presetAudit';
+import { DEPOSIT_CHANNEL_MANIFEST, PAYOUT_CHANNEL_MANIFEST, SUBSCRIPTION_CHANNEL_MANIFEST } from './env';
 
 describe('preset audit', () => {
   test('reports known JCB sources as deferred instead of hiding their parse failure', async () => {
     expect.hasAssertions();
+    const manifests = [
+      ...DEPOSIT_CHANNEL_MANIFEST,
+      ...PAYOUT_CHANNEL_MANIFEST,
+      ...SUBSCRIPTION_CHANNEL_MANIFEST,
+    ];
+    const deferredCount = manifests.filter((entry) => entry.deferred === true).length;
+    const commonPresetFileCount = 3;
 
     const report = await auditPresetData({
       dataDirPath: '/tmp/examine-api-audit',
@@ -16,7 +24,11 @@ describe('preset audit', () => {
       },
     });
 
-    expect(report.summary).toEqual({ ready: 80, deferred: 2, invalid: 0 });
+    expect(report.summary).toEqual({
+      ready: commonPresetFileCount + manifests.length - deferredCount,
+      deferred: deferredCount,
+      invalid: 0,
+    });
     expect(report.complete).toBe(false);
     expect(report.entries.filter((entry) => entry.status === 'deferred')).toEqual([
       expect.objectContaining({

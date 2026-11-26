@@ -251,11 +251,11 @@ export function useDepositOperator(mode: OperatorEnvironmentMode) {
 
   const commonFieldOverrides: Record<string, RequestBuilderFieldOverride> = {
     [productNoFieldKey]: {
-      readOnly: true,
+      displayOnly: true,
       badge: depositOnlyBadgeLabel,
     },
     [merchantRefFieldKey]: {
-      readOnly: true,
+      displayOnly: true,
       action: {
         label: 'Generate',
         tone: 'secondary',

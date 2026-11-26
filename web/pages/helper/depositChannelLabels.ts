@@ -73,6 +73,19 @@ export const DEPOSIT_CHANNEL_LABELS: Partial<Record<DepositChannel, string>> = {
   'ez-intercard-usd': 'ezpay-usd',
   'ez-intercard-hkd': 'ezpay-hkd',
   'ez-intercard-jpy': 'ezpay-jpy',
+  'ezpay-upop-hkd': 'ezpay-銀聯-HKD',
+  'ezpay-upop-cny': 'ezpay-銀聯-CNY',
+  'ezpay-upop-usd': 'ezpay-銀聯-USD',
+  'ezpay-alipaycn-hkd': 'ezpay-ALICN-HKD',
+  'ezpay-alipaycn-usd': 'ezpay-ALICN-USD',
+  'ezpay-alipayhk-hkd': 'ezpay-ALIHK-HKD',
+  'ezpay-alipayhk-usd': 'ezpay-ALIHK-USD',
+  'ezpay-wxh5-hkd': 'ezpay-WXH5-HKD',
+  'ezpay-wxh5-cny': 'ezpay-WXH5-CNY',
+  'ezpay-wxh5-usd': 'ezpay-WXH5-USD',
+  'ezpay-wxqr-hkd': 'ezpay-WXQR-HKD',
+  'ezpay-wxqr-cny': 'ezpay-WXQR-CNY',
+  'ezpay-wxqr-usd': 'ezpay-WXQR-USD',
 };
 
 /**

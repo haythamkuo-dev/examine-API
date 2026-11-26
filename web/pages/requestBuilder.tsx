@@ -79,7 +79,8 @@ type RequestBuilderAction = {
 
 export type RequestBuilderFieldOverride = {
   action?: RequestBuilderAction;
-  readOnly?: boolean;
+  /** Render the value as static text instead of a form control. */
+  displayOnly?: boolean;
   badge?: string;
 };
 
@@ -127,7 +128,10 @@ const isEditableElement = (element: EventTarget | null): boolean => {
     return false;
   }
 
-  return element.isContentEditable || Boolean(element.closest('input, textarea, select, [contenteditable]'));
+  return (
+    element.isContentEditable ||
+    Boolean(element.closest('input:not([readonly]), textarea:not([readonly]), select, [contenteditable]'))
+  );
 };
 
 type ChannelPickerDialogProps = {
@@ -462,6 +466,58 @@ export function SchemaFields(props: {
       );
     }
 
+    if (
+      fieldOverride?.displayOnly &&
+      (schema.kind === 'text' || schema.kind === 'textarea' || schema.kind === 'number')
+    ) {
+      const valueText = toInputValue(value);
+      const displayText = valueText || schema.placeholder || '—';
+
+      return (
+        <dl className={fieldLabelClassName} key={pathKey}>
+          <div className="grid gap-2">
+            <dt>
+              <span className="flex flex-wrap items-center gap-2">
+                <span className={fieldLabelTextClassName}>
+                  {schema.label}
+                  {schema.required ? ' *' : ''}
+                </span>
+                {fieldOverride.badge ? (
+                  <span
+                    aria-hidden="true"
+                    className="rounded-full border border-[var(--operator-card-soft-border)] bg-[var(--operator-card-soft-bg)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-muted)]"
+                  >
+                    {fieldOverride.badge}
+                  </span>
+                ) : null}
+              </span>
+              {schema.helperText ? <p className={helperTextClassName}>{schema.helperText}</p> : null}
+            </dt>
+            <dd className="m-0 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <span
+                className={`min-w-0 flex-1 select-text break-all rounded-2xl border border-[var(--operator-input-border)] bg-[var(--operator-input-bg)] px-4 py-3 text-sm shadow-[var(--operator-input-shadow)] ${
+                  valueText ? 'text-[var(--color-text)]' : 'text-[color:var(--color-text-muted)]'
+                }`}
+              >
+                {displayText}
+              </span>
+              {fieldOverride.action ? (
+                <ActionButton
+                  type="button"
+                  tone={fieldOverride.action.tone}
+                  onClick={fieldOverride.action.onClick}
+                  disabled={disabled}
+                  className="min-h-11 shrink-0 px-4 sm:min-h-12 sm:px-5"
+                >
+                  {fieldOverride.action.label}
+                </ActionButton>
+              ) : null}
+            </dd>
+          </div>
+        </dl>
+      );
+    }
+
     if (schema.kind === 'boolean') {
       return (
         <label
@@ -520,7 +576,6 @@ export function SchemaFields(props: {
             className={textareaClassName}
             disabled={disabled}
             placeholder={schema.placeholder}
-            readOnly={fieldOverride?.readOnly}
             value={typeof value === 'string' ? value : ''}
             onChange={(event) => onChange(fieldPath, event.target.value)}
           />
@@ -551,8 +606,6 @@ export function SchemaFields(props: {
             className={`${inputClassName} ${fieldOverride?.action ? 'sm:flex-1' : ''}`}
             disabled={disabled}
             placeholder={schema.placeholder}
-            readOnly={fieldOverride?.readOnly}
-            aria-readonly={fieldOverride?.readOnly ? 'true' : undefined}
             value={toInputValue(value)}
             onChange={(event) => onChange(fieldPath, parseNumericInputValue(event.target.value))}
           />
@@ -581,8 +634,6 @@ export function SchemaFields(props: {
             className={`${inputClassName} ${fieldOverride?.action ? 'sm:flex-1' : ''}`}
             disabled={disabled}
             placeholder={schema.placeholder}
-            readOnly={fieldOverride?.readOnly}
-            aria-readonly={fieldOverride?.readOnly ? 'true' : undefined}
             value={toInputValue(value)}
             onChange={(event) => onChange(fieldPath, event.target.value)}
           />

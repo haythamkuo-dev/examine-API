@@ -385,11 +385,11 @@ describe('RequestBuilderCard', () => {
     expect(view.getByRole('button', { name: /Open channel selector/ })).toHaveTextContent('alpha');
   });
 
-  test('renders read-only shared fields with an inline action button', () => {
+  test('renders display-only shared fields as text with an inline action button', () => {
     const generate = mock<() => void>();
     const commonFieldOverrides: Record<string, RequestBuilderFieldOverride> = {
       merchantRef: {
-        readOnly: true,
+        displayOnly: true,
         action: {
           label: 'Generate',
           onClick: generate,
@@ -421,9 +421,8 @@ describe('RequestBuilderCard', () => {
       />,
     );
 
-    const input = view.getByLabelText('Merchant ref *');
-
-    expect(input).toHaveAttribute('readonly');
+    expect(view.queryByRole('textbox', { name: 'Merchant ref *' })).toBeNull();
+    expect(view.getByText('merchant-a')).toBeInTheDocument();
 
     fireEvent.click(view.getByRole('button', { name: 'Generate' }));
 

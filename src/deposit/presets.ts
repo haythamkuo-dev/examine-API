@@ -1580,6 +1580,71 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
       },
     },
   },
+  'ezpay-upop-hkd': {
+    commonValues: { productNo: 'DEP-EZPAY-UPOP-HKD', amount: '10.00', currencyCode: 'HKD' },
+    schema: {},
+    values: {},
+  },
+  'ezpay-upop-cny': {
+    commonValues: { productNo: 'DEP-EZPAY-UPOP-CNY', amount: '10.00', currencyCode: 'CNY' },
+    schema: {},
+    values: {},
+  },
+  'ezpay-upop-usd': {
+    commonValues: { productNo: 'DEP-EZPAY-UPOP-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
+  'ezpay-alipaycn-hkd': {
+    commonValues: { productNo: 'DEP-EZPAY-ALIPAYCN-HKD', amount: '10.00', currencyCode: 'HKD' },
+    schema: {},
+    values: {},
+  },
+  'ezpay-alipaycn-usd': {
+    commonValues: { productNo: 'DEP-EZPAY-ALIPAYCN-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
+  'ezpay-alipayhk-hkd': {
+    commonValues: { productNo: 'DEP-EZPAY-ALIPAYHK-HKD', amount: '10.00', currencyCode: 'HKD' },
+    schema: {},
+    values: {},
+  },
+  'ezpay-alipayhk-usd': {
+    commonValues: { productNo: 'DEP-EZPAY-ALIPAYHK-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
+  'ezpay-wxh5-hkd': {
+    commonValues: { productNo: 'DEP-EZPAY-WXH5-HKD', amount: '10.00', currencyCode: 'HKD' },
+    schema: {},
+    values: {},
+  },
+  'ezpay-wxh5-cny': {
+    commonValues: { productNo: 'DEP-EZPAY-WXH5-CNY', amount: '10.00', currencyCode: 'CNY' },
+    schema: {},
+    values: {},
+  },
+  'ezpay-wxh5-usd': {
+    commonValues: { productNo: 'DEP-EZPAY-WXH5-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
+  'ezpay-wxqr-hkd': {
+    commonValues: { productNo: 'DEP-EZPAY-WXQR-HKD', amount: '10.00', currencyCode: 'HKD' },
+    schema: {},
+    values: {},
+  },
+  'ezpay-wxqr-cny': {
+    commonValues: { productNo: 'DEP-EZPAY-WXQR-CNY', amount: '10.00', currencyCode: 'CNY' },
+    schema: {},
+    values: {},
+  },
+  'ezpay-wxqr-usd': {
+    commonValues: { productNo: 'DEP-EZPAY-WXQR-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
 });
 
 export const createSeedDepositPresets = (

@@ -129,6 +129,19 @@ export const DEPOSIT_CHANNEL_MANIFEST = [
   createChannelManifestEntry('deposit', 'ez-intercard-usd', { tokenKey: MerchantTokenKey.Normal }),
   createChannelManifestEntry('deposit', 'ez-intercard-hkd', { tokenKey: MerchantTokenKey.Normal }),
   createChannelManifestEntry('deposit', 'ez-intercard-jpy', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-upop-hkd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-upop-cny', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-upop-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-alipaycn-hkd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-alipaycn-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-alipayhk-hkd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-alipayhk-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-wxh5-hkd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-wxh5-cny', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-wxh5-usd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-wxqr-hkd', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-wxqr-cny', { tokenKey: MerchantTokenKey.Normal }),
+  createChannelManifestEntry('deposit', 'ezpay-wxqr-usd', { tokenKey: MerchantTokenKey.Normal }),
 ] as const;
 
 export const PAYOUT_CHANNEL_MANIFEST = [

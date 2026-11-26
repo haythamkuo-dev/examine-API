@@ -343,7 +343,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
   const commonFieldOverrides: Record<string, RequestBuilderFieldOverride> = {
     [merchantReferenceFieldKey]: {
-      readOnly: true,
+      displayOnly: true,
       action: {
         label: 'Generate',
         tone: 'secondary',
@@ -354,7 +354,7 @@ export function usePayoutOperator(mode: OperatorEnvironmentMode) {
 
   const channelFieldOverrides: Record<string, RequestBuilderFieldOverride> = {
     [productNoFieldKey]: {
-      readOnly: true,
+      displayOnly: true,
       badge: readOnlyBadgeLabel,
     },
   };
