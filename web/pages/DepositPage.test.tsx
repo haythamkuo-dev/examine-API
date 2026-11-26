@@ -21,6 +21,7 @@ import { getDepositChannelLabel } from './helper/depositChannelLabels';
 import {
   createFetchHarness,
   closeModal,
+  expectRequestBuilderFieldText,
   jsonResponse,
   openRequestBuilderChannel,
   readJsonBody,
@@ -341,8 +342,8 @@ describe('DepositPage', () => {
     );
     expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();
     expect(view.getByRole('button', { name: 'Edit API key' })).toBeInTheDocument();
-    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
-    expect(view.getByLabelText('Merchant reference')).toHaveAttribute('readonly');
+    expectRequestBuilderFieldText(view, 'Merchant reference', '—');
+    expect(view.queryByRole('textbox', { name: 'Merchant reference' })).toBeNull();
   });
 
   test('wraps request fields in a scroll container with a max height', async () => {
@@ -411,7 +412,7 @@ describe('DepositPage', () => {
 
     expect(channelValues.approvalRequired).toBe(true);
     expect(channelValues.collects[0]?.enabled).toBe(false);
-    expect(view.getByLabelText('Merchant reference')).toHaveValue(`PREVIEW-${primaryChannel}`);
+    expectRequestBuilderFieldText(view, 'Merchant reference', `PREVIEW-${primaryChannel}`);
     expect(view.getAllByText(new RegExp(`"merchant_ref": "PREVIEW-${primaryChannel}"`))).toHaveLength(1);
     expect(view.queryByText('deposit:preview:test')).toBeNull();
     expect(view.queryByText('https://gateway.example.test/deposit')).toBeNull();
@@ -476,17 +477,18 @@ describe('DepositPage', () => {
     await selectRequestBuilderChannel(view, secondaryChannel, getDepositChannelLabel(secondaryChannel));
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+      expectRequestBuilderFieldText(view, 'Merchant reference', '—');
     });
 
-    expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue('PROD-SECONDARY');
+    expectRequestBuilderFieldText(view, 'Product number *', 'PROD-SECONDARY');
+    expect(view.queryByRole('textbox', { name: /Product number/ })).toBeNull();
     expect(view.getByText('typed-deposit-key')).toBeInTheDocument();
     expect(view.queryByText(`api-key-${secondaryChannel}`)).toBeNull();
 
     await selectRequestBuilderChannel(view, primaryChannel, getDepositChannelLabel(primaryChannel));
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+      expectRequestBuilderFieldText(view, 'Merchant reference', '—');
     });
 
     await act(async () => {
@@ -593,14 +595,13 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-002');
+      expectRequestBuilderFieldText(view, 'Merchant reference', 'GENERATED-002');
     });
 
-    expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-002');
-    const productNoField = view.getByRole('textbox', { name: /Product number/ });
-    expect(productNoField).toHaveProperty('readOnly', true);
+    expectRequestBuilderFieldText(view, 'Merchant reference', 'GENERATED-002');
+    expectRequestBuilderFieldText(view, 'Product number *', `PROD-${primaryChannel}`);
+    expect(view.queryByRole('textbox', { name: /Product number/ })).toBeNull();
     expect(view.getByText('ReadOnly')).toBeInTheDocument();
-    expect(productNoField).toHaveValue(`PROD-${primaryChannel}`);
   });
 
   test('does not restore a server merchant reference when generation fails', async () => {
@@ -619,7 +620,7 @@ describe('DepositPage', () => {
     });
 
     await view.findByText('generator unavailable');
-    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+    expectRequestBuilderFieldText(view, 'Merchant reference', '—');
   });
 
   test('does not restore the generated merchant reference when reloading defaults', async () => {
@@ -648,7 +649,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-003');
+      expectRequestBuilderFieldText(view, 'Merchant reference', 'GENERATED-003');
     });
 
     await act(async () => {
@@ -656,10 +657,10 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+      expectRequestBuilderFieldText(view, 'Merchant reference', '—');
     });
 
-    expect(view.getByRole('textbox', { name: /Product number/ })).toHaveValue('PROD-RELOADED');
+    expectRequestBuilderFieldText(view, 'Product number *', 'PROD-RELOADED');
   });
 
   test('resets the api key to the backend default when the environment changes', async () => {
@@ -724,7 +725,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-004');
+      expectRequestBuilderFieldText(view, 'Merchant reference', 'GENERATED-004');
     });
 
     await act(async () => {
@@ -732,7 +733,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+      expectRequestBuilderFieldText(view, 'Merchant reference', '—');
     });
   });
 
@@ -794,14 +795,14 @@ describe('DepositPage', () => {
     const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit' });
-    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+    expectRequestBuilderFieldText(view, 'Merchant reference', '—');
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('PREVIEW-GENERATED');
+      expectRequestBuilderFieldText(view, 'Merchant reference', 'PREVIEW-GENERATED');
     });
 
     await act(async () => {
@@ -876,7 +877,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(firstView.getByLabelText('Merchant reference')).toHaveValue('GENERATED-ENV');
+      expectRequestBuilderFieldText(firstView, 'Merchant reference', 'GENERATED-ENV');
     });
 
     await act(async () => {
@@ -895,7 +896,7 @@ describe('DepositPage', () => {
 
     await secondView.findByRole('heading', { name: 'Deposit' });
     expect(secondView.getByText('環境: 產品')).toBeInTheDocument();
-    expect(secondView.getByLabelText('Merchant reference')).toHaveValue('');
+    expectRequestBuilderFieldText(secondView, 'Merchant reference', '—');
   });
 
   test('new draft resets the current merchant reference without affecting the local api key draft', async () => {
@@ -924,7 +925,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-SAVE');
+      expectRequestBuilderFieldText(view, 'Merchant reference', 'GENERATED-SAVE');
     });
 
     await act(async () => {
@@ -932,7 +933,7 @@ describe('DepositPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+      expectRequestBuilderFieldText(view, 'Merchant reference', '—');
     });
     expect(view.getByText('typed-deposit-key')).toBeInTheDocument();
   });
@@ -982,7 +983,7 @@ describe('DepositPage', () => {
     setRouteHandlers({
       'GET /api/deposit/defaults': async () => jsonResponse(createDefaultsResponse(primaryChannel)),
       'POST /api/deposit/preview': async () =>
-        textResponse('commonValues.productNo is required', {
+        textResponse('commonValues.amount is required', {
           status: 400,
           statusText: 'Bad Request',
         }),
@@ -993,13 +994,13 @@ describe('DepositPage', () => {
     await view.findByRole('heading', { name: 'Deposit' });
 
     await act(async () => {
-      fireEvent.change(view.getByRole('textbox', { name: /Product number/ }), {
+      fireEvent.change(view.getByRole('textbox', { name: /Amount/ }), {
         target: { value: '' },
       });
       fireEvent.click(view.getByRole('button', { name: 'Preview request' }));
     });
 
-    const errorMessage = 'commonValues.productNo is required';
+    const errorMessage = 'commonValues.amount is required';
     await view.findByText(errorMessage);
 
     const resultHeading = view.getByRole('heading', { name: 'API result' });

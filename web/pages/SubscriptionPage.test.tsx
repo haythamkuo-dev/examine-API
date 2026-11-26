@@ -18,6 +18,7 @@ import { getSubscriptionChannelLabel } from './helper/subscriptionChannelLabels'
 import {
   createFetchHarness,
   closeModal,
+  expectRequestBuilderFieldText,
   jsonResponse,
   openRequestBuilderChannel,
   readJsonBody,
@@ -253,8 +254,9 @@ describe('SubscriptionPage', () => {
     const view = renderSubscriptionPage();
 
     await view.findByRole('heading', { name: 'Subscription' });
-    await view.findByLabelText('Merchant reference');
-    expect(view.getByLabelText('Merchant reference')).toHaveAttribute('readonly');
+    await view.findByText('Merchant reference', { exact: true });
+    expect(view.queryByRole('textbox', { name: 'Merchant reference' })).toBeNull();
+    expectRequestBuilderFieldText(view, 'Merchant reference', '—');
     expect(view.getByText('plan-default')).toBeInTheDocument();
     expect(view.getByRole('button', { name: 'Edit Plan ID' })).toBeInTheDocument();
     expect(view.getByText('subscription-default-key')).toBeInTheDocument();
@@ -271,7 +273,7 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-SUB-001');
+      expectRequestBuilderFieldText(view, 'Merchant reference', 'GENERATED-SUB-001');
       expect(view.getByText('Merchant reference generated.')).toBeInTheDocument();
     });
   });
@@ -303,7 +305,7 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-SUB-002');
+      expectRequestBuilderFieldText(view, 'Merchant reference', 'GENERATED-SUB-002');
     });
 
     await act(async () => {
@@ -314,14 +316,14 @@ describe('SubscriptionPage', () => {
       expect(view.getByText('環境: 產品')).toBeInTheDocument();
     });
 
-    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+    expectRequestBuilderFieldText(view, 'Merchant reference', '—');
 
     await act(async () => {
       fireEvent.click(view.getByRole('button', { name: 'Reload defaults' }));
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+      expectRequestBuilderFieldText(view, 'Merchant reference', '—');
     });
 
     await act(async () => {
@@ -329,7 +331,7 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+      expectRequestBuilderFieldText(view, 'Merchant reference', '—');
     });
   });
 
@@ -361,7 +363,7 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-SUB-003');
+      expectRequestBuilderFieldText(view, 'Merchant reference', 'GENERATED-SUB-003');
     });
 
     await act(async () => {
@@ -372,7 +374,7 @@ describe('SubscriptionPage', () => {
       expect(view.getByText('generator unavailable')).toBeInTheDocument();
     });
 
-    expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-SUB-003');
+    expectRequestBuilderFieldText(view, 'Merchant reference', 'GENERATED-SUB-003');
   });
 
   test('preview replaces the current merchant reference with the backend-generated value and create reuses it', async () => {
@@ -420,8 +422,8 @@ describe('SubscriptionPage', () => {
     const view = renderSubscriptionPage();
 
     await view.findByRole('heading', { name: 'Subscription' });
-    await view.findByLabelText('Merchant reference');
-    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+    await view.findByText('Merchant reference', { exact: true });
+    expectRequestBuilderFieldText(view, 'Merchant reference', '—');
 
     await updateApiKeyFromModal(view, 'typed-subscription-key');
 
@@ -437,7 +439,7 @@ describe('SubscriptionPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('preview-generated-subscription');
+      expectRequestBuilderFieldText(view, 'Merchant reference', 'preview-generated-subscription');
     });
     expect(view.queryByText('Preview completed.')).toBeNull();
     expect(view.queryByText('subscription:preview:test')).toBeNull();

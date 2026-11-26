@@ -20,6 +20,7 @@ import { getPayoutChannelLabel } from './helper/payoutChannelLabels';
 import {
   createFetchHarness,
   closeModal,
+  expectRequestBuilderFieldText,
   jsonResponse,
   openRequestBuilderChannel,
   readJsonBody,
@@ -312,7 +313,7 @@ describe('PayoutPage', () => {
       expect(view.getByRole('button', { name: 'Generate' })).toBeEnabled();
     });
 
-    expect(view.getByLabelText('Merchant reference')).toHaveAttribute('readonly');
+    expect(view.queryByRole('textbox', { name: 'Merchant reference' })).toBeNull();
     expect(view.getByText(`api-key-${primaryChannel}`)).toBeInTheDocument();
     expect(view.getByRole('button', { name: 'Edit API key' })).toBeInTheDocument();
 
@@ -321,7 +322,7 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-PAYOUT-001');
+      expectRequestBuilderFieldText(view, 'Merchant reference', 'GENERATED-PAYOUT-001');
       expect(view.getByText('Merchant reference generated.')).toBeInTheDocument();
     });
   });
@@ -428,7 +429,7 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-PAYOUT-002');
+      expectRequestBuilderFieldText(view, 'Merchant reference', 'GENERATED-PAYOUT-002');
     });
 
     await updateApiKeyFromModal(view, 'typed-payout-key');
@@ -436,14 +437,12 @@ describe('PayoutPage', () => {
     await selectRequestBuilderChannel(view, secondaryChannel, getPayoutChannelLabel(secondaryChannel));
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+      expectRequestBuilderFieldText(view, 'Merchant reference', '—');
     });
 
     await waitFor(() => {
-      const productNumber = view.getByLabelText(/Product number/);
-      expect(productNumber).toHaveValue('product-secondary-server');
-      expect(productNumber).toHaveAttribute('readonly');
-      expect(productNumber).toHaveAttribute('aria-readonly', 'true');
+      expectRequestBuilderFieldText(view, 'Product number *', 'product-secondary-server');
+      expect(view.queryByRole('textbox', { name: /Product number/ })).toBeNull();
     });
 
     expect(view.getByText('typed-payout-key')).toBeInTheDocument();
@@ -452,7 +451,7 @@ describe('PayoutPage', () => {
     await selectRequestBuilderChannel(view, primaryChannel, getPayoutChannelLabel(primaryChannel));
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+      expectRequestBuilderFieldText(view, 'Merchant reference', '—');
     });
 
     await act(async () => {
@@ -618,7 +617,7 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('GENERATED-PAYOUT-003');
+      expectRequestBuilderFieldText(view, 'Merchant reference', 'GENERATED-PAYOUT-003');
     });
 
     await act(async () => {
@@ -626,7 +625,7 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+      expectRequestBuilderFieldText(view, 'Merchant reference', '—');
     });
   });
 
@@ -652,7 +651,7 @@ describe('PayoutPage', () => {
       expect(view.getByText('generator unavailable')).toBeInTheDocument();
     });
 
-    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+    expectRequestBuilderFieldText(view, 'Merchant reference', '—');
   });
 
   test('shows a success banner after create succeeds', async () => {
@@ -741,7 +740,7 @@ describe('PayoutPage', () => {
       expect(view.getByRole('button', { name: 'Preview request' })).toBeEnabled();
     });
 
-    expect(view.getByLabelText('Merchant reference')).toHaveValue('');
+    expectRequestBuilderFieldText(view, 'Merchant reference', '—');
 
     await updateApiKeyFromModal(view, 'preview-payout-key');
 
@@ -754,7 +753,7 @@ describe('PayoutPage', () => {
     });
 
     await waitFor(() => {
-    expect(view.getByLabelText('Merchant reference')).toHaveValue('preview-generated-payout');
+    expectRequestBuilderFieldText(view, 'Merchant reference', 'preview-generated-payout');
     expect(view.queryByText('payout:preview:test')).toBeNull();
     expect(view.queryByText('https://gateway.example.test/payout')).toBeNull();
     });

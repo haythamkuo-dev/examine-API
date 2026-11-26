@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -33,20 +34,48 @@ const ModalContext = createContext<ModalContextValue | null>(null);
 
 const focusableSelector =
   [
-    'button:not([disabled])',
-    'input:not([disabled])',
-    'select:not([disabled])',
-    'textarea:not([disabled])',
+    'button:not(:disabled)',
+    'input:not(:disabled):not([type="hidden"])',
+    'select:not(:disabled)',
+    'textarea:not(:disabled)',
     'a[href]',
-    '[tabindex]:not([tabindex="-1"])',
+    '[tabindex]',
+    '[contenteditable="true"]',
   ].join(', ');
 
-const getFirstFocusableElement = (root: HTMLElement | null): HTMLElement | null => {
+const getFocusableElements = (root: HTMLElement | null): HTMLElement[] => {
   if (!root) {
-    return null;
+    return [];
   }
 
-  return root.querySelector<HTMLElement>(focusableSelector);
+  return Array.from(root.querySelectorAll<HTMLElement>(focusableSelector)).filter((element) => {
+    if (element.matches(':disabled') || element.tabIndex < 0) {
+      return false;
+    }
+
+    let ancestor: HTMLElement | null = element;
+    while (ancestor) {
+      if (
+        ancestor.hasAttribute('hidden') ||
+        ancestor.hasAttribute('inert') ||
+        ancestor.getAttribute('aria-hidden') === 'true'
+      ) {
+        return false;
+      }
+
+      const style = window.getComputedStyle(ancestor);
+      if (style.display === 'none' || style.visibility === 'hidden') {
+        return false;
+      }
+
+      if (ancestor === root) {
+        break;
+      }
+      ancestor = ancestor.parentElement;
+    }
+
+    return true;
+  });
 };
 
 /**
@@ -65,7 +94,7 @@ export function ModalProvider({ children }: PropsWithChildren) {
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof document === 'undefined') {
       return;
     }
@@ -76,11 +105,15 @@ export function ModalProvider({ children }: PropsWithChildren) {
 
       const previousElement = lastActiveElementRef.current;
       lastActiveElementRef.current = null;
-      previousElement?.focus?.();
+      if (previousElement?.isConnected) {
+        previousElement.focus();
+      }
       return;
     }
 
-    lastActiveElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!lastActiveElementRef.current) {
+      lastActiveElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
     document.body.style.overflow = 'hidden';
@@ -89,14 +122,16 @@ export function ModalProvider({ children }: PropsWithChildren) {
     }
   }, [modalOptions]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!modalOptions) {
       return;
     }
 
+    const focusableElements = getFocusableElements(panelRef.current);
+    const autofocusElement = panelRef.current?.querySelector<HTMLElement>('[data-modal-autofocus="true"]');
     const element =
-      panelRef.current?.querySelector<HTMLElement>('[data-modal-autofocus="true"]') ??
-      getFirstFocusableElement(panelRef.current) ??
+      (autofocusElement && focusableElements.includes(autofocusElement) ? autofocusElement : null) ??
+      focusableElements[0] ??
       panelRef.current;
     element?.focus?.();
   }, [modalOptions]);
@@ -170,13 +205,47 @@ export function ModalProvider({ children }: PropsWithChildren) {
     [closeModal, modalOptions?.dismissible],
   );
 
-  useEffect(() => {
-    if (!modalOptions?.dismissible) {
+  useLayoutEffect(() => {
+    if (!modalOptions) {
       return;
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Tab' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const panel = panelRef.current;
+        if (!panel) {
+          return;
+        }
+
+        const focusableElements = getFocusableElements(panel);
+        if (focusableElements.length === 0) {
+          event.preventDefault();
+          panel.focus();
+          return;
+        }
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        const activeElement = document.activeElement;
+        const activeIndex = focusableElements.indexOf(activeElement as HTMLElement);
+
+        if (!panel.contains(activeElement) || activeIndex === -1) {
+          event.preventDefault();
+          (event.shiftKey ? lastElement : firstElement).focus();
+          return;
+        }
+
+        if (event.shiftKey && activeIndex === 0) {
+          event.preventDefault();
+          lastElement.focus();
+        } else if (!event.shiftKey && activeIndex === focusableElements.length - 1) {
+          event.preventDefault();
+          firstElement.focus();
+        }
+        return;
+      }
+
+      if (modalOptions.dismissible && event.key === 'Escape') {
         event.preventDefault();
         closeModal();
       }
@@ -184,7 +253,7 @@ export function ModalProvider({ children }: PropsWithChildren) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [closeModal, modalOptions?.dismissible]);
+  }, [closeModal, modalOptions]);
 
   const value = useMemo(
     () => ({

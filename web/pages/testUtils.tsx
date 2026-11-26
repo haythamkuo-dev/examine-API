@@ -25,6 +25,31 @@ type FetchHarnessOptions<TBody> = {
 export type PageTestView = ReturnType<typeof renderPage>;
 
 /**
+ * Asserts that a display-only request builder field shows the expected text.
+ *
+ * @param view Rendered page test view.
+ * @param fieldLabel Visible label of the display-only field.
+ * @param expectedText Expected displayed value, or an em dash for an empty value.
+ * @returns Nothing when the field displays the expected text.
+ * @throws {Error} When the field or expected text is not rendered.
+ */
+export const expectRequestBuilderFieldText = (
+  view: PageTestView,
+  fieldLabel: string,
+  expectedText: string,
+): void => {
+  const fields = within(view.getByTestId('request-builder-fields'));
+  const label = fields.getByText(fieldLabel, { exact: true });
+  const field = label.closest('dl');
+
+  if (!field) {
+    throw new Error(`${fieldLabel} is not rendered as a definition list field.`);
+  }
+
+  expect(within(field).getByText(expectedText, { exact: true })).toBeInTheDocument();
+};
+
+/**
  * Builds a JSON response for page-level fetch mocks.
  *
  * @param body Response payload.
