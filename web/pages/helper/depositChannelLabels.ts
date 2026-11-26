@@ -36,6 +36,8 @@ export const DEPOSIT_CHANNEL_LABELS: Partial<Record<DepositChannel, string>> = {
   'PAYPAY-JPY': 'PAYPAY-JPY',
   'ALIPAY-CNY': 'collect_CNY 通道',
   'ALIPAY-HKD': 'collect_HKD 通道',
+  'ALIPAYCN-USD': 'ALICN-USD',
+  'ALIPAYHK-USD': 'ALIHK-USD',
   'WECHAT-HKD': 'collect_HKD 補充通道',
   'ALIPAY-8000': '鴻運-8000-CNY',
   'ALIPAY-6014': '鴻運-6014-CNY',

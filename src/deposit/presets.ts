@@ -1518,10 +1518,15 @@ const getSeedChannelConfigs = (env: CliEnv): Record<DepositChannel, DepositChann
     schema: clone(SIMPLE_COLLECT_SCHEMA),
     values: { payment_order: { collect: { country_code: 'HK', product_detail: 'Collect order for %s', product_name: 'aliPay for HKD' } } },
   },
-  'WECHAT-HKD': {
-    commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-HKWECHATPAYST-HKD', amount: '188.00', currencyCode: 'HKD' },
-    schema: clone(SIMPLE_COLLECT_SCHEMA),
-    values: { payment_order: { collect: { country_code: 'HK', product_detail: 'Collect order for %s', product_name: 'wechat for HKD' } } },
+  'ALIPAYCN-USD': {
+    commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-ALIPAYCN-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
+  },
+  'ALIPAYHK-USD': {
+    commonValues: { productNo: 'DEP-FUTUREPAY_COLLECT-ALIPAYHK-USD', amount: '10.00', currencyCode: 'USD' },
+    schema: {},
+    values: {},
   },
   'ALIPAY-8000': { commonValues: { productNo: 'DEP-HONGYUNPAY-ALIPAY8000-CNY', amount: '100.00', currencyCode: 'CNY' }, schema: {}, values: {} },
   'ALIPAY-6014': { commonValues: { productNo: 'DEP-HONGYUNPAY-ALIPAY6014-CNY', amount: '120.00', currencyCode: 'CNY' }, schema: {}, values: {} },

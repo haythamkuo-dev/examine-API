@@ -88,23 +88,23 @@ export function SubscriptionPage() {
             onChannelChange={onChannelChange}
             channelLabel={getSubscriptionChannelLabel}
             channelDetail={(
-              <div className="grid gap-3">
-                <EditableSummaryFieldTrigger
-                  label="Plan ID"
-                  value={draftPlanId}
-                  editLabel="Edit Plan ID"
-                  modalTitle="Edit Plan ID"
-                  modalDescription="Update the subscription plan id and confirm the change before applying it."
-                  inputId="subscription-plan-id-modal-input"
-                  disabled={loading !== null}
-                  onConfirm={(value) => updateChannelValue(['subs_plan_id'], value)}
-                />
-                <ApiKeyEditorTrigger
-                  apiKey={apiKey}
-                  disabled={loading !== null}
-                  onConfirm={updateApiKey}
-                />
-              </div>
+              <ApiKeyEditorTrigger
+                apiKey={apiKey}
+                disabled={loading !== null}
+                onConfirm={updateApiKey}
+              />
+            )}
+            advancedDetail={(
+              <EditableSummaryFieldTrigger
+                label="Plan ID"
+                value={draftPlanId}
+                editLabel="Edit Plan ID"
+                modalTitle="Edit Plan ID"
+                modalDescription="Update the subscription plan id and confirm the change before applying it."
+                inputId="subscription-plan-id-modal-input"
+                disabled={loading !== null}
+                onConfirm={(value) => updateChannelValue(['subs_plan_id'], value)}
+              />
             )}
             commonSchema={commonSchema}
             commonValues={form.commonValues as Record<string, unknown>}

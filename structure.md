@@ -29,7 +29,6 @@
 │   │   │   ├── WECHAT-6016-USD.json
 │   │   │   ├── WECHAT-6016.json
 │   │   │   ├── WECHAT-6038.json
-│   │   │   ├── WECHAT-HKD.json
 │   │   │   ├── bdt_worldpay.json
 │   │   │   ├── cmoney-intercard.json
 │   │   │   ├── co_bank_transfer.json
@@ -43,6 +42,19 @@
 │   │   │   ├── ez-intercard-hkd.json
 │   │   │   ├── ez-intercard-jpy.json
 │   │   │   ├── ez-intercard-usd.json
+│   │   │   ├── ezpay-alipaycn-hkd.json
+│   │   │   ├── ezpay-alipaycn-usd.json
+│   │   │   ├── ezpay-alipayhk-hkd.json
+│   │   │   ├── ezpay-alipayhk-usd.json
+│   │   │   ├── ezpay-upop-cny.json
+│   │   │   ├── ezpay-upop-hkd.json
+│   │   │   ├── ezpay-upop-usd.json
+│   │   │   ├── ezpay-wxh5-cny.json
+│   │   │   ├── ezpay-wxh5-hkd.json
+│   │   │   ├── ezpay-wxh5-usd.json
+│   │   │   ├── ezpay-wxqr-cny.json
+│   │   │   ├── ezpay-wxqr-hkd.json
+│   │   │   ├── ezpay-wxqr-usd.json
 │   │   │   ├── googlepay_usd.json
 │   │   │   ├── id_dana_usd.json
 │   │   │   ├── inr_upi.json
@@ -253,4 +265,4 @@
     │       └── modal.tsx
     └── styles.css
 
-31 directories, 223 files
+31 directories, 235 files

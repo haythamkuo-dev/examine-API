@@ -331,17 +331,28 @@ describe('RequestBuilderCard', () => {
         channels={['alpha', 'beta']}
         selectedChannel="alpha"
         onChannelChange={onChannelChange}
-        channelDetail={<p>Plan ID detail</p>}
+        channelDetail={<p>API key detail</p>}
+        advancedDetail={<p>Plan ID detail</p>}
         commonSchema={{
           merchantRef: {
             kind: 'text',
             label: 'Merchant ref',
             required: true,
           },
+          amount: {
+            kind: 'text',
+            label: 'Amount',
+            required: true,
+          },
         }}
-        commonValues={{ merchantRef: 'merchant-a' }}
+        commonValues={{ merchantRef: 'merchant-a', amount: '42' }}
         onCommonValueChange={() => undefined}
         channelSchema={{
+          product_no: {
+            kind: 'text',
+            label: 'Product number',
+            required: true,
+          },
           payload: {
             kind: 'object',
             label: 'Payload',
@@ -353,7 +364,7 @@ describe('RequestBuilderCard', () => {
             },
           },
         }}
-        channelValues={{ payload: { nested: 'value-a' } }}
+        channelValues={{ product_no: 'product-a', payload: { nested: 'value-a' } }}
         onChannelValueChange={() => undefined}
         loadingLabel="Form ready"
         disabled={false}
@@ -375,7 +386,24 @@ describe('RequestBuilderCard', () => {
     expect(onChannelChange).toHaveBeenCalledWith('beta');
     expect(reload).toHaveBeenCalled();
     expect(preview).toHaveBeenCalled();
+    expect(view.getByText('API key detail')).toBeTruthy();
+    expect(view.getByRole('textbox', { name: 'Product number *' })).toHaveValue('product-a');
+    expect(view.getByRole('textbox', { name: 'Merchant ref *' })).toHaveValue('merchant-a');
+    const advancedFields = view.getByTestId('request-builder-advanced');
+    const advancedFieldsToggle = view.getByRole('button', { name: 'More fields' });
+    expect(advancedFieldsToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(advancedFields).toHaveAttribute('aria-hidden', 'true');
+    fireEvent.click(advancedFieldsToggle, { detail: 1 });
+    expect(advancedFieldsToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(advancedFields).toHaveClass('grid-rows-[1fr]', 'transition-[grid-template-rows]', 'duration-200');
     expect(view.getByText('Plan ID detail')).toBeTruthy();
+    expect(view.getByRole('textbox', { name: 'Amount *' })).toHaveValue('42');
+    expect(view.getByText('Nested')).toBeTruthy();
+    fireEvent.click(advancedFieldsToggle, { detail: 0 });
+    expect(advancedFieldsToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(advancedFields).toHaveAttribute('aria-hidden', 'true');
+    expect(advancedFields).toHaveClass('grid-rows-[0fr]');
+    expect(advancedFields).not.toHaveClass('transition-[grid-template-rows]');
     expect(view.getByText('Footer message')).toBeTruthy();
     expect(view.getByTestId('request-builder-fields')).toHaveClass(
       'rounded-2xl',

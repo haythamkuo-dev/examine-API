@@ -84,6 +84,32 @@ export type RequestBuilderFieldOverride = {
   badge?: string;
 };
 
+const primaryRequestBuilderFieldNames = new Set([
+  'productno',
+  'productnumber',
+  'merchantref',
+  'merchantreference',
+]);
+
+const normalizeRequestBuilderFieldName = (value: string): string =>
+  value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const isPrimaryRequestBuilderField = (key: string, schema: SharedFieldSchema): boolean =>
+  [key, schema.label].some((name) =>
+    primaryRequestBuilderFieldNames.has(normalizeRequestBuilderFieldName(name)),
+  );
+
+const splitRequestBuilderFields = (schemaMap: SharedFieldMap) => {
+  const primary: SharedFieldMap = {};
+  const additional: SharedFieldMap = {};
+
+  for (const [key, schema] of Object.entries(schemaMap)) {
+    (isPrimaryRequestBuilderField(key, schema) ? primary : additional)[key] = schema;
+  }
+
+  return { primary, additional };
+};
+
 const FieldLabel = ({
   label,
   required,
@@ -657,8 +683,9 @@ export function SchemaFields(props: {
 /**
  * Renders the shared request-builder card used by the operator pages.
  *
- * @param props Channel selector, schema sections, actions, and optional footer content.
+ * @param props Channel selector, core and additional schema fields, actions, and optional details or footer content.
  * @returns Shared form card for editing and dispatching operator requests.
+ * @throws An error raised while rendering child content.
  */
 export function RequestBuilderCard(props: {
   channels: string[];
@@ -666,6 +693,7 @@ export function RequestBuilderCard(props: {
   onChannelChange: (channel: string) => void;
   channelLabel?: (channel: string) => string;
   channelDetail?: ReactNode;
+  advancedDetail?: ReactNode;
   commonSchema: SharedFieldMap;
   commonValues: Record<string, unknown>;
   onCommonValueChange: (key: string, value: string) => void;
@@ -686,6 +714,7 @@ export function RequestBuilderCard(props: {
     onChannelChange,
     channelLabel = (channel) => channel,
     channelDetail,
+    advancedDetail,
     commonSchema,
     commonValues,
     onCommonValueChange,
@@ -700,6 +729,18 @@ export function RequestBuilderCard(props: {
     footer,
     visibilityResolver,
   } = props;
+  const [advancedFieldsOpen, setAdvancedFieldsOpen] = useState(false);
+  const [animateAdvancedFields, setAnimateAdvancedFields] = useState(false);
+  const advancedFieldsId = useId();
+  const commonFieldGroups = splitRequestBuilderFields(commonSchema);
+  const channelFieldGroups = splitRequestBuilderFields(channelSchema);
+  const hasCoreFields =
+    Object.keys(commonFieldGroups.primary).length > 0 ||
+    Object.keys(channelFieldGroups.primary).length > 0;
+  const hasAdditionalFields =
+    advancedDetail !== undefined ||
+    Object.keys(commonFieldGroups.additional).length > 0 ||
+    Object.keys(channelFieldGroups.additional).length > 0;
 
   return (
     <PageCard className="p-6">
@@ -718,35 +759,103 @@ export function RequestBuilderCard(props: {
         />
         {channelDetail ? <div className="mt-3">{channelDetail}</div> : null}
 
-        <div className="mt-4 border-t border-[var(--operator-card-soft-border)] pt-5">
-          <SectionHeading title="Shared fields" />
-          <SchemaFields
-            schemaMap={commonSchema}
-            values={commonValues}
-            pathPrefix={[]}
-            onChange={(path, value) => {
-              const key = path[0];
-              if (typeof key === 'string' && typeof value === 'string') {
-                onCommonValueChange(key, value);
-              }
-            }}
-            fieldOverrides={commonFieldOverrides}
-            disabled={disabled}
-          />
-        </div>
+        {hasCoreFields ? (
+          <div className="mt-4 border-t border-[var(--operator-card-soft-border)] pt-5">
+            <SectionHeading title="Core fields" />
+            {Object.keys(commonFieldGroups.primary).length > 0 ? (
+              <SchemaFields
+                schemaMap={commonFieldGroups.primary}
+                values={commonValues}
+                pathPrefix={[]}
+                onChange={(path, value) => {
+                  const key = path[0];
+                  if (typeof key === 'string' && typeof value === 'string') {
+                    onCommonValueChange(key, value);
+                  }
+                }}
+                fieldOverrides={commonFieldOverrides}
+                disabled={disabled}
+              />
+            ) : null}
+            {Object.keys(channelFieldGroups.primary).length > 0 ? (
+              <SchemaFields
+                schemaMap={channelFieldGroups.primary}
+                values={channelValues}
+                pathPrefix={[]}
+                onChange={onChannelValueChange}
+                disabled={disabled}
+                fieldOverrides={channelFieldOverrides}
+                visibilityResolver={visibilityResolver}
+              />
+            ) : null}
+          </div>
+        ) : null}
 
-        <div className="mt-4 border-t border-[var(--operator-card-soft-border)] pt-5">
-          <SectionHeading title="Channel fields" />
-          <SchemaFields
-            schemaMap={channelSchema}
-            values={channelValues}
-            pathPrefix={[]}
-            onChange={onChannelValueChange}
-            disabled={disabled}
-            fieldOverrides={channelFieldOverrides}
-            visibilityResolver={visibilityResolver}
-          />
-        </div>
+        {hasAdditionalFields ? (
+          <div className="mt-4 border-t border-[var(--operator-card-soft-border)] pt-3">
+            <button
+              type="button"
+              aria-expanded={advancedFieldsOpen}
+              aria-controls={advancedFieldsId}
+              onClick={(event) => {
+                setAnimateAdvancedFields(event.detail > 0);
+                setAdvancedFieldsOpen((isOpen) => !isOpen);
+              }}
+              className="flex min-h-11 w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+            >
+              <span>More fields</span>
+              <FaChevronDown
+                aria-hidden="true"
+                className={`h-3 w-3 ${animateAdvancedFields ? 'transition-transform duration-200 ease-out motion-reduce:transition-none' : ''} ${advancedFieldsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+            <div
+              id={advancedFieldsId}
+              aria-hidden={!advancedFieldsOpen}
+              inert={!advancedFieldsOpen}
+              className={`grid ${advancedFieldsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'} ${animateAdvancedFields ? 'transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none' : ''}`}
+              data-testid="request-builder-advanced"
+            >
+              <div className="min-h-0 overflow-hidden">
+                <div className="mt-4 border-t border-[var(--operator-card-soft-border)] pt-5">
+                  {advancedDetail ? <div className="mb-5">{advancedDetail}</div> : null}
+                  {Object.keys(commonFieldGroups.additional).length > 0 ? (
+                    <div>
+                      <SectionHeading title="Shared fields" />
+                      <SchemaFields
+                        schemaMap={commonFieldGroups.additional}
+                        values={commonValues}
+                        pathPrefix={[]}
+                        onChange={(path, value) => {
+                          const key = path[0];
+                          if (typeof key === 'string' && typeof value === 'string') {
+                            onCommonValueChange(key, value);
+                          }
+                        }}
+                        fieldOverrides={commonFieldOverrides}
+                        disabled={disabled}
+                      />
+                    </div>
+                  ) : null}
+                  {Object.keys(channelFieldGroups.additional).length > 0 ? (
+                    <div className="mt-4 border-t border-[var(--operator-card-soft-border)] pt-5">
+                      <SectionHeading title="Channel fields" />
+                      <SchemaFields
+                        schemaMap={channelFieldGroups.additional}
+                        values={channelValues}
+                        pathPrefix={[]}
+                        onChange={onChannelValueChange}
+                        disabled={disabled}
+                        fieldOverrides={channelFieldOverrides}
+                        visibilityResolver={visibilityResolver}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">

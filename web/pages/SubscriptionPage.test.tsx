@@ -111,7 +111,14 @@ const updatePlanIdFromModal = (
   view: ReturnType<typeof renderSubscriptionPage>,
   value: string,
   action: 'Confirm' | 'Cancel' = 'Confirm',
-): Promise<void> => updateModalField(view, 'Edit Plan ID', 'Plan ID', value, action);
+): Promise<void> => {
+  const moreFieldsToggle = view.getByRole('button', { name: 'More fields' });
+  if (moreFieldsToggle.getAttribute('aria-expanded') !== 'true') {
+    fireEvent.click(moreFieldsToggle);
+  }
+
+  return updateModalField(view, 'Edit Plan ID', 'Plan ID', value, action);
+};
 
 beforeEach(() => {
   fetchHarness.reset();
@@ -257,12 +264,14 @@ describe('SubscriptionPage', () => {
     await view.findByText('Merchant reference', { exact: true });
     expect(view.queryByRole('textbox', { name: 'Merchant reference' })).toBeNull();
     expectRequestBuilderFieldText(view, 'Merchant reference', '—');
-    expect(view.getByText('plan-default')).toBeInTheDocument();
-    expect(view.getByRole('button', { name: 'Edit Plan ID' })).toBeInTheDocument();
+    expect(view.queryByRole('button', { name: 'Edit Plan ID' })).toBeNull();
+    expect(view.getByRole('button', { name: 'More fields' })).toHaveAttribute('aria-expanded', 'false');
     expect(view.getByText('subscription-default-key')).toBeInTheDocument();
     expect(view.getByRole('button', { name: 'Edit API key' })).toBeInTheDocument();
 
     await updatePlanIdFromModal(view, 'plan-draft-override');
+
+    expect(view.getByRole('button', { name: 'Edit Plan ID' })).toBeInTheDocument();
 
     await waitFor(() => {
       expect(view.getByText('plan-draft-override')).toBeInTheDocument();

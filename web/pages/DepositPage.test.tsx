@@ -992,6 +992,11 @@ describe('DepositPage', () => {
     const view = renderDepositPage();
 
     await view.findByRole('heading', { name: 'Deposit' });
+    await view.findByRole('button', { name: 'More fields' });
+
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: 'More fields' }));
+    });
 
     await act(async () => {
       fireEvent.change(view.getByRole('textbox', { name: /Amount/ }), {
